@@ -78,6 +78,22 @@ public interface IWiredEffect {
     }
 
     /**
+     * Selectors can use this to gate stack execution after their target list has
+     * been resolved. Returning false stops the stack before conditions/effects.
+     */
+    default boolean hasRequiredSelectorTargets(WiredContext ctx) {
+        return true;
+    }
+
+    /**
+     * Selectors that filter the current selector result should run after
+     * selectors that create/replace that result.
+     */
+    default boolean usesExistingSelectorTargets() {
+        return false;
+    }
+
+    /**
      * Simulate this effect's execution and record intended state changes.
      * <p>
      * This method is called when WiredExtraRequireFullExecution is present.

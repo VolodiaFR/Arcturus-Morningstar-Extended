@@ -32,6 +32,8 @@ import java.util.List;
 import java.util.Locale;
 
 public final class WiredTextPlaceholderUtil {
+    private static final char PRESERVED_SPACE = '\u00A0';
+
     private WiredTextPlaceholderUtil() {
     }
 
@@ -87,7 +89,41 @@ public final class WiredTextPlaceholderUtil {
             }
         }
 
-        return resolvedText;
+        return preserveRepeatedSpaces(resolvedText);
+    }
+
+    private static String preserveRepeatedSpaces(String text) {
+        if (text == null || text.length() < 2) {
+            return text;
+        }
+
+        StringBuilder result = new StringBuilder(text.length());
+        int index = 0;
+        while (index < text.length()) {
+            char currentChar = text.charAt(index);
+            if (currentChar != ' ') {
+                result.append(currentChar);
+                index++;
+                continue;
+            }
+
+            int startIndex = index;
+            while (index < text.length() && text.charAt(index) == ' ') {
+                index++;
+            }
+
+            int spaceCount = index - startIndex;
+            if (spaceCount == 1) {
+                result.append(' ');
+                continue;
+            }
+
+            for (int spaceIndex = 0; spaceIndex < spaceCount; spaceIndex++) {
+                result.append(PRESERVED_SPACE);
+            }
+        }
+
+        return result.toString();
     }
 
     public static boolean requiresActor(Room room, HabboItem stackItem) {
@@ -275,7 +311,7 @@ public final class WiredTextPlaceholderUtil {
         }
 
         String value = resolveRoomVariableValue(room, extra);
-        return (value == null || value.isEmpty()) ? List.of() : List.of(value);
+        return value == null ? List.of() : List.of(value);
     }
 
     private static List<String> collectContextVariableValues(WiredContext ctx, WiredExtraTextOutputVariable extra) {
@@ -284,7 +320,7 @@ public final class WiredTextPlaceholderUtil {
         }
 
         String value = resolveContextVariableValue(ctx, extra);
-        return (value == null || value.isEmpty()) ? List.of() : List.of(value);
+        return value == null ? List.of() : List.of(value);
     }
 
     private static String resolveUserVariableValue(Room room, RoomUnit roomUnit, WiredExtraTextOutputVariable extra) {

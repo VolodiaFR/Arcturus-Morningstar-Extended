@@ -21,6 +21,7 @@ import com.eu.habbo.habbohotel.pets.PetManager;
 import com.eu.habbo.habbohotel.polls.PollManager;
 import com.eu.habbo.habbohotel.rooms.RoomChatBubbleManager;
 import com.eu.habbo.habbohotel.rooms.RoomManager;
+import com.eu.habbo.habbohotel.translations.GoogleTranslateManager;
 import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.habbohotel.users.subscriptions.SubscriptionManager;
 import com.eu.habbo.habbohotel.users.subscriptions.SubscriptionScheduler;
@@ -58,6 +59,7 @@ public class GameEnvironment {
     private SubscriptionManager subscriptionManager;
     private CalendarManager calendarManager;
     private RoomChatBubbleManager roomChatBubbleManager;
+    private GoogleTranslateManager googleTranslateManager;
 
     public void load() throws Exception {
         LOGGER.info("GameEnvironment -> Loading...");
@@ -84,6 +86,7 @@ public class GameEnvironment {
         this.pollManager = new PollManager();
         this.calendarManager = new CalendarManager();
         this.roomChatBubbleManager = new RoomChatBubbleManager();
+        this.googleTranslateManager = new GoogleTranslateManager();
 
         this.roomManager.loadPublicRooms();
         this.navigatorManager.loadNavigator();
@@ -121,6 +124,9 @@ public class GameEnvironment {
         this.hotelViewManager.dispose();
         this.subscriptionManager.dispose();
         this.calendarManager.dispose();
+        if (this.googleTranslateManager != null) {
+            this.googleTranslateManager.clearCache();
+        }
         LOGGER.info("GameEnvironment -> Disposed!");
     }
 
@@ -218,5 +224,9 @@ public class GameEnvironment {
 
     public RoomChatBubbleManager getRoomChatBubbleManager() {
         return roomChatBubbleManager;
+    }
+
+    public GoogleTranslateManager getGoogleTranslateManager() {
+        return this.googleTranslateManager;
     }
 }

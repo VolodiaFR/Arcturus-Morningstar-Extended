@@ -1058,7 +1058,7 @@ public class CatalogManager {
                                     }
                                 }
 
-                                Bot bot = Emulator.getGameEnvironment().getBotManager().createBot(data, type);
+                                Bot bot = Emulator.getGameEnvironment().getBotManager().createBot(data, type, habbo.getHabboInfo().getId());
 
                                 if (bot != null) {
                                     bot.setOwnerId(habbo.getClient().getHabbo().getHabboInfo().getId());

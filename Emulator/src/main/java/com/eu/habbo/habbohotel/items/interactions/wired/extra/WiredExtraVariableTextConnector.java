@@ -22,6 +22,7 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
     public static final int CODE = 79;
     public static final int MAX_MAPPING_LENGTH = 1000;
     public static final int MAX_MAPPING_LINES = 30;
+    private static final String PRESERVED_SPACE = "\u00A0";
 
     private String mappingsText = "";
     private LinkedHashMap<Integer, String> mappings = new LinkedHashMap<>();
@@ -123,8 +124,12 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
             return "";
         }
 
-        String mappedValue = this.mappings.get(value);
-        return mappedValue != null ? mappedValue : String.valueOf(value);
+        if (this.mappings.containsKey(value)) {
+            String mappedValue = this.mappings.get(value);
+            return mappedValue != null ? preserveSpaces(mappedValue) : "";
+        }
+
+        return String.valueOf(value);
     }
 
     public Integer resolveValue(String text) {
@@ -132,17 +137,16 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
             return null;
         }
 
-        String normalizedText = text.trim();
-        if (normalizedText.isEmpty()) {
-            return null;
-        }
+        String normalizedText = normalizePreservedSpaces(text);
 
         for (Map.Entry<Integer, String> entry : this.mappings.entrySet()) {
             if (entry == null || entry.getKey() == null || entry.getValue() == null) {
                 continue;
             }
 
-            if (entry.getValue().trim().equalsIgnoreCase(normalizedText)) {
+            String normalizedMappingValue = normalizePreservedSpaces(entry.getValue());
+
+            if (normalizedMappingValue.equalsIgnoreCase(normalizedText)) {
                 return entry.getKey();
             }
         }
@@ -195,8 +199,8 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
                 continue;
             }
 
-            String line = rawLine.trim();
-            if (line.isEmpty()) {
+            String line = rawLine;
+            if (line.trim().isEmpty()) {
                 continue;
             }
 
@@ -210,7 +214,7 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
             }
 
             String keyPart = line.substring(0, separatorIndex).trim();
-            String valuePart = line.substring(separatorIndex + 1).trim();
+            String valuePart = line.substring(separatorIndex + 1);
 
             try {
                 result.put(Integer.parseInt(keyPart), valuePart);
@@ -219,6 +223,14 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
         }
 
         return result;
+    }
+
+    private static String preserveSpaces(String value) {
+        return value.replace(" ", PRESERVED_SPACE);
+    }
+
+    private static String normalizePreservedSpaces(String value) {
+        return value.replace(PRESERVED_SPACE, " ");
     }
 
     static class JsonData {

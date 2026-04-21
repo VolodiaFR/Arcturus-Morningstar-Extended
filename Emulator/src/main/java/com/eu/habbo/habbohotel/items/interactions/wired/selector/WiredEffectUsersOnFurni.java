@@ -112,6 +112,11 @@ public class WiredEffectUsersOnFurni extends InteractionWiredEffect {
     }
 
     @Override
+    public boolean usesExistingSelectorTargets() {
+        return this.filterExisting;
+    }
+
+    @Override
     public String getWiredData() {
         this.refresh(Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId()));
 

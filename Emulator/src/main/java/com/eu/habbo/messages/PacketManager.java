@@ -36,6 +36,7 @@ import com.eu.habbo.messages.incoming.helper.MySanctionStatusEvent;
 import com.eu.habbo.messages.incoming.helper.RequestTalentTrackEvent;
 import com.eu.habbo.messages.incoming.hotelview.*;
 import com.eu.habbo.messages.incoming.inventory.*;
+import com.eu.habbo.messages.incoming.inventory.nickicons.*;
 import com.eu.habbo.messages.incoming.inventory.prefixes.*;
 import com.eu.habbo.messages.incoming.modtool.*;
 import com.eu.habbo.messages.incoming.navigator.*;
@@ -61,6 +62,8 @@ import com.eu.habbo.messages.incoming.rooms.promotions.RequestPromotionRoomsEven
 import com.eu.habbo.messages.incoming.rooms.promotions.UpdateRoomPromotionEvent;
 import com.eu.habbo.messages.incoming.rooms.users.*;
 import com.eu.habbo.messages.incoming.trading.*;
+import com.eu.habbo.messages.incoming.translation.TranslationLanguagesRequestEvent;
+import com.eu.habbo.messages.incoming.translation.TranslationTextRequestEvent;
 import com.eu.habbo.messages.incoming.unknown.RequestResolutionEvent;
 import com.eu.habbo.messages.incoming.unknown.UnknownEvent1;
 import com.eu.habbo.messages.incoming.users.*;
@@ -117,6 +120,7 @@ public class PacketManager {
         this.registerGuilds();
         this.registerPets();
         this.registerWired();
+        this.registerTranslation();
         this.registerAchievements();
         this.registerFloorPlanEditor();
         this.registerAmbassadors();
@@ -407,6 +411,13 @@ public class PacketManager {
         this.registerHandler(Incoming.SetActivePrefixEvent, SetActivePrefixEvent.class);
         this.registerHandler(Incoming.DeletePrefixEvent, DeletePrefixEvent.class);
         this.registerHandler(Incoming.PurchasePrefixEvent, PurchasePrefixEvent.class);
+        this.registerHandler(Incoming.PurchaseCatalogPrefixEvent, PurchaseCatalogPrefixEvent.class);
+        this.registerHandler(Incoming.SetDisplayOrderEvent, SetDisplayOrderEvent.class);
+
+        // Nick Icons
+        this.registerHandler(Incoming.RequestUserNickIconsEvent, RequestUserNickIconsEvent.class);
+        this.registerHandler(Incoming.PurchaseNickIconEvent, PurchaseNickIconEvent.class);
+        this.registerHandler(Incoming.SetActiveNickIconEvent, SetActiveNickIconEvent.class);
     }
 
     void registerRooms() throws Exception {
@@ -631,6 +642,11 @@ public class PacketManager {
         this.registerHandler(Incoming.WiredUserVariableUpdateEvent, WiredUserVariableUpdateEvent.class);
         this.registerHandler(Incoming.WiredUserVariableManageEvent, WiredUserVariableManageEvent.class);
         this.registerHandler(Incoming.WiredUserInspectMoveEvent, WiredUserInspectMoveEvent.class);
+    }
+
+    void registerTranslation() throws Exception {
+        this.registerHandler(Incoming.TranslationLanguagesRequestEvent, TranslationLanguagesRequestEvent.class);
+        this.registerHandler(Incoming.TranslationTextRequestEvent, TranslationTextRequestEvent.class);
     }
 
     void registerUnknown() throws Exception {

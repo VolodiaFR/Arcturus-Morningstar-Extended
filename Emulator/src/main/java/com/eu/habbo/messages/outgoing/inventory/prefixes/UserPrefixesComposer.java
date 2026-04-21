@@ -30,6 +30,7 @@ public class UserPrefixesComposer extends MessageComposer {
             this.response.appendString(prefix.getColor());
             this.response.appendString(prefix.getIcon());
             this.response.appendString(prefix.getEffect());
+            this.response.appendString(prefix.getFont());
             this.response.appendInt(prefix.isActive() ? 1 : 0);
         }
 

@@ -74,6 +74,11 @@ public class WiredEffectUsersHandItem extends InteractionWiredEffect {
     }
 
     @Override
+    public boolean usesExistingSelectorTargets() {
+        return this.filterExisting;
+    }
+
+    @Override
     public String getWiredData() {
         return WiredManager.getGson().toJson(new JsonData(this.handItemId, this.filterExisting, this.invert, this.getDelay()));
     }

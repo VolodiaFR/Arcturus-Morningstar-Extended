@@ -33,7 +33,7 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
 
     public static final WiredEffectType type = WiredEffectType.SEND_SIGNAL;
 
-    private static final int MAX_SIGNAL_DEPTH = 10;
+    public static int MAX_SIGNAL_DEPTH = 100;
 
     private static final int ANTENNA_PICKED  = 0;
     private static final int ANTENNA_TRIGGER = 1;
@@ -166,7 +166,7 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
                 .signalChannel(signalChannel)
                 .signalUserCount(signalUserCount)
                 .signalFurniCount(sourceItem != null ? 1 : 0)
-                .contextVariableScope(ctx.contextVariables())
+                .contextVariableScope(ctx.contextVariables().copy())
                 .triggeredByEffect(true);
 
         if (actor != null) builder.actor(actor);
@@ -283,15 +283,6 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
         for (HabboItem receiver : newItems) {
             if (!isAntennaItem(receiver)) {
                 throw new WiredSaveException("Only antenna furni can be selected");
-            }
-        }
-
-        if (room != null && room.getRoomSpecialTypes() != null) {
-            for (HabboItem receiver : newItems) {
-                int count = room.getRoomSpecialTypes().countSendersTargetingReceiver(receiver.getId(), this);
-                if (count >= RoomSpecialTypes.MAX_SENDERS_PER_RECEIVER) {
-                    throw new WiredSaveException("Maximum of " + RoomSpecialTypes.MAX_SENDERS_PER_RECEIVER + " senders per receiver reached");
-                }
             }
         }
 
