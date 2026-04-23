@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.sql.*;
 import java.time.Instant;
@@ -29,6 +30,7 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
     private static final String REGISTER_PATH        = "/api/auth/register";
     private static final String FORGOT_PATH          = "/api/auth/forgot-password";
     private static final String LOGOUT_PATH          = "/api/auth/logout";
+    private static final String REMEMBER_PATH        = "/api/auth/remember";
     private static final String CHECK_EMAIL_PATH     = "/api/auth/check-email";
     private static final String CHECK_USERNAME_PATH  = "/api/auth/check-username";
     private static final String HEALTH_PATH          = "/api/health";
@@ -49,6 +51,7 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
 
         if (!path.equals(LOGIN_PATH) && !path.equals(REGISTER_PATH)
                 && !path.equals(FORGOT_PATH) && !path.equals(LOGOUT_PATH)
+                && !path.equals(REMEMBER_PATH)
                 && !path.equals(CHECK_EMAIL_PATH) && !path.equals(CHECK_USERNAME_PATH)
                 && !path.equals(HEALTH_PATH)) {
             super.channelRead(ctx, msg);
@@ -109,6 +112,10 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
 
         if (path.equals(LOGOUT_PATH)) {
             handleLogout(ctx, req, body);
+            return;
+        }
+        if (path.equals(REMEMBER_PATH)) {
+            handleRemember(ctx, req, body, ip);
             return;
         }
 
@@ -220,26 +227,46 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
 
     private void handleLogout(ChannelHandlerContext ctx, FullHttpRequest req, com.google.gson.JsonObject body) {
         String ssoTicket = readString(body, "ssoTicket");
+        String rememberToken = readString(body, "rememberToken");
         JsonObject ok = new JsonObject();
         ok.addProperty("message", "Logged out.");
 
-        if (ssoTicket == null || ssoTicket.isEmpty()) {
+        if ((ssoTicket == null || ssoTicket.isEmpty()) && rememberToken.isEmpty()) {
             sendJson(ctx, req, HttpResponseStatus.OK, ok);
             return;
         }
 
-        try (Connection conn = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement lookup = conn.prepareStatement(
-                     "SELECT id FROM users WHERE auth_ticket = ? LIMIT 1")) {
-            lookup.setString(1, ssoTicket);
+        try (Connection conn = Emulator.getDatabase().getDataSource().getConnection()) {
             int userId = 0;
-            try (ResultSet rs = lookup.executeQuery()) {
-                if (rs.next()) userId = rs.getInt("id");
+
+            if (ssoTicket != null && !ssoTicket.isEmpty()) {
+                try (PreparedStatement lookup = conn.prepareStatement(
+                        "SELECT id FROM users WHERE auth_ticket = ? LIMIT 1")) {
+                    lookup.setString(1, ssoTicket);
+                    try (ResultSet rs = lookup.executeQuery()) {
+                        if (rs.next()) userId = rs.getInt("id");
+                    }
+                }
+            }
+
+            if (!rememberToken.isEmpty()) {
+                String rememberHash = sha256Hex(rememberToken);
+                if (userId == 0) {
+                    try (PreparedStatement lookupRemember = conn.prepareStatement(
+                            "SELECT id FROM users WHERE remember_token_hash = ? LIMIT 1")) {
+                        lookupRemember.setString(1, rememberHash);
+                        try (ResultSet rs = lookupRemember.executeQuery()) {
+                            if (rs.next()) userId = rs.getInt("id");
+                        }
+                    }
+                } else {
+                    clearRememberToken(conn, rememberHash);
+                }
             }
 
             if (userId > 0) {
                 try (PreparedStatement clear = conn.prepareStatement(
-                        "UPDATE users SET auth_ticket = '', online = '0' WHERE id = ? LIMIT 1")) {
+                        "UPDATE users SET auth_ticket = '', online = '0', remember_token_hash = '', remember_token_expires_at = 0 WHERE id = ? LIMIT 1")) {
                     clear.setInt(1, userId);
                     clear.executeUpdate();
                 }
@@ -265,6 +292,7 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
     private void handleLogin(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body, String ip) {
         String username = readString(body, "username").trim();
         String password = readString(body, "password");
+        boolean remember = readBoolean(body, "remember") || readBoolean(body, "rememberMe");
 
         if (username.isEmpty() || password.isEmpty()) {
             sendJson(ctx, req, HttpResponseStatus.BAD_REQUEST, errorPayload("Missing credentials."));
@@ -300,12 +328,21 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
                 }
 
                 String ssoTicket = mintSsoTicket();
+                String rememberToken = "";
+                int rememberExpiresAt = 0;
+
+                if (remember && rememberEnabled()) {
+                    rememberToken = mintRememberToken();
+                    rememberExpiresAt = rememberExpiresAt();
+                }
 
                 try (PreparedStatement upd = conn.prepareStatement(
-                        "UPDATE users SET auth_ticket = ?, ip_current = ? WHERE id = ? LIMIT 1")) {
+                        "UPDATE users SET auth_ticket = ?, ip_current = ?, remember_token_hash = ?, remember_token_expires_at = ? WHERE id = ? LIMIT 1")) {
                     upd.setString(1, ssoTicket);
                     upd.setString(2, ip == null ? "" : ip);
-                    upd.setInt(3, userId);
+                    upd.setString(3, rememberToken.isEmpty() ? "" : sha256Hex(rememberToken));
+                    upd.setInt(4, rememberExpiresAt);
+                    upd.setInt(5, userId);
                     upd.executeUpdate();
                 }
 
@@ -314,10 +351,77 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
                 JsonObject ok = new JsonObject();
                 ok.addProperty("ssoTicket", ssoTicket);
                 ok.addProperty("username", rs.getString("username"));
+                if (!rememberToken.isEmpty()) {
+                    ok.addProperty("rememberToken", rememberToken);
+                    ok.addProperty("rememberExpiresAt", rememberExpiresAt);
+                }
                 sendJson(ctx, req, HttpResponseStatus.OK, ok);
             }
         } catch (Exception e) {
             LOGGER.error("Login query failed for username=" + username, e);
+            sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
+        }
+    }
+
+/* â”€â”€â”€ Remember login â”€â”€â”€ */
+
+    private void handleRemember(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body, String ip) {
+        if (!rememberEnabled()) {
+            sendJson(ctx, req, HttpResponseStatus.FORBIDDEN, errorPayload("Remember login is disabled."));
+            return;
+        }
+
+        String rememberToken = readString(body, "rememberToken").trim();
+
+        if (rememberToken.isEmpty()) {
+            sendJson(ctx, req, HttpResponseStatus.BAD_REQUEST, errorPayload("Missing remember token."));
+            return;
+        }
+
+        int now = Emulator.getIntUnixTimestamp();
+        String rememberHash = sha256Hex(rememberToken);
+
+        try (Connection conn = Emulator.getDatabase().getDataSource().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(
+                     "SELECT id, username FROM users WHERE remember_token_hash = ? AND remember_token_expires_at > ? LIMIT 1")) {
+            stmt.setString(1, rememberHash);
+            stmt.setInt(2, now);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (!rs.next()) {
+                    clearRememberToken(conn, rememberHash);
+                    AuthRateLimiter.recordFailure(ip);
+                    sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, errorPayload("Remember login expired."));
+                    return;
+                }
+
+                int userId = rs.getInt("id");
+                String username = rs.getString("username");
+                String ssoTicket = mintSsoTicket();
+                String nextRememberToken = mintRememberToken();
+                int rememberExpiresAt = rememberExpiresAt();
+
+                try (PreparedStatement upd = conn.prepareStatement(
+                        "UPDATE users SET auth_ticket = ?, ip_current = ?, remember_token_hash = ?, remember_token_expires_at = ? WHERE id = ? LIMIT 1")) {
+                    upd.setString(1, ssoTicket);
+                    upd.setString(2, ip == null ? "" : ip);
+                    upd.setString(3, sha256Hex(nextRememberToken));
+                    upd.setInt(4, rememberExpiresAt);
+                    upd.setInt(5, userId);
+                    upd.executeUpdate();
+                }
+
+                AuthRateLimiter.recordSuccess(ip);
+
+                JsonObject ok = new JsonObject();
+                ok.addProperty("ssoTicket", ssoTicket);
+                ok.addProperty("username", username);
+                ok.addProperty("rememberToken", nextRememberToken);
+                ok.addProperty("rememberExpiresAt", rememberExpiresAt);
+                sendJson(ctx, req, HttpResponseStatus.OK, ok);
+            }
+        } catch (Exception e) {
+            LOGGER.error("Remember-login failed", e);
             sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
         }
     }
@@ -501,12 +605,71 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(buf);
     }
 
+    private static String mintRememberToken() {
+        byte[] buf = new byte[48];
+        RNG.nextBytes(buf);
+        return "remember-" + Base64.getUrlEncoder().withoutPadding().encodeToString(buf);
+    }
+
     private static String readString(JsonObject obj, String key) {
         if (obj == null || !obj.has(key) || obj.get(key).isJsonNull()) return "";
         try {
             return obj.get(key).getAsString();
         } catch (Exception e) {
             return "";
+        }
+    }
+
+    private static boolean readBoolean(JsonObject obj, String key) {
+        if (obj == null || !obj.has(key) || obj.get(key).isJsonNull()) return false;
+        try {
+            if (obj.get(key).isJsonPrimitive()) {
+                String value = obj.get(key).getAsString();
+                return "true".equalsIgnoreCase(value) || "1".equals(value) || "yes".equalsIgnoreCase(value);
+            }
+        } catch (Exception ignored) {
+        }
+        try {
+            return obj.get(key).getAsBoolean();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private static boolean rememberEnabled() {
+        return Emulator.getConfig().getBoolean("login.remember.enabled", true);
+    }
+
+    private static int rememberExpiresAt() {
+        int days = Math.max(1, Emulator.getConfig().getInt("login.remember.days", 30));
+        long expiresAt = (long) Emulator.getIntUnixTimestamp() + (days * 86400L);
+        return (int) Math.min(Integer.MAX_VALUE, expiresAt);
+    }
+
+    private static void clearRememberToken(Connection conn, String rememberHash) {
+        if (rememberHash == null || rememberHash.isEmpty()) return;
+        try (PreparedStatement clear = conn.prepareStatement(
+                "UPDATE users SET remember_token_hash = '', remember_token_expires_at = 0 WHERE remember_token_hash = ? LIMIT 1")) {
+            clear.setString(1, rememberHash);
+            clear.executeUpdate();
+        } catch (Exception e) {
+            LOGGER.debug("Unable to clear remember token", e);
+        }
+    }
+
+    private static String sha256Hex(String value) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(value.getBytes(StandardCharsets.UTF_8));
+            StringBuilder builder = new StringBuilder(hash.length * 2);
+
+            for (byte b : hash) {
+                builder.append(String.format("%02x", b));
+            }
+
+            return builder.toString();
+        } catch (Exception e) {
+            throw new IllegalStateException("SHA-256 is unavailable", e);
         }
     }
 
@@ -565,7 +728,8 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
             response.headers().set("Access-Control-Allow-Credentials", "true");
         }
         response.headers().set("Access-Control-Allow-Methods", "GET, HEAD, POST, OPTIONS");
-        response.headers().set("Access-Control-Allow-Headers", "Content-Type, X-Requested-With");
+        response.headers().set("Access-Control-Allow-Headers", "Content-Type, X-Requested-With, X-Nitro-Key, X-Nitro-Api");
+        response.headers().set("Access-Control-Expose-Headers", "X-Nitro-Sec, X-Nitro-Key-Fp, X-Nitro-Derive-Fp");
     }
 
     private static boolean isKeepAlive(FullHttpRequest req) {

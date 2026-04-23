@@ -47,3 +47,7 @@ nitro.secure.config.root=
 nitro.secure.gamedata.root=
 # Set a persistent secret when using Cloudflare / multiple backend requests.
 nitro.secure.master_key=change-me-to-a-long-random-secret
+
+# Remember-me login tokens.
+login.remember.enabled=true
+login.remember.days=30

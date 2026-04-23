@@ -1,5 +1,7 @@
 package com.eu.habbo.networking.gameserver.auth;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelDuplexHandler;
@@ -17,12 +19,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class NitroSecureApiHandler extends ChannelDuplexHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(NitroSecureApiHandler.class);
     private static final String API_PREFIX = "/api/";
     private static final AttributeKey<Deque<SecureApiContext>> SECURE_CONTEXTS =
             AttributeKey.valueOf("nitroSecureApiContexts");
+    private static final ConcurrentHashMap<String, Long> NONCE_CACHE = new ConcurrentHashMap<>();
+    private static final long MAX_REQUEST_SKEW_MS = 90_000L;
+    private static final long NONCE_TTL_MS = 2 * 60 * 1000L;
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -72,6 +78,7 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
             byte[] encrypted = new byte[req.content().readableBytes()];
             req.content().getBytes(req.content().readerIndex(), encrypted);
             byte[] clear = NitroSecureAssetHandler.decrypt(sessionKey, NitroSecureAssetHandler.fromHex(new String(encrypted, StandardCharsets.UTF_8)));
+            clear = unwrapEnvelope(clear, req, secureContext);
 
             FullHttpRequest decryptedReq = new DefaultFullHttpRequest(
                     req.protocolVersion(),
@@ -154,6 +161,56 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
 
     private static boolean isSecureRequest(FullHttpRequest req) {
         return "1".equals(req.headers().get("X-Nitro-Api"));
+    }
+
+    private static byte[] unwrapEnvelope(byte[] clear, FullHttpRequest req, SecureApiContext secureContext) {
+        if (!requiresReplayEnvelope(req.method())) return clear;
+
+        JsonObject envelope = JsonParser.parseString(new String(clear, StandardCharsets.UTF_8)).getAsJsonObject();
+        long ts = envelope.has("ts") ? envelope.get("ts").getAsLong() : 0L;
+        String nonce = envelope.has("nonce") ? envelope.get("nonce").getAsString() : "";
+        String method = envelope.has("method") ? envelope.get("method").getAsString() : "";
+        String path = envelope.has("path") ? envelope.get("path").getAsString() : "";
+        String body = envelope.has("body") ? envelope.get("body").getAsString() : "";
+        long now = System.currentTimeMillis();
+
+        if (Math.abs(now - ts) > MAX_REQUEST_SKEW_MS) {
+            throw new IllegalArgumentException("Secure request expired.");
+        }
+
+        if (!req.method().name().equalsIgnoreCase(method)) {
+            throw new IllegalArgumentException("Secure request method mismatch.");
+        }
+
+        String requestPath = req.uri();
+        if (!requestPath.equals(path)) {
+            throw new IllegalArgumentException("Secure request path mismatch.");
+        }
+
+        if (nonce.isBlank()) {
+            throw new IllegalArgumentException("Missing secure request nonce.");
+        }
+
+        cleanupExpiredNonces(now);
+
+        String replayKey = secureContext.derivedFingerprint() + ':' + nonce;
+        if (NONCE_CACHE.putIfAbsent(replayKey, now + NONCE_TTL_MS) != null) {
+            throw new IllegalArgumentException("Secure request replay detected.");
+        }
+
+        return java.util.Base64.getDecoder().decode(body);
+    }
+
+    private static boolean requiresReplayEnvelope(HttpMethod method) {
+        return method == HttpMethod.POST
+                || method == HttpMethod.PUT
+                || method == HttpMethod.PATCH
+                || method == HttpMethod.DELETE;
+    }
+
+    private static void cleanupExpiredNonces(long now) {
+        if (NONCE_CACHE.size() < 512) return;
+        NONCE_CACHE.entrySet().removeIf(entry -> entry.getValue() < now);
     }
 
     private static void enqueueContext(ChannelHandlerContext ctx, SecureApiContext context) {
