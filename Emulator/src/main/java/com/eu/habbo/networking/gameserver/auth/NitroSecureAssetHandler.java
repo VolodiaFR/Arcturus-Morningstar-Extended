@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class NitroSecureAssetHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOGGER = LoggerFactory.getLogger(NitroSecureAssetHandler.class);
     private static final String MASTER_KEY_CONFIG = "nitro.secure.master_key";
+    private static final String ENABLED_CONFIG = "nitro.secure.assets.enabled";
     private static final String BOOTSTRAP_PATH = "/nitro-sec/bootstrap";
     private static final String FILE_PATH = "/nitro-sec/file";
     private static final int MAX_BOOTSTRAP_BODY_BYTES = 4096;
@@ -47,6 +48,11 @@ public class NitroSecureAssetHandler extends ChannelInboundHandlerAdapter {
         }
 
         String path = new QueryStringDecoder(req.uri()).path();
+
+        if (!secureAssetsEnabled()) {
+            super.channelRead(ctx, msg);
+            return;
+        }
 
         if (!path.equals(BOOTSTRAP_PATH) && !path.equals(FILE_PATH)) {
             super.channelRead(ctx, msg);
@@ -182,6 +188,10 @@ public class NitroSecureAssetHandler extends ChannelInboundHandlerAdapter {
         }
 
         return Path.of(fallback).toAbsolutePath().normalize();
+    }
+
+    private static boolean secureAssetsEnabled() {
+        return Emulator.getConfig().getBoolean(ENABLED_CONFIG, true);
     }
 
     static SecretKey deriveSessionKey(byte[] clientPublicEncoded) throws Exception {

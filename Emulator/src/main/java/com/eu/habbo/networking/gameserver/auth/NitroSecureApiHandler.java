@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class NitroSecureApiHandler extends ChannelDuplexHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(NitroSecureApiHandler.class);
+    private static final String ENABLED_CONFIG = "nitro.secure.api.enabled";
     private static final String API_PREFIX = "/api/";
     private static final AttributeKey<Deque<SecureApiContext>> SECURE_CONTEXTS =
             AttributeKey.valueOf("nitroSecureApiContexts");
@@ -38,6 +39,11 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
         }
 
         String path = new QueryStringDecoder(req.uri()).path();
+
+        if (!secureApiEnabled()) {
+            super.channelRead(ctx, msg);
+            return;
+        }
 
         if (!path.startsWith(API_PREFIX)) {
             super.channelRead(ctx, msg);
@@ -161,6 +167,10 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
 
     private static boolean isSecureRequest(FullHttpRequest req) {
         return "1".equals(req.headers().get("X-Nitro-Api"));
+    }
+
+    private static boolean secureApiEnabled() {
+        return com.eu.habbo.Emulator.getConfig().getBoolean(ENABLED_CONFIG, true);
     }
 
     private static byte[] unwrapEnvelope(byte[] clear, FullHttpRequest req, SecureApiContext secureContext) {
