@@ -45,6 +45,7 @@ enc.d=59ae13e243392e89ded305764bdd9e92e4eafa67bb6dac7e1415e8c645b0950bccd26246fd
 # Nitro secure runtime assets. JSON files are read live from disk.
 nitro.secure.assets.enabled=true
 nitro.secure.api.enabled=true
+# Point this to your deployed Nitro `/configuration` folder when secure config assets are enabled.
 nitro.secure.config.root=
 nitro.secure.gamedata.root=
 # Set a persistent secret when using Cloudflare / multiple backend requests.
