@@ -33,6 +33,7 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
     private static final String CHECK_EMAIL_PATH     = "/api/auth/check-email";
     private static final String CHECK_USERNAME_PATH  = "/api/auth/check-username";
     private static final String ROOM_TEMPLATES_PATH  = "/api/auth/room-templates";
+    private static final String NEWS_PATH            = "/api/auth/news";
     private static final String REMEMBER_PATH        = "/api/auth/remember";
     private static final String REFRESH_PATH         = "/api/auth/refresh";
     private static final String SERVER_KEY_PATH      = "/api/auth/server-key";
@@ -57,6 +58,7 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
                 && !path.equals(FORGOT_PATH) && !path.equals(LOGOUT_PATH)
                 && !path.equals(CHECK_EMAIL_PATH) && !path.equals(CHECK_USERNAME_PATH)
                 && !path.equals(ROOM_TEMPLATES_PATH)
+                && !path.equals(NEWS_PATH)
                 && !path.equals(REMEMBER_PATH)
                 && !path.equals(REFRESH_PATH)
                 && !path.equals(SERVER_KEY_PATH)
@@ -95,6 +97,22 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
                 return;
             }
             handleRoomTemplates(ctx, req);
+            return;
+        }
+
+        if (path.equals(NEWS_PATH)) {
+            if (req.method() != HttpMethod.GET && req.method() != HttpMethod.HEAD) {
+                sendJson(ctx, req, HttpResponseStatus.METHOD_NOT_ALLOWED, errorPayload("Use GET."));
+                return;
+            }
+            String ip = resolveClientIp(ctx, req);
+            if (!AuthRateLimiter.tryProbe(ip)) {
+                long secs = AuthRateLimiter.secondsUntilProbeReset(ip);
+                sendJson(ctx, req, HttpResponseStatus.TOO_MANY_REQUESTS,
+                        errorPayload("Too many requests. Try again in " + secs + "s."));
+                return;
+            }
+            handleNews(ctx, req);
             return;
         }
 
@@ -680,6 +698,76 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
         JsonObject res = new JsonObject();
         res.add("templates", templates);
         sendJson(ctx, req, HttpResponseStatus.OK, res);
+    }
+
+    private static final long NEWS_CACHE_TTL_MS = 30_000L;
+    private static final int NEWS_IMAGE_MAX_BYTES = 512 * 1024;
+    private static volatile NewsCacheEntry NEWS_CACHE = null;
+
+    private static final class NewsCacheEntry {
+        final byte[] jsonBytes;
+        final long expiresAt;
+        NewsCacheEntry(byte[] j, long e) { jsonBytes = j; expiresAt = e; }
+    }
+
+    private void handleNews(ChannelHandlerContext ctx, FullHttpRequest req) {
+        long now = System.currentTimeMillis();
+        NewsCacheEntry cached = NEWS_CACHE;
+
+        if (cached == null || cached.expiresAt < now) {
+            JsonArray items = new JsonArray();
+            int limit = Math.max(1, Math.min(20, Emulator.getConfig().getInt("login.news.limit", 5)));
+            try (Connection conn = Emulator.getDatabase().getDataSource().getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(
+                         "SELECT id, title, body, image, link_text, link_url " +
+                                 "FROM ui_news WHERE enabled = 1 " +
+                                 "ORDER BY sort_order ASC, id DESC LIMIT ?")) {
+                stmt.setInt(1, limit);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        int id = rs.getInt("id");
+                        JsonObject n = new JsonObject();
+                        n.addProperty("id", id);
+                        n.addProperty("title", rs.getString("title"));
+                        n.addProperty("body", rs.getString("body"));
+
+                        String image = rs.getString("image");
+                        if (image != null && image.length() > NEWS_IMAGE_MAX_BYTES) {
+                            LOGGER.warn("ui_news id={} image is {} bytes (>{}KB cap), omitting in response",
+                                    id, image.length(), NEWS_IMAGE_MAX_BYTES / 1024);
+                            image = null;
+                        }
+                        n.addProperty("image", image); // gson encodes null as JSON null
+
+                        n.addProperty("linkText", rs.getString("link_text"));
+                        n.addProperty("linkUrl", rs.getString("link_url"));
+                        items.add(n);
+                    }
+                }
+            } catch (Exception e) {
+                LOGGER.error("ui_news list failed", e);
+                sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
+                return;
+            }
+
+            JsonObject res = new JsonObject();
+            res.add("news", items);
+            byte[] bytes = res.toString().getBytes(StandardCharsets.UTF_8);
+            cached = new NewsCacheEntry(bytes, now + NEWS_CACHE_TTL_MS);
+            NEWS_CACHE = cached;
+        }
+
+        FullHttpResponse response = new DefaultFullHttpResponse(
+                HttpVersion.HTTP_1_1, HttpResponseStatus.OK,
+                Unpooled.wrappedBuffer(cached.jsonBytes));
+        response.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json; charset=utf-8");
+        response.headers().setInt(HttpHeaderNames.CONTENT_LENGTH, cached.jsonBytes.length);
+        response.headers().set(HttpHeaderNames.CACHE_CONTROL, "public, max-age=30");
+        applyCors(req, response);
+        boolean keepAlive = isKeepAlive(req);
+        if (keepAlive) response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
+        var future = ctx.writeAndFlush(response);
+        if (!keepAlive) future.addListener(ChannelFutureListener.CLOSE);
     }
 
     private void handleServerKey(ChannelHandlerContext ctx, FullHttpRequest req) {
