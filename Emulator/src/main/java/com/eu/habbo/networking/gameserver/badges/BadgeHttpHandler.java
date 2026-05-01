@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.users.custombadge.CustomBadgeException;
 import com.eu.habbo.habbohotel.users.custombadge.CustomBadgeManager;
 import com.eu.habbo.networking.gameserver.GameServerAttributes;
 import com.eu.habbo.networking.gameserver.auth.AccessTokenService;
+import com.eu.habbo.networking.gameserver.auth.AuthRateLimiter;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -29,6 +30,9 @@ public class BadgeHttpHandler extends ChannelInboundHandlerAdapter {
 
     private static final String BASE_PATH = "/api/badges/custom";
     private static final int MAX_BODY_BYTES = 128 * 1024;
+
+    private static volatile JsonObject cachedTextsResponse = null;
+    private static volatile long cachedTextsVersion = -1L;
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -58,6 +62,13 @@ public class BadgeHttpHandler extends ChannelInboundHandlerAdapter {
 
         if (path.equals(BASE_PATH + "/texts")) {
             if (req.method() == HttpMethod.GET || req.method() == HttpMethod.HEAD) {
+                String ip = resolveClientIp(ctx, req);
+                if (!AuthRateLimiter.tryProbe(ip)) {
+                    long secs = AuthRateLimiter.secondsUntilProbeReset(ip);
+                    sendJson(ctx, req, HttpResponseStatus.TOO_MANY_REQUESTS,
+                            error("Too many requests. Try again in " + secs + "s."));
+                    return;
+                }
                 handleTexts(ctx, req);
                 return;
             }
@@ -116,20 +127,26 @@ public class BadgeHttpHandler extends ChannelInboundHandlerAdapter {
 
     private void handleTexts(ChannelHandlerContext ctx, FullHttpRequest req) {
         CustomBadgeManager manager = Emulator.getGameEnvironment().getCustomBadgeManager();
-        java.util.Map<String, CustomBadgeManager.BadgeText> cache = manager.getTextCache();
-
-        JsonObject texts = new JsonObject();
-        for (java.util.Map.Entry<String, CustomBadgeManager.BadgeText> entry : cache.entrySet()) {
-            String badgeId = entry.getKey();
-            CustomBadgeManager.BadgeText value = entry.getValue();
-            texts.addProperty("badge_name_" + badgeId, value.name);
-            texts.addProperty("badge_desc_" + badgeId, value.description);
+        long version = manager.getTextCacheVersion();
+        JsonObject ok = cachedTextsResponse;
+        if (ok == null || cachedTextsVersion != version) {
+            java.util.Map<String, CustomBadgeManager.BadgeText> cache = manager.getTextCache();
+            JsonObject texts = new JsonObject();
+            for (java.util.Map.Entry<String, CustomBadgeManager.BadgeText> entry : cache.entrySet()) {
+                String badgeId = entry.getKey();
+                CustomBadgeManager.BadgeText value = entry.getValue();
+                texts.addProperty("badge_name_" + badgeId, value.name);
+                texts.addProperty("badge_desc_" + badgeId, value.description);
+            }
+            JsonObject built = new JsonObject();
+            built.add("texts", texts);
+            built.addProperty("count", cache.size());
+            built.addProperty("version", version);
+            cachedTextsResponse = built;
+            cachedTextsVersion = version;
+            ok = built;
         }
-
-        JsonObject ok = new JsonObject();
-        ok.add("texts", texts);
-        ok.addProperty("count", cache.size());
-        sendJson(ctx, req, HttpResponseStatus.OK, ok);
+        sendJsonCached(ctx, req, HttpResponseStatus.OK, ok);
     }
 
     private void handleList(ChannelHandlerContext ctx, FullHttpRequest req, int userId) {
@@ -285,6 +302,21 @@ public class BadgeHttpHandler extends ChannelInboundHandlerAdapter {
         obj.addProperty("error", message);
         if (code != null) obj.addProperty("code", code);
         return obj;
+    }
+
+    private static void sendJsonCached(ChannelHandlerContext ctx, FullHttpRequest req,
+                                       HttpResponseStatus status, JsonObject body) {
+        byte[] bytes = body.toString().getBytes(StandardCharsets.UTF_8);
+        FullHttpResponse response = new DefaultFullHttpResponse(
+                HttpVersion.HTTP_1_1, status, Unpooled.wrappedBuffer(bytes));
+        response.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json; charset=utf-8");
+        response.headers().setInt(HttpHeaderNames.CONTENT_LENGTH, bytes.length);
+        response.headers().set(HttpHeaderNames.CACHE_CONTROL, "public, max-age=30");
+        applyCors(req, response);
+        boolean keepAlive = isKeepAlive(req);
+        if (keepAlive) response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
+        var future = ctx.writeAndFlush(response);
+        if (!keepAlive) future.addListener(ChannelFutureListener.CLOSE);
     }
 
     private static void sendJson(ChannelHandlerContext ctx, FullHttpRequest req,

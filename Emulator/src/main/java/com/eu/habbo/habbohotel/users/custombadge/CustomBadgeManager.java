@@ -54,6 +54,7 @@ public class CustomBadgeManager {
     private final SecureRandom random = new SecureRandom();
     private final Map<Integer, long[]> rateBuckets = new ConcurrentHashMap<>();
     private final Map<String, BadgeText> textCache = new ConcurrentHashMap<>();
+    private final java.util.concurrent.atomic.AtomicLong textCacheVersion = new java.util.concurrent.atomic.AtomicLong();
 
     private volatile CustomBadgeSettings settings;
 
@@ -72,6 +73,10 @@ public class CustomBadgeManager {
 
     public Map<String, BadgeText> getTextCache() {
         return java.util.Collections.unmodifiableMap(this.textCache);
+    }
+
+    public long getTextCacheVersion() {
+        return this.textCacheVersion.get();
     }
 
     private void loadTextCache() {
@@ -93,6 +98,7 @@ public class CustomBadgeManager {
         }
         this.textCache.clear();
         this.textCache.putAll(next);
+        this.textCacheVersion.incrementAndGet();
         LOGGER.info("CustomBadgeManager -> loaded {} custom badge texts into memory.", next.size());
     }
 
@@ -219,6 +225,7 @@ public class CustomBadgeManager {
             }
 
             this.textCache.put(badgeId, new BadgeText(safeName, safeDesc));
+            this.textCacheVersion.incrementAndGet();
             issueBadgeToInventory(userId, badgeId);
 
             return new CustomBadge(generatedId, userId, badgeId, safeName, safeDesc, now, now);
@@ -264,6 +271,7 @@ public class CustomBadgeManager {
         String safeDesc = sanitize(description, 255);
         this.textCache.remove(oldBadgeId);
         this.textCache.put(newBadgeId, new BadgeText(safeName, safeDesc));
+        this.textCacheVersion.incrementAndGet();
         renameBadgeInInventory(userId, oldBadgeId, newBadgeId);
         deleteBadgeFileQuietly(oldBadgeId);
         return new CustomBadge(existing.getId(), userId, newBadgeId, safeName, safeDesc, existing.getDateCreated(), now);
@@ -288,6 +296,7 @@ public class CustomBadgeManager {
         }
 
         this.textCache.remove(badgeId);
+        this.textCacheVersion.incrementAndGet();
         revokeBadgeFromInventory(userId, badgeId);
         deleteBadgeFileQuietly(badgeId);
     }
