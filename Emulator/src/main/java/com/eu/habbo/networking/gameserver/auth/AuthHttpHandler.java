@@ -37,6 +37,7 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
     private static final String REMEMBER_PATH        = "/api/auth/remember";
     private static final String REFRESH_PATH         = "/api/auth/refresh";
     private static final String SERVER_KEY_PATH      = "/api/auth/server-key";
+    private static final String SSO_TOKEN_PATH       = "/api/auth/sso-token";
     private static final String HEALTH_PATH          = "/api/health";
 
     private static final Pattern USERNAME_RE = Pattern.compile("^[A-Za-z0-9._-]{3,32}$");
@@ -62,6 +63,7 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
                 && !path.equals(REMEMBER_PATH)
                 && !path.equals(REFRESH_PATH)
                 && !path.equals(SERVER_KEY_PATH)
+                && !path.equals(SSO_TOKEN_PATH)
                 && !path.equals(HEALTH_PATH)) {
             super.channelRead(ctx, msg);
             return;
@@ -172,6 +174,10 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
         }
         if (path.equals(REFRESH_PATH)) {
             handleRefresh(ctx, req, body, ip);
+            return;
+        }
+        if (path.equals(SSO_TOKEN_PATH)) {
+            handleSsoToken(ctx, req, body, ip);
             return;
         }
 
@@ -342,9 +348,48 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
             ok.addProperty("username", rot.username);
             ok.addProperty("rememberToken", rot.jwt);
             ok.addProperty("expiresAt", rot.expiresAt);
+            AccessTokenService.Issued access = AccessTokenService.issue(rot.userId);
+            ok.addProperty("accessToken", access.token);
+            ok.addProperty("accessTokenExpiresAt", access.expiresAt);
             sendJson(ctx, req, HttpResponseStatus.OK, ok);
         } catch (Exception e) {
             LOGGER.error("Remember login failed", e);
+            sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
+        }
+    }
+
+    private void handleSsoToken(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body, String ip) {
+        String ssoTicket = readString(body, "ssoTicket").trim();
+        if (ssoTicket.isEmpty() || ssoTicket.length() > 128) {
+            AuthRateLimiter.recordFailure(ip);
+            sendJson(ctx, req, HttpResponseStatus.BAD_REQUEST, errorPayload("Missing or invalid ssoTicket."));
+            return;
+        }
+
+        try (Connection conn = Emulator.getDatabase().getDataSource().getConnection();
+             PreparedStatement lookup = conn.prepareStatement(
+                     "SELECT id, username FROM users WHERE auth_ticket = ? LIMIT 1")) {
+            lookup.setString(1, ssoTicket);
+            try (ResultSet rs = lookup.executeQuery()) {
+                if (!rs.next()) {
+                    AuthRateLimiter.recordFailure(ip);
+                    sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, errorPayload("SSO ticket not recognised."));
+                    return;
+                }
+                int userId = rs.getInt("id");
+                String username = rs.getString("username");
+
+                AuthRateLimiter.recordSuccess(ip);
+
+                AccessTokenService.Issued access = AccessTokenService.issue(userId);
+                JsonObject ok = new JsonObject();
+                ok.addProperty("username", username);
+                ok.addProperty("accessToken", access.token);
+                ok.addProperty("accessTokenExpiresAt", access.expiresAt);
+                sendJson(ctx, req, HttpResponseStatus.OK, ok);
+            }
+        } catch (Exception e) {
+            LOGGER.error("[auth/sso-token] lookup failed", e);
             sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
         }
     }
@@ -365,6 +410,9 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
             JsonObject ok = new JsonObject();
             ok.addProperty("rememberToken", rot.jwt);
             ok.addProperty("expiresAt", rot.expiresAt);
+            AccessTokenService.Issued access = AccessTokenService.issue(rot.userId);
+            ok.addProperty("accessToken", access.token);
+            ok.addProperty("accessTokenExpiresAt", access.expiresAt);
             sendJson(ctx, req, HttpResponseStatus.OK, ok);
         } catch (Exception e) {
             LOGGER.error("Refresh failed", e);
@@ -456,6 +504,9 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
                     ok.addProperty("ssoTicket", ssoTicket);
                     ok.addProperty("username", rs.getString("username"));
                     if (rememberToken != null) ok.addProperty("rememberToken", rememberToken);
+                    AccessTokenService.Issued access = AccessTokenService.issue(userId);
+                    ok.addProperty("accessToken", access.token);
+                    ok.addProperty("accessTokenExpiresAt", access.expiresAt);
                     sendJson(ctx, req, HttpResponseStatus.OK, ok);
                 }
             }

@@ -45,6 +45,7 @@ public class HabboInfo implements Runnable {
     private int InfostandBg;
     private int InfostandStand;
     private int InfostandOverlay;
+    private int InfostandCardBg;
     private int loadingRoom;
     private Room currentRoom;
     private String roomEntryMethod = "door";
@@ -91,6 +92,7 @@ public class HabboInfo implements Runnable {
             this.InfostandBg = set.getInt("background_id");
             this.InfostandStand = set.getInt("background_stand_id");
             this.InfostandOverlay = set.getInt("background_overlay_id");
+            this.InfostandCardBg = set.getInt("background_card_id");
             this.currentRoom = null;
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
@@ -289,6 +291,14 @@ public class HabboInfo implements Runnable {
 
     public void setInfostandOverlay(int infostandOverlay) {
         InfostandOverlay = infostandOverlay;
+    }
+
+    public int getInfostandCardBg() {
+        return InfostandCardBg;
+    }
+
+    public void setInfostandCardBg(int infostandCardBg) {
+        InfostandCardBg = infostandCardBg;
     }
     public Rank getRank() {
         return this.rank;
@@ -577,7 +587,7 @@ public class HabboInfo implements Runnable {
 
         try {
             SqlQueries.update(
-                    "UPDATE users SET motto = ?, online = ?, look = ?, gender = ?, credits = ?, last_login = ?, last_online = ?, home_room = ?, ip_current = ?, `rank` = ?, machine_id = ?, username = ?, background_id = ?, background_stand_id = ?, background_overlay_id = ? WHERE id = ?",
+                    "UPDATE users SET motto = ?, online = ?, look = ?, gender = ?, credits = ?, last_login = ?, last_online = ?, home_room = ?, ip_current = ?, `rank` = ?, machine_id = ?, username = ?, background_id = ?, background_stand_id = ?, background_overlay_id = ?, background_card_id = ? WHERE id = ?",
                     this.motto,
                     this.online ? "1" : "0",
                     this.look,
@@ -593,6 +603,7 @@ public class HabboInfo implements Runnable {
                     this.InfostandBg,
                     this.InfostandStand,
                     this.InfostandOverlay,
+                    this.InfostandCardBg,
                     this.id);
         } catch (SqlQueries.DataAccessException e) {
             LOGGER.error("Caught SQL exception", e);

@@ -115,6 +115,7 @@ public class UserProfileComposer extends MessageComposer {
         this.response.appendInt(this.habboInfo.getInfostandBg());
         this.response.appendInt(this.habboInfo.getInfostandStand());
         this.response.appendInt(this.habboInfo.getInfostandOverlay());
+        this.response.appendInt(this.habboInfo.getInfostandCardBg());
 
         return this.response;
     }
