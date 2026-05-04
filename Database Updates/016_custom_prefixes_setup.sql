@@ -1,8 +1,3 @@
--- ============================================================
--- Custom Prefix System - Complete Setup
--- ============================================================
-
--- 1. Main user prefixes table
 CREATE TABLE IF NOT EXISTS `user_prefixes` (
     `id` INT(11) NOT NULL AUTO_INCREMENT,
     `user_id` INT(11) NOT NULL,
@@ -46,34 +41,6 @@ INSERT IGNORE INTO `custom_prefix_blacklist` (`word`) VALUES
     ('mod'),
     ('owner');
 
--- 4. Add effect column (if table already exists without it)
--- ALTER TABLE `user_prefixes` ADD COLUMN IF NOT EXISTS `effect` VARCHAR(50) NOT NULL DEFAULT '' AFTER `icon`;
-
--- ============================================================
--- Catalog page for custom prefixes
--- ============================================================
--- NOTE: Adjust parent_id to match your catalog parent category ID.
--- Example: parent_id = -1 for root, or the ID of your "Extra" / "Specials" category
-
-INSERT INTO `catalog_pages` (
-    `parent_id`, `caption`, `caption_save`, `icon_image`, `visible`, `enabled`,
-    `min_rank`, `page_layout`, `page_strings_1`, `page_strings_2`
-) VALUES (
-    -1,
-    'Custom Prefix',
-    'custom_prefix',
-    1,
-    1,
-    1,
-    1,
-    'custom_prefix',
-    'Create your own custom prefix!\rChoose text, colors, icon and effects to stand out in chat.',
-    ''
-);
-
--- ============================================================
--- Command texts (insert into emulator_texts if not present)
--- ============================================================
 INSERT IGNORE INTO `emulator_texts` (`key`, `value`) VALUES
     -- GivePrefix command
     ('commands.keys.cmd_give_prefix', 'giveprefix'),
@@ -105,11 +72,11 @@ INSERT IGNORE INTO `emulator_texts` (`key`, `value`) VALUES
     ('commands.succes.cmd_prefix_blacklist.added', 'Word "%word%" added to prefix blacklist.'),
     ('commands.succes.cmd_prefix_blacklist.removed', 'Word "%word%" removed from prefix blacklist.');
 
--- ============================================================
--- Permissions for prefix commands (add to permissions table)
--- ============================================================
-INSERT IGNORE INTO `permissions` (`id`, `rank_id`, `permission_name`, `setting_type`) VALUES
-    (NULL, 7, 'cmd_give_prefix', '1'),
-    (NULL, 7, 'cmd_list_prefixes', '1'),
-    (NULL, 7, 'cmd_remove_prefix', '1'),
-    (NULL, 7, 'cmd_prefix_blacklist', '1');
+INSERT IGNORE INTO permission_definitions
+(permission_key, max_value, rank_1, rank_2, rank_3, rank_4, rank_5, rank_6, rank_7)
+VALUES
+('cmd_give_prefix', '1', '0', '0', '0', '0', '0', '0', '1'),
+('cmd_list_prefixes', '1', '0', '0', '0', '0', '0', '0', '1'),
+('cmd_remove_prefix', '1', '0', '0', '0', '0', '0', '0', '1'),
+('cmd_prefix_blacklist', '1', '0', '0', '0', '0', '0', '0', '1');
+
