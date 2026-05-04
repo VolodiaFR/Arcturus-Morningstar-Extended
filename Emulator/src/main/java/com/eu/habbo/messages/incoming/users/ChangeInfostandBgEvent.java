@@ -1,8 +1,11 @@
 package com.eu.habbo.messages.incoming.users;
 
+import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.HabboStats;
+import com.eu.habbo.habbohotel.users.infostand.InfostandBackgroundManager;
+import com.eu.habbo.habbohotel.users.infostand.InfostandBackgroundManager.Category;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserDataComposer;
 
@@ -30,10 +33,17 @@ public class ChangeInfostandBgEvent extends MessageHandler {
             stats.cache.put(COOLDOWN_KEY, now);
         }
 
-        int backgroundImage = sanitize(this.packet.readInt());
-        int backgroundStand = sanitize(this.packet.readInt());
-        int backgroundOverlay = sanitize(this.packet.readInt());
-        int backgroundCard = this.packet.bytesAvailable() >= 4 ? sanitize(this.packet.readInt()) : 0;
+        int requestedBg = sanitize(this.packet.readInt());
+        int requestedStand = sanitize(this.packet.readInt());
+        int requestedOverlay = sanitize(this.packet.readInt());
+        int requestedCard = this.packet.bytesAvailable() >= 4 ? sanitize(this.packet.readInt()) : 0;
+
+        InfostandBackgroundManager manager = Emulator.getGameEnvironment() != null ? Emulator.getGameEnvironment().getInfostandBackgroundManager() : null;
+
+        int backgroundImage = resolve(manager, habbo, Category.BACKGROUND, requestedBg, info.getInfostandBg());
+        int backgroundStand = resolve(manager, habbo, Category.STAND, requestedStand, info.getInfostandStand());
+        int backgroundOverlay = resolve(manager, habbo, Category.OVERLAY, requestedOverlay, info.getInfostandOverlay());
+        int backgroundCard = resolve(manager, habbo, Category.CARD, requestedCard, info.getInfostandCardBg());
 
         if (info.getInfostandBg() == backgroundImage
                 && info.getInfostandStand() == backgroundStand
@@ -58,5 +68,10 @@ public class ChangeInfostandBgEvent extends MessageHandler {
     private static int sanitize(int value) {
         if (value < MIN_ID || value > MAX_ID) return 0;
         return value;
+    }
+
+    private static int resolve(InfostandBackgroundManager manager, Habbo habbo, Category category, int requested, int current) {
+        if (manager == null) return requested;
+        return manager.canUse(habbo, category, requested) ? requested : current;
     }
 }

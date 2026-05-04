@@ -23,6 +23,7 @@ import com.eu.habbo.habbohotel.rooms.RoomChatBubbleManager;
 import com.eu.habbo.habbohotel.rooms.RoomManager;
 import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.habbohotel.users.custombadge.CustomBadgeManager;
+import com.eu.habbo.habbohotel.users.infostand.InfostandBackgroundManager;
 import com.eu.habbo.habbohotel.users.subscriptions.SubscriptionManager;
 import com.eu.habbo.habbohotel.users.subscriptions.SubscriptionScheduler;
 import org.slf4j.Logger;
@@ -60,6 +61,7 @@ public class GameEnvironment {
     private CalendarManager calendarManager;
     private RoomChatBubbleManager roomChatBubbleManager;
     private CustomBadgeManager customBadgeManager;
+    private InfostandBackgroundManager infostandBackgroundManager;
 
     public void load() throws Exception {
         LOGGER.info("GameEnvironment -> Loading...");
@@ -87,6 +89,7 @@ public class GameEnvironment {
         this.calendarManager = new CalendarManager();
         this.roomChatBubbleManager = new RoomChatBubbleManager();
         this.customBadgeManager = new CustomBadgeManager();
+        this.infostandBackgroundManager = new InfostandBackgroundManager();
 
         this.roomManager.loadPublicRooms();
         this.navigatorManager.loadNavigator();
@@ -225,5 +228,9 @@ public class GameEnvironment {
 
     public CustomBadgeManager getCustomBadgeManager() {
         return this.customBadgeManager;
+    }
+
+    public InfostandBackgroundManager getInfostandBackgroundManager() {
+        return this.infostandBackgroundManager;
     }
 }
