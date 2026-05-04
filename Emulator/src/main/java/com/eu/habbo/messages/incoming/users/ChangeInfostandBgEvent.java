@@ -9,10 +9,12 @@ public class ChangeInfostandBgEvent extends MessageHandler {
         int backgroundImage = this.packet.readInt();
         int backgroundStand = this.packet.readInt();
         int backgroundOverlay = this.packet.readInt();
+        int backgroundCard = this.packet.bytesAvailable() >= 4 ? this.packet.readInt() : 0;
 
         this.client.getHabbo().getHabboInfo().setInfostandBg(backgroundImage);
         this.client.getHabbo().getHabboInfo().setInfostandStand(backgroundStand);
         this.client.getHabbo().getHabboInfo().setInfostandOverlay(backgroundOverlay);
+        this.client.getHabbo().getHabboInfo().setInfostandCardBg(backgroundCard);
         this.client.getHabbo().getHabboInfo().run();
 
         if (this.client.getHabbo().getHabboInfo().getCurrentRoom() != null) {
