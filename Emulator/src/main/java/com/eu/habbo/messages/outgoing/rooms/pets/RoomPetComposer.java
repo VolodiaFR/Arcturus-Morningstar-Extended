@@ -36,6 +36,7 @@ public class RoomPetComposer extends MessageComposer implements TIntObjectProced
         this.response.appendInt(0);
         this.response.appendInt(0);
         this.response.appendInt(0);
+        this.response.appendInt(0);
         if (pet instanceof IPetLook) {
             this.response.appendString(((IPetLook) pet).getLook());
         } else {
