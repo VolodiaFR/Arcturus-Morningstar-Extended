@@ -10,6 +10,11 @@ db.pool.maxsize=100
 
 # Encrypt your traffic
 crypto.ws.enabled=0
+# Optional packet signing for encrypted WebSocket traffic.
+crypto.ws.signing.enabled=false
+# Optional persistent signing keys. Leave empty to auto-generate/persist them in emulator_settings.
+crypto.ws.signing.public_key=
+crypto.ws.signing.private_key=
 
 #Game Configuration.
 #Host IP. Most likely just 0.0.0.0 Use 127.0.0.1 if you want to play on LAN.
@@ -48,6 +53,8 @@ enc.d=59ae13e243392e89ded305764bdd9e92e4eafa67bb6dac7e1415e8c645b0950bccd26246fd
 # Nitro secure runtime assets. JSON files are read live from disk.
 nitro.secure.assets.enabled=true
 nitro.secure.api.enabled=true
+# Secure runtime ECDH session TTL in seconds.
+nitro.secure.session_ttl_sec=900
 # Point this to your deployed Nitro `/configuration` folder when secure config assets are enabled.
 nitro.secure.config.root=
 nitro.secure.gamedata.root=
@@ -59,3 +66,6 @@ login.remember.enabled=true
 login.remember.duration.days=30
 # Optional: set a persistent remember-me JWT secret here, otherwise one is generated and stored in emulator_settings.
 login.remember.jwt.secret=
+
+# Login news API.
+login.news.limit=5
