@@ -13,6 +13,7 @@ import com.eu.habbo.habbohotel.games.tag.TagGame;
 import com.eu.habbo.habbohotel.items.ItemManager;
 import com.eu.habbo.habbohotel.items.interactions.InteractionPostIt;
 import com.eu.habbo.habbohotel.items.interactions.InteractionRoller;
+import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSendSignal;
 import com.eu.habbo.habbohotel.items.interactions.games.football.InteractionFootballGate;
 import com.eu.habbo.habbohotel.messenger.Messenger;
 import com.eu.habbo.habbohotel.modtool.WordFilter;
@@ -116,6 +117,7 @@ public class PluginManager {
         RoomManager.HOME_ROOM_ID = Emulator.getConfig().getInt("hotel.home.room");
         WiredManager.MAXIMUM_FURNI_SELECTION = Emulator.getConfig().getInt("hotel.wired.furni.selection.count");
         WiredManager.TELEPORT_DELAY = Emulator.getConfig().getInt("wired.effect.teleport.delay", 500);
+        WiredEffectSendSignal.MAX_SIGNAL_DEPTH = Emulator.getConfig().getInt("wired.signal.max.depth", 100);
         WiredEngine.MAX_RECURSION_DEPTH = Emulator.getConfig().getInt("wired.abuse.max.recursion.depth", 10);
         WiredEngine.MAX_EVENTS_PER_WINDOW = Emulator.getConfig().getInt("wired.abuse.max.events.per.window", 100);
         WiredEngine.RATE_LIMIT_WINDOW_MS = Emulator.getConfig().getInt("wired.abuse.rate.limit.window.ms", 10000);

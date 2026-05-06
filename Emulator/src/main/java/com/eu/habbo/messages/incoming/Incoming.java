@@ -419,6 +419,8 @@ public class Incoming {
     public static final int WiredUserVariableUpdateEvent = 10025;
     public static final int WiredUserVariableManageEvent = 10026;
     public static final int WiredUserInspectMoveEvent = 10027;
+    public static final int TranslationLanguagesRequestEvent = 10032;
+    public static final int TranslationTextRequestEvent = 10033;
     public static final int RequestInventoryPetDelete = 10030;
     public static final int RequestInventoryBadgeDelete  = 10031;
 
@@ -448,6 +450,11 @@ public class Incoming {
     public static final int SetActivePrefixEvent = 7012;
     public static final int DeletePrefixEvent = 7013;
     public static final int PurchasePrefixEvent = 7014;
+    public static final int RequestUserNickIconsEvent = 7015;
+    public static final int PurchaseNickIconEvent = 7016;
+    public static final int SetActiveNickIconEvent = 7017;
+    public static final int PurchaseCatalogPrefixEvent = 7018;
+    public static final int SetDisplayOrderEvent = 7019;
 
     // YouTube Room Broadcast
     public static final int YouTubeRoomPlayEvent = 8001;

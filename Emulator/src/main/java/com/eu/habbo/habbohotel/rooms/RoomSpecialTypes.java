@@ -343,18 +343,16 @@ public class RoomSpecialTypes {
      * Adds a wired trigger to the room.
      * @param trigger The trigger to add
      */
-    public static final int MAX_SIGNAL_SENDERS_PER_ROOM = 25;
-    public static final int MAX_SIGNAL_RECEIVERS_PER_ROOM = 5;
-    public static final int MAX_SENDERS_PER_RECEIVER = 5;
+    public static final int MAX_SIGNAL_SENDERS_PER_ROOM = 0;
+    public static final int MAX_SIGNAL_RECEIVERS_PER_ROOM = 0;
+    public static final int MAX_SENDERS_PER_RECEIVER = 0;
 
     public boolean isSignalSenderLimitReached() {
-        Set<InteractionWiredEffect> existing = this.getSignalSenders();
-        return existing != null && existing.size() >= MAX_SIGNAL_SENDERS_PER_ROOM;
+        return false;
     }
 
     public boolean isSignalReceiverLimitReached() {
-        Set<InteractionWiredTrigger> existing = this.wiredTriggers.get(WiredTriggerType.RECEIVE_SIGNAL);
-        return existing != null && existing.size() >= MAX_SIGNAL_RECEIVERS_PER_ROOM;
+        return false;
     }
 
     public int countSendersTargetingReceiver(int receiverItemId, InteractionWiredEffect excludeSender) {

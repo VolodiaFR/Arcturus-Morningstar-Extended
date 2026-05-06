@@ -163,7 +163,7 @@
             <version>2.13.0</version>
         </dependency>
 
-        <!-- jBCrypt â€” used by the built-in /api/auth/* HTTP login handler
+        <!-- jBCrypt — used by the built-in /api/auth/* HTTP login handler
              to verify Laravel-style $2y$ BCrypt hashes from users.password -->
         <dependency>
             <groupId>org.mindrot</groupId>
@@ -171,7 +171,7 @@
             <version>0.4</version>
         </dependency>
 
-        <!-- Jakarta Mail â€” used by the built-in forgot-password endpoint
+        <!-- Jakarta Mail — used by the built-in forgot-password endpoint
              when smtp.* keys are configured in emulator_settings -->
         <dependency>
             <groupId>org.eclipse.angus</groupId>

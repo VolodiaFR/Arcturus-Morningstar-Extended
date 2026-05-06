@@ -101,6 +101,11 @@ public class WiredEffectFurniArea extends InteractionWiredEffect {
     }
 
     @Override
+    public boolean usesExistingSelectorTargets() {
+        return this.filterExisting;
+    }
+
+    @Override
     public String getWiredData() {
         return WiredManager.getGson().toJson(new JsonData(rootX, rootY, areaWidth, areaHeight, filterExisting, invert, getDelay()));
     }

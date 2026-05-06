@@ -112,7 +112,7 @@ public final class WiredContext {
         this.state = state;
         this.legacySettings = legacySettings;
         this.contextVariables = (event.getContextVariableScope() != null)
-                ? event.getContextVariableScope()
+                ? event.getContextVariableScope().copy()
                 : new WiredContextVariableScope();
         this.targets = new WiredTargets();
         

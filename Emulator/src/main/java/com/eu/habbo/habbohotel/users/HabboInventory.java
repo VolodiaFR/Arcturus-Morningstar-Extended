@@ -23,6 +23,8 @@ public class HabboInventory {
     private ItemsComponent itemsComponent;
     private PetsComponent petsComponent;
     private PrefixesComponent prefixesComponent;
+    private NickIconsComponent nickIconsComponent;
+    private UserVisualSettingsComponent userVisualSettingsComponent;
 
     public HabboInventory(Habbo habbo) {
         this.habbo = habbo;
@@ -64,6 +66,18 @@ public class HabboInventory {
 
         try {
             this.prefixesComponent = new PrefixesComponent(this.habbo);
+        } catch (Exception e) {
+            LOGGER.error("Caught exception", e);
+        }
+
+        try {
+            this.nickIconsComponent = new NickIconsComponent(this.habbo);
+        } catch (Exception e) {
+            LOGGER.error("Caught exception", e);
+        }
+
+        try {
+            this.userVisualSettingsComponent = new UserVisualSettingsComponent(this.habbo);
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);
         }
@@ -127,6 +141,22 @@ public class HabboInventory {
         this.prefixesComponent = prefixesComponent;
     }
 
+    public NickIconsComponent getNickIconsComponent() {
+        return this.nickIconsComponent;
+    }
+
+    public void setNickIconsComponent(NickIconsComponent nickIconsComponent) {
+        this.nickIconsComponent = nickIconsComponent;
+    }
+
+    public UserVisualSettingsComponent getUserVisualSettingsComponent() {
+        return this.userVisualSettingsComponent;
+    }
+
+    public void setUserVisualSettingsComponent(UserVisualSettingsComponent userVisualSettingsComponent) {
+        this.userVisualSettingsComponent = userVisualSettingsComponent;
+    }
+
     public void dispose() {
         this.badgesComponent.dispose();
         this.botsComponent.dispose();
@@ -135,6 +165,8 @@ public class HabboInventory {
         this.petsComponent.dispose();
         this.wardrobeComponent.dispose();
         this.prefixesComponent.dispose();
+        this.nickIconsComponent.dispose();
+        this.userVisualSettingsComponent.dispose();
 
         this.badgesComponent = null;
         this.botsComponent = null;
@@ -143,6 +175,8 @@ public class HabboInventory {
         this.petsComponent = null;
         this.wardrobeComponent = null;
         this.prefixesComponent = null;
+        this.nickIconsComponent = null;
+        this.userVisualSettingsComponent = null;
     }
 
     public void addMarketplaceOffer(MarketPlaceOffer marketPlaceOffer) {

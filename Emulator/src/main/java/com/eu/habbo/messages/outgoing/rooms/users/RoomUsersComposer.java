@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.guilds.Guild;
 import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.users.UserCustomizationData;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
@@ -67,6 +68,14 @@ public class RoomUsersComposer extends MessageComposer {
             this.response.appendString("");
             this.response.appendInt(this.habbo.getHabboStats().getAchievementScore());
             this.response.appendBoolean(true);
+            UserCustomizationData customizationData = UserCustomizationData.fromHabbo(this.habbo);
+            this.response.appendString(customizationData.nickIcon);
+            this.response.appendString(customizationData.prefixText);
+            this.response.appendString(customizationData.prefixColor);
+            this.response.appendString(customizationData.prefixIcon);
+            this.response.appendString(customizationData.prefixEffect);
+            this.response.appendString(customizationData.prefixFont);
+            this.response.appendString(customizationData.displayOrder);
             this.response.appendString(this.habbo.getHabboInfo().getRoomEntryMethod());
             this.response.appendInt(this.habbo.getHabboInfo().getRoomEntryTeleportId());
         } else if (this.habbos != null) {
@@ -101,6 +110,14 @@ public class RoomUsersComposer extends MessageComposer {
                     this.response.appendString("");
                     this.response.appendInt(habbo.getHabboStats().getAchievementScore());
                     this.response.appendBoolean(true);
+                    UserCustomizationData customizationData = UserCustomizationData.fromHabbo(habbo);
+                    this.response.appendString(customizationData.nickIcon);
+                    this.response.appendString(customizationData.prefixText);
+                    this.response.appendString(customizationData.prefixColor);
+                    this.response.appendString(customizationData.prefixIcon);
+                    this.response.appendString(customizationData.prefixEffect);
+                    this.response.appendString(customizationData.prefixFont);
+                    this.response.appendString(customizationData.displayOrder);
                     this.response.appendString(habbo.getHabboInfo().getRoomEntryMethod());
                     this.response.appendInt(habbo.getHabboInfo().getRoomEntryTeleportId());
                 }

@@ -38,6 +38,7 @@ public class WiredEffectUsersNeighborhood extends InteractionWiredEffect {
 
     private static final int MAX_PICKED_FURNI = 20;
     private static final int MAX_TILE_OFFSETS  = 64;
+    private static final int GRID_RANGE = 4;
 
     private int             sourceType      = SOURCE_USER_TRIGGER;
     private boolean         filterExisting  = false;
@@ -87,10 +88,24 @@ public class WiredEffectUsersNeighborhood extends InteractionWiredEffect {
 
         LOGGER.debug("[Neighborhood] Target tiles: {}", targetTiles);
 
+        Set<String> neighborhoodTiles = new HashSet<>();
+        for (int[] src : sourcePositions) {
+            for (int[] offset : getFullGridOffsets()) {
+                int tx = src[0] + (offset[0] - this.targetOffsetX);
+                int ty = src[1] + (offset[1] - this.targetOffsetY);
+                neighborhoodTiles.add(tx + "," + ty);
+            }
+        }
+
         List<RoomUnit> result = new ArrayList<>();
+        List<RoomUnit> neighborhoodUsers = new ArrayList<>();
         for (RoomUnit unit : room.getRoomUnits()) {
             String pos = unit.getX() + "," + unit.getY();
             boolean onTile = targetTiles.contains(pos);
+
+            if (neighborhoodTiles.contains(pos)) {
+                neighborhoodUsers.add(unit);
+            }
 
             LOGGER.debug("[Neighborhood] Unit id={} type={} pos={} onTile={}", unit.getId(), unit.getRoomUnitType(), pos, onTile);
 
@@ -99,7 +114,7 @@ public class WiredEffectUsersNeighborhood extends InteractionWiredEffect {
             }
         }
 
-        result = new ArrayList<>(this.applySelectorModifiers(result, room.getRoomUnits(), ctx.targets().users(), filterExisting, invert));
+        result = new ArrayList<>(this.applyNeighborhoodModifiers(result, neighborhoodUsers, ctx.targets().users()));
 
         LOGGER.debug("[Neighborhood] Result: {} users selected", result.size());
 
@@ -110,15 +125,51 @@ public class WiredEffectUsersNeighborhood extends InteractionWiredEffect {
         ctx.targets().setUsers(result);
     }
 
+    private List<int[]> getFullGridOffsets() {
+        List<int[]> offsets = new ArrayList<>();
+
+        for (int y = -GRID_RANGE; y <= GRID_RANGE; y++) {
+            for (int x = -GRID_RANGE; x <= GRID_RANGE; x++) {
+                offsets.add(new int[]{ x, y });
+            }
+        }
+
+        return offsets;
+    }
+
+    private LinkedHashSet<RoomUnit> applyNeighborhoodModifiers(Collection<RoomUnit> matchedTargets,
+                                                               Collection<RoomUnit> neighborhoodTargets,
+                                                               Collection<RoomUnit> existingTargets) {
+        LinkedHashSet<RoomUnit> matched = new LinkedHashSet<>(matchedTargets);
+
+        if (this.invert) {
+            LinkedHashSet<RoomUnit> base = new LinkedHashSet<>(neighborhoodTargets);
+            base.removeAll(matched);
+
+            if (this.filterExisting) {
+                base.retainAll(this.toLinkedHashSet(existingTargets));
+            }
+
+            return base;
+        }
+
+        if (this.filterExisting) {
+            matched.retainAll(this.toLinkedHashSet(existingTargets));
+        }
+
+        return matched;
+    }
+
     private List<int[]> resolveSourcePositions(WiredContext ctx, Room room) {
         switch (sourceType) {
             case SOURCE_USER_TRIGGER: {
-                if (ctx.tile().isPresent()) {
-                    return Collections.singletonList(new int[]{ ctx.tile().get().x, ctx.tile().get().y });
+                Optional<RoomUnit> actor = ctx.actor();
+                if (actor.isPresent()) {
+                    return Collections.singletonList(new int[]{ actor.get().getX(), actor.get().getY() });
                 }
 
-                return ctx.actor()
-                        .map(actor -> Collections.singletonList(new int[]{ actor.getX(), actor.getY() }))
+                return ctx.tile()
+                        .map(tile -> Collections.singletonList(new int[]{ tile.x, tile.y }))
                         .orElse(Collections.emptyList());
             }
             case SOURCE_USER_SIGNAL: {
@@ -260,6 +311,16 @@ public class WiredEffectUsersNeighborhood extends InteractionWiredEffect {
     @Override
     public boolean isSelector() {
         return true;
+    }
+
+    @Override
+    public boolean hasRequiredSelectorTargets(WiredContext ctx) {
+        return ctx != null && ctx.targets().hasUsers();
+    }
+
+    @Override
+    public boolean usesExistingSelectorTargets() {
+        return this.filterExisting;
     }
 
     @Override

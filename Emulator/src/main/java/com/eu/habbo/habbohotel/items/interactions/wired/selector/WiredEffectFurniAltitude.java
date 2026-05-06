@@ -96,6 +96,11 @@ public class WiredEffectFurniAltitude extends InteractionWiredEffect {
     }
 
     @Override
+    public boolean usesExistingSelectorTargets() {
+        return this.filterExisting;
+    }
+
+    @Override
     public String getWiredData() {
         return WiredManager.getGson().toJson(new JsonData(
                 this.comparison,

@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.users.UserPrefix;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
+import com.eu.habbo.messages.outgoing.inventory.nickicons.UserNickIconsComposer;
 import com.eu.habbo.messages.outgoing.inventory.prefixes.PrefixReceivedComposer;
 import com.eu.habbo.messages.outgoing.users.UserCreditsComposer;
 import com.eu.habbo.messages.outgoing.users.UserCurrencyComposer;
@@ -19,6 +20,7 @@ import java.sql.SQLException;
 
 public class PurchasePrefixEvent extends MessageHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(PurchasePrefixEvent.class);
+    private static final String[] ALLOWED_FONTS = { "", "pixel", "cherry", "vampiro" };
 
     @Override
     public int getRatelimit() {
@@ -31,6 +33,7 @@ public class PurchasePrefixEvent extends MessageHandler {
         String color = this.packet.readString();
         String icon = this.packet.readString();
         String effect = this.packet.readString();
+        String font = this.packet.readString();
 
         Habbo habbo = this.client.getHabbo();
 
@@ -42,6 +45,9 @@ public class PurchasePrefixEvent extends MessageHandler {
         int priceCredits = getSettingInt("price_credits", 5);
         int pricePoints = getSettingInt("price_points", 0);
         int pointsType = getSettingInt("points_type", 0);
+        int fontPriceCredits = getSettingInt("font_price_credits", 10);
+        int fontPricePoints = getSettingInt("font_price_points", 0);
+        int fontPointsType = getSettingInt("font_points_type", pointsType);
 
         // Validate text
         text = text.trim();
@@ -72,43 +78,67 @@ public class PurchasePrefixEvent extends MessageHandler {
             return;
         }
 
+        if (icon == null) icon = "";
+        icon = icon.trim();
+
+        if (effect == null) effect = "";
+        effect = effect.trim();
+
+        if (font == null) font = "";
+        font = font.trim().toLowerCase();
+
+        if (!isAllowedFont(font)) {
+            this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, "Invalid font format."));
+            return;
+        }
+
+        int totalPriceCredits = priceCredits + (!font.isEmpty() ? fontPriceCredits : 0);
+
         // Check credits
-        if (priceCredits > 0 && habbo.getHabboInfo().getCredits() < priceCredits) {
+        if (totalPriceCredits > 0 && habbo.getHabboInfo().getCredits() < totalPriceCredits) {
             this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, "Not enough credits."));
             return;
         }
 
+        int totalPricePointsSameType = pricePoints + ((fontPricePoints > 0 && fontPointsType == pointsType && !font.isEmpty()) ? fontPricePoints : 0);
+
         // Check points
-        if (pricePoints > 0 && habbo.getHabboInfo().getCurrencyAmount(pointsType) < pricePoints) {
+        if (totalPricePointsSameType > 0 && habbo.getHabboInfo().getCurrencyAmount(pointsType) < totalPricePointsSameType) {
+            this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, "Not enough points."));
+            return;
+        }
+
+        if (!font.isEmpty() && fontPricePoints > 0 && fontPointsType != pointsType && habbo.getHabboInfo().getCurrencyAmount(fontPointsType) < fontPricePoints) {
             this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, "Not enough points."));
             return;
         }
 
         // Deduct currency
-        if (priceCredits > 0) {
-            habbo.getHabboInfo().addCredits(-priceCredits);
+        if (totalPriceCredits > 0) {
+            habbo.getHabboInfo().addCredits(-totalPriceCredits);
             this.client.sendResponse(new UserCreditsComposer(habbo));
         }
 
-        if (pricePoints > 0) {
-            habbo.getHabboInfo().addCurrencyAmount(pointsType, -pricePoints);
+        if (totalPricePointsSameType > 0) {
+            habbo.getHabboInfo().addCurrencyAmount(pointsType, -totalPricePointsSameType);
             this.client.sendResponse(new UserCurrencyComposer(habbo));
         }
 
-        // Validate icon (allow empty or known icon names)
-        if (icon == null) icon = "";
-        icon = icon.trim();
-
-        // Validate effect
-        if (effect == null) effect = "";
-        effect = effect.trim();
+        if (!font.isEmpty() && fontPricePoints > 0 && fontPointsType != pointsType) {
+            habbo.getHabboInfo().addCurrencyAmount(fontPointsType, -fontPricePoints);
+            this.client.sendResponse(new UserCurrencyComposer(habbo));
+        }
 
         // Create prefix
-        UserPrefix prefix = new UserPrefix(habbo.getHabboInfo().getId(), text, color, icon, effect);
+        int storedPoints = totalPricePointsSameType;
+        int storedPointsType = (storedPoints > 0) ? pointsType : ((!font.isEmpty() && fontPricePoints > 0) ? fontPointsType : pointsType);
+
+        UserPrefix prefix = new UserPrefix(habbo.getHabboInfo().getId(), text, color, icon, effect, font, 0, text, storedPoints, storedPointsType, true);
         prefix.run(); // Insert into DB synchronously to get the ID
         habbo.getInventory().getPrefixesComponent().addPrefix(prefix);
 
         this.client.sendResponse(new PrefixReceivedComposer(prefix));
+        this.client.sendResponse(new UserNickIconsComposer(habbo));
     }
 
     private int getSettingInt(String key, int defaultValue) {
@@ -140,6 +170,16 @@ public class PurchasePrefixEvent extends MessageHandler {
         } catch (SQLException e) {
             LOGGER.error("Error checking prefix blacklist", e);
         }
+        return false;
+    }
+
+    private boolean isAllowedFont(String font) {
+        for (String allowedFont : ALLOWED_FONTS) {
+            if (allowedFont.equals(font)) {
+                return true;
+            }
+        }
+
         return false;
     }
 }

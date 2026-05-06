@@ -53,26 +53,37 @@ public class WiredEffectFurniToFurni extends InteractionWiredEffect {
             return;
         }
 
-        HabboItem moveItem = this.resolveLastMoveItem(ctx);
-        HabboItem targetItem = this.resolveLastTargetItem(ctx);
+        List<HabboItem> moveItems = this.resolveMoveItems(ctx);
+        List<HabboItem> targetItems = this.resolveTargetItems(ctx);
 
-        if (moveItem == null || targetItem == null || moveItem.getId() == targetItem.getId()) {
+        if (moveItems.isEmpty() || targetItems.isEmpty()) {
             return;
         }
 
-        RoomTile targetTile = room.getLayout().getTile(targetItem.getX(), targetItem.getY());
-        if (targetTile == null) {
-            return;
-        }
+        int targetIndex = 0;
+        for (HabboItem moveItem : moveItems) {
+            if (moveItem == null) {
+                continue;
+            }
 
-        FurnitureMovementError error = WiredMoveCarryHelper.moveFurni(room, this, moveItem, targetTile, moveItem.getRotation(), null, false, ctx);
-        if (error == FurnitureMovementError.NONE) {
-            return;
-        }
+            HabboItem targetItem = targetItems.get(targetIndex % targetItems.size());
+            targetIndex++;
 
-        error = WiredMoveCarryHelper.moveFurni(room, this, moveItem, targetTile, moveItem.getRotation(), targetItem.getZ(), null, false, ctx);
-        if (error == FurnitureMovementError.NONE) {
-            return;
+            if (targetItem == null || moveItem.getId() == targetItem.getId()) {
+                continue;
+            }
+
+            RoomTile targetTile = room.getLayout().getTile(targetItem.getX(), targetItem.getY());
+            if (targetTile == null) {
+                continue;
+            }
+
+            FurnitureMovementError error = WiredMoveCarryHelper.moveFurni(room, this, moveItem, targetTile, moveItem.getRotation(), null, false, ctx);
+            if (error == FurnitureMovementError.NONE) {
+                continue;
+            }
+
+            WiredMoveCarryHelper.moveFurni(room, this, moveItem, targetTile, moveItem.getRotation(), targetItem.getZ(), null, false, ctx);
         }
     }
 
@@ -233,35 +244,23 @@ public class WiredEffectFurniToFurni extends InteractionWiredEffect {
         return COOLDOWN_MOVEMENT;
     }
 
-    private HabboItem resolveLastMoveItem(WiredContext ctx) {
-        return this.resolveLastItem(ctx, this.moveSource, this.moveItems);
+    private List<HabboItem> resolveMoveItems(WiredContext ctx) {
+        return this.resolveItems(ctx, this.moveSource, this.moveItems);
     }
 
-    private HabboItem resolveLastTargetItem(WiredContext ctx) {
+    private List<HabboItem> resolveTargetItems(WiredContext ctx) {
         int source = (this.targetSource == SOURCE_SECONDARY_SELECTED) ? WiredSourceUtil.SOURCE_SELECTED : this.targetSource;
-        return this.resolveLastItem(ctx, source, this.targetItems);
+        return this.resolveItems(ctx, source, this.targetItems);
     }
 
-    private HabboItem resolveLastItem(WiredContext ctx, int source, List<HabboItem> items) {
+    private List<HabboItem> resolveItems(WiredContext ctx, int source, List<HabboItem> items) {
         if (source == WiredSourceUtil.SOURCE_SELECTED) {
             this.validateItems(items);
         }
 
-        List<HabboItem> resolvedItems = WiredSourceUtil.resolveItems(ctx, source, items);
-
-        if (resolvedItems.isEmpty()) {
-            return null;
-        }
-
-        for (int index = resolvedItems.size() - 1; index >= 0; index--) {
-            HabboItem item = resolvedItems.get(index);
-
-            if (item != null) {
-                return item;
-            }
-        }
-
-        return null;
+        return WiredSourceUtil.resolveItems(ctx, source, items).stream()
+                .filter(item -> item != null && ctx.room().getHabboItem(item.getId()) != null)
+                .collect(Collectors.toList());
     }
 
     private List<HabboItem> parseItems(String data, Room room) throws WiredSaveException {

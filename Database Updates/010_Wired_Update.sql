@@ -91,7 +91,7 @@ ALTER TABLE `catalog_pages`
     'builders_club_addons',
     'builders_club_loyalty'
   ) NOT NULL DEFAULT 'default_3x3';
-  
+
 ALTER TABLE `catalog_pages`
 ADD COLUMN IF NOT EXISTS `catalog_mode` ENUM('NORMAL','BUILDER','BOTH') NOT NULL DEFAULT 'NORMAL'
 AFTER `club_only`;
@@ -878,7 +878,7 @@ ON DUPLICATE KEY UPDATE
     `permission` = VALUES(`permission`),
     `overridable` = VALUES(`overridable`),
     `triggers_talking_furniture` = VALUES(`triggers_talking_furniture`);
-	
+
 ALTER TABLE `catalog_club_offers`
 MODIFY COLUMN `type` ENUM('HC', 'VIP', 'BUILDERS_CLUB', 'BUILDERS_CLUB_ADDON') NOT NULL DEFAULT 'HC';
 
@@ -987,4 +987,3 @@ ALTER TABLE `catalog_pages_bc`
         'builders_club_addons',
         'builders_club_loyalty'
     ) NOT NULL DEFAULT 'default_3x3';
-	

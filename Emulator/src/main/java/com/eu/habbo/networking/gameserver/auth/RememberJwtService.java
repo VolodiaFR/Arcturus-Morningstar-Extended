@@ -44,7 +44,9 @@ public final class RememberJwtService {
     }
 
     private static int familyTtlDays() {
-        return Math.max(1, Emulator.getConfig().getInt("login.remember.duration.days", 30));
+        int configured = Emulator.getConfig().getInt("login.remember.duration.days", 0);
+        if (configured <= 0) configured = Emulator.getConfig().getInt("login.remember.days", 30);
+        return Math.max(1, configured);
     }
 
     private static long familyTtlSeconds() {

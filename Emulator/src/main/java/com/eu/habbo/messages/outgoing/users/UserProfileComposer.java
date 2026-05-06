@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.guilds.Guild;
 import com.eu.habbo.habbohotel.messenger.Messenger;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
+import com.eu.habbo.habbohotel.users.UserCustomizationData;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
@@ -116,6 +117,14 @@ public class UserProfileComposer extends MessageComposer {
         this.response.appendInt(this.habboInfo.getInfostandStand());
         this.response.appendInt(this.habboInfo.getInfostandOverlay());
         this.response.appendInt(this.habboInfo.getInfostandCardBg());
+        UserCustomizationData customizationData = (this.habbo != null) ? UserCustomizationData.fromHabbo(this.habbo) : UserCustomizationData.fromUserId(this.habboInfo.getId());
+        this.response.appendString(customizationData.nickIcon);
+        this.response.appendString(customizationData.prefixText);
+        this.response.appendString(customizationData.prefixColor);
+        this.response.appendString(customizationData.prefixIcon);
+        this.response.appendString(customizationData.prefixEffect);
+        this.response.appendString(customizationData.prefixFont);
+        this.response.appendString(customizationData.displayOrder);
 
         return this.response;
     }

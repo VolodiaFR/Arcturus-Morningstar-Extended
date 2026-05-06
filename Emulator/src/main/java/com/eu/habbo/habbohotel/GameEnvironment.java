@@ -21,6 +21,7 @@ import com.eu.habbo.habbohotel.pets.PetManager;
 import com.eu.habbo.habbohotel.polls.PollManager;
 import com.eu.habbo.habbohotel.rooms.RoomChatBubbleManager;
 import com.eu.habbo.habbohotel.rooms.RoomManager;
+import com.eu.habbo.habbohotel.translations.GoogleTranslateManager;
 import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.habbohotel.users.custombadge.CustomBadgeManager;
 import com.eu.habbo.habbohotel.users.infostand.InfostandBackgroundManager;
@@ -60,6 +61,7 @@ public class GameEnvironment {
     private SubscriptionManager subscriptionManager;
     private CalendarManager calendarManager;
     private RoomChatBubbleManager roomChatBubbleManager;
+    private GoogleTranslateManager googleTranslateManager;
     private CustomBadgeManager customBadgeManager;
     private InfostandBackgroundManager infostandBackgroundManager;
 
@@ -88,6 +90,7 @@ public class GameEnvironment {
         this.pollManager = new PollManager();
         this.calendarManager = new CalendarManager();
         this.roomChatBubbleManager = new RoomChatBubbleManager();
+        this.googleTranslateManager = new GoogleTranslateManager();
         this.customBadgeManager = new CustomBadgeManager();
         this.infostandBackgroundManager = new InfostandBackgroundManager();
 
@@ -127,6 +130,9 @@ public class GameEnvironment {
         this.hotelViewManager.dispose();
         this.subscriptionManager.dispose();
         this.calendarManager.dispose();
+        if (this.googleTranslateManager != null) {
+            this.googleTranslateManager.clearCache();
+        }
         LOGGER.info("GameEnvironment -> Disposed!");
     }
 
@@ -224,6 +230,10 @@ public class GameEnvironment {
 
     public RoomChatBubbleManager getRoomChatBubbleManager() {
         return roomChatBubbleManager;
+    }
+
+    public GoogleTranslateManager getGoogleTranslateManager() {
+        return this.googleTranslateManager;
     }
 
     public CustomBadgeManager getCustomBadgeManager() {

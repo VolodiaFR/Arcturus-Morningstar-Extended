@@ -188,6 +188,11 @@ public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEf
     }
 
     @Override
+    public boolean usesExistingSelectorTargets() {
+        return this.filterExisting;
+    }
+
+    @Override
     public String getWiredData() {
         this.refreshReferenceItems();
 

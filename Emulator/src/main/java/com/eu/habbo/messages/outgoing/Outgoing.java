@@ -124,6 +124,8 @@ public class Outgoing {
     public final static int WiredRoomSettingsDataComposer = 5102; // CUSTOM
     public final static int WiredUserVariablesDataComposer = 5103; // CUSTOM
     public final static int ConfInvisStateComposer = 5104; // CUSTOM
+    public final static int TranslationLanguagesComposer = 5106; // CUSTOM
+    public final static int TranslationResultComposer = 5107; // CUSTOM
     public final static int AreaHideComposer = 6001; // CUSTOM
     public final static int RoomPaintComposer = 2454; // PRODUCTION-201611291003-338511768
     public final static int MarketplaceConfigComposer = 1823; // PRODUCTION-201611291003-338511768
@@ -576,6 +578,7 @@ public class Outgoing {
     public static final int UserPrefixesComposer = 7001;
     public static final int PrefixReceivedComposer = 7002;
     public static final int ActivePrefixUpdatedComposer = 7003;
+    public static final int UserNickIconsComposer = 7004;
     public static final int AvailableCommandsComposer = 4050;
 
     // YouTube Room Broadcast

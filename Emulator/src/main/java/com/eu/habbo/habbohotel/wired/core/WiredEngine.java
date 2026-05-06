@@ -26,6 +26,7 @@ import com.eu.habbo.habbohotel.wired.api.WiredStack;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.GenericAlertComposer;
+import com.eu.habbo.messages.outgoing.rooms.items.ItemStateComposer;
 import com.eu.habbo.plugin.events.furniture.wired.WiredStackExecutedEvent;
 import com.eu.habbo.plugin.events.furniture.wired.WiredStackTriggeredEvent;
 import gnu.trove.map.hash.THashMap;
@@ -130,6 +131,9 @@ public final class WiredEngine {
     /** Cache room+eventType+sourceItemId -> matching stacks for source-triggered timer events */
     private final ConcurrentHashMap<String, List<WiredStack>> sourceStacksByTriggerKey;
 
+    /** Track filter-selector animation tokens so rapid executions do not reset newer animations */
+    private final ConcurrentHashMap<Integer, Long> filteredSelectorAnimationTokens;
+
     /**
      * Create a new wired engine.
      *
@@ -151,6 +155,7 @@ public final class WiredEngine {
         this.bannedRooms = new ConcurrentHashMap<>();
         this.roomDiagnostics = new ConcurrentHashMap<>();
         this.sourceStacksByTriggerKey = new ConcurrentHashMap<>();
+        this.filteredSelectorAnimationTokens = new ConcurrentHashMap<>();
     }
 
     /**
@@ -426,6 +431,10 @@ public final class WiredEngine {
             applySelectionFilterExtras(stack, ctx, executedSelectors);
         }
 
+        if (!selectorsHaveRequiredTargets(executedSelectors, ctx)) {
+            return false;
+        }
+
         boolean conditionsPassedForExecution = getConditionOutcomeForExecution(stack, ctx, negateConditions);
         List<IWiredEffect> executableEffects = getExecutableEffectsForCurrentExecution(stack, conditionsPassedForExecution);
         boolean hasSpecialOutcome = conditionsPassedForExecution && hasSpecialTriggerOutcome(stack, event);
@@ -541,6 +550,10 @@ public final class WiredEngine {
             applySelectionFilterExtras(stack, ctx, executedSelectors);
         }
 
+        if (!selectorsHaveRequiredTargets(executedSelectors, ctx)) {
+            return false;
+        }
+
         boolean conditionsPassedForExecution = getConditionOutcomeForExecution(stack, ctx, negateConditions);
         List<IWiredEffect> executableEffects = getExecutableEffectsForCurrentExecution(stack, conditionsPassedForExecution);
         boolean hasSpecialOutcome = conditionsPassedForExecution && hasSpecialTriggerOutcome(stack, event);
@@ -627,6 +640,10 @@ public final class WiredEngine {
             applySelectionFilterExtras(stack, ctx, executedSelectors);
         }
 
+        if (!selectorsHaveRequiredTargets(executedSelectors, ctx)) {
+            return false;
+        }
+
         boolean conditionsPassedForExecution = getConditionOutcomeForExecution(stack, ctx, negateConditions);
         List<IWiredEffect> executableEffects = getExecutableEffectsForCurrentExecution(stack, conditionsPassedForExecution);
         return !executableEffects.isEmpty();
@@ -658,6 +675,10 @@ public final class WiredEngine {
         if (stack.hasEffects()) {
             executedSelectors = executeSelectors(stack, ctx);
             applySelectionFilterExtras(stack, ctx, executedSelectors);
+        }
+
+        if (!selectorsHaveRequiredTargets(executedSelectors, ctx)) {
+            return false;
         }
 
         boolean conditionsPassedForExecution = getConditionOutcomeForExecution(stack, ctx, false);
@@ -1011,9 +1032,27 @@ public final class WiredEngine {
         if (effects.isEmpty()) return Collections.emptyList();
 
         List<InteractionWiredEffect> executedSelectors = new ArrayList<>();
+        List<IWiredEffect> immediateSelectors = new ArrayList<>();
+        List<IWiredEffect> deferredSelectors = new ArrayList<>();
 
         for (IWiredEffect effect : effects) {
             if (!effect.isSelector()) continue;
+
+            if (effect.usesExistingSelectorTargets()) {
+                deferredSelectors.add(effect);
+            } else {
+                immediateSelectors.add(effect);
+            }
+        }
+
+        executeSelectorList(immediateSelectors, ctx, executedSelectors);
+        executeSelectorList(deferredSelectors, ctx, executedSelectors);
+
+        return executedSelectors;
+    }
+
+    private void executeSelectorList(List<IWiredEffect> selectors, WiredContext ctx, List<InteractionWiredEffect> executedSelectors) {
+        for (IWiredEffect effect : selectors) {
             if (effect.requiresActor() && !ctx.hasActor()) {
                 continue;
             }
@@ -1022,14 +1061,17 @@ public final class WiredEngine {
             try {
                 effect.execute(ctx);
                 if (effect instanceof InteractionWiredEffect) {
-                    executedSelectors.add((InteractionWiredEffect) effect);
+                    InteractionWiredEffect wiredEffect = (InteractionWiredEffect) effect;
+                    executedSelectors.add(wiredEffect);
+
+                    if (wiredEffect.usesExistingSelectorTargets()) {
+                        setFilteredSelectorState(ctx.room(), wiredEffect, "3");
+                    }
                 }
             } catch (Exception e) {
                 LOGGER.warn("Error executing selector: {}", e.getMessage());
             }
         }
-
-        return executedSelectors;
     }
 
     private void finalizeSelectors(List<InteractionWiredEffect> executedSelectors, WiredContext ctx, long currentTime) {
@@ -1042,7 +1084,56 @@ public final class WiredEngine {
 
         for (InteractionWiredEffect wiredEffect : executedSelectors) {
             wiredEffect.setCooldown(currentTime);
-            wiredEffect.activateBox(room, actor, currentTime);
+
+            if (wiredEffect.usesExistingSelectorTargets()) {
+                animateFilteredSelectorBox(room, wiredEffect);
+            } else {
+                wiredEffect.activateBox(room, actor, currentTime);
+            }
+        }
+    }
+
+    private void animateFilteredSelectorBox(Room room, InteractionWiredEffect wiredEffect) {
+        if (room == null || wiredEffect == null || room.isHideWired()) {
+            return;
+        }
+
+        long animationToken = System.nanoTime();
+        this.filteredSelectorAnimationTokens.put(wiredEffect.getId(), animationToken);
+
+        setFilteredSelectorState(room, wiredEffect, "3", animationToken, false);
+        scheduleFilteredSelectorState(room, wiredEffect, "4", animationToken, 80L, false);
+        scheduleFilteredSelectorState(room, wiredEffect, "5", animationToken, 160L, false);
+        scheduleFilteredSelectorState(room, wiredEffect, "3", animationToken, 240L, true);
+    }
+
+    private void scheduleFilteredSelectorState(Room room, InteractionWiredEffect wiredEffect, String state, long animationToken, long delay, boolean clearToken) {
+        Emulator.getThreading().run(() -> setFilteredSelectorState(room, wiredEffect, state, animationToken, clearToken), delay);
+    }
+
+    private void setFilteredSelectorState(Room room, InteractionWiredEffect wiredEffect, String state) {
+        setFilteredSelectorState(room, wiredEffect, state, 0L, false);
+    }
+
+    private void setFilteredSelectorState(Room room, InteractionWiredEffect wiredEffect, String state, long animationToken, boolean clearToken) {
+        if (room == null || wiredEffect == null || room.isHideWired()) {
+            return;
+        }
+
+        if (animationToken != 0L) {
+            Long currentToken = this.filteredSelectorAnimationTokens.get(wiredEffect.getId());
+            if (currentToken == null || currentToken != animationToken) {
+                return;
+            }
+        }
+
+        if (!state.equals(wiredEffect.getExtradata())) {
+            wiredEffect.setExtradata(state);
+            room.sendComposer(new ItemStateComposer(wiredEffect).compose());
+        }
+
+        if (clearToken) {
+            this.filteredSelectorAnimationTokens.remove(wiredEffect.getId(), animationToken);
         }
     }
 
@@ -1057,6 +1148,20 @@ public final class WiredEngine {
         }
 
         WiredSelectionFilterSupport.applySelectorFilters(room, stack.triggerItem(), ctx);
+    }
+
+    private boolean selectorsHaveRequiredTargets(List<InteractionWiredEffect> executedSelectors, WiredContext ctx) {
+        if (executedSelectors == null || executedSelectors.isEmpty()) {
+            return true;
+        }
+
+        for (InteractionWiredEffect selector : executedSelectors) {
+            if (!selector.hasRequiredSelectorTargets(ctx)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

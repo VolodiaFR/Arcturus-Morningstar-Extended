@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 
 public final class WiredVariableTextConnectorSupport {
+    private static final String PRESERVED_SPACE = "\u00A0";
+
     private WiredVariableTextConnectorSupport() {
     }
 
@@ -71,7 +73,7 @@ public final class WiredVariableTextConnectorSupport {
             Map<Integer, String> mappings = connector.getMappings();
             if (mappings.containsKey(value)) {
                 String mappedValue = mappings.get(value);
-                return mappedValue != null ? mappedValue : String.valueOf(value);
+                return mappedValue != null ? preserveSpaces(mappedValue) : "";
             }
         }
 
@@ -83,10 +85,7 @@ public final class WiredVariableTextConnectorSupport {
             return null;
         }
 
-        String normalizedText = text.trim();
-        if (normalizedText.isEmpty()) {
-            return null;
-        }
+        String normalizedText = normalizePreservedSpaces(text);
 
         for (WiredExtraVariableTextConnector connector : getConnectors(room, definitionItemId)) {
             Integer mappedValue = connector.resolveValue(normalizedText);
@@ -96,5 +95,13 @@ public final class WiredVariableTextConnectorSupport {
         }
 
         return null;
+    }
+
+    private static String preserveSpaces(String value) {
+        return value.replace(" ", PRESERVED_SPACE);
+    }
+
+    private static String normalizePreservedSpaces(String value) {
+        return value.replace(PRESERVED_SPACE, " ");
     }
 }

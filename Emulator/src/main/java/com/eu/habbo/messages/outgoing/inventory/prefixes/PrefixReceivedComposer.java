@@ -20,6 +20,7 @@ public class PrefixReceivedComposer extends MessageComposer {
         this.response.appendString(this.prefix.getColor());
         this.response.appendString(this.prefix.getIcon());
         this.response.appendString(this.prefix.getEffect());
+        this.response.appendString(this.prefix.getFont());
         return this.response;
     }
 }
