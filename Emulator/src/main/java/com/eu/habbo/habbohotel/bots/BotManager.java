@@ -71,13 +71,23 @@ public class BotManager {
     }
 
     public Bot createBot(THashMap<String, String> data, String type) {
+        return this.createBot(data, type, 0);
+    }
+
+    public Bot createBot(THashMap<String, String> data, String type, int ownerId) {
+        if (ownerId <= 0) {
+            LOGGER.error("Cannot create bot of type '{}' without a valid owner user id.", type);
+            return null;
+        }
+
         Bot bot = null;
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO bots (user_id, room_id, name, motto, figure, gender, type) VALUES (0, 0, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
-            statement.setString(1, data.get("name"));
-            statement.setString(2, data.get("motto"));
-            statement.setString(3, data.get("figure"));
-            statement.setString(4, data.get("gender").toUpperCase());
-            statement.setString(5, type);
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO bots (user_id, room_id, name, motto, figure, gender, type) VALUES (?, 0, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
+            statement.setInt(1, ownerId);
+            statement.setString(2, data.get("name"));
+            statement.setString(3, data.get("motto"));
+            statement.setString(4, data.get("figure"));
+            statement.setString(5, data.get("gender").toUpperCase());
+            statement.setString(6, type);
             statement.execute();
             try (ResultSet set = statement.getGeneratedKeys()) {
                 if (set.next()) {

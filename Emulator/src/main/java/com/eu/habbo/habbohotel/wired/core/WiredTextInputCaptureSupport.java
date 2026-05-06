@@ -64,8 +64,17 @@ public final class WiredTextInputCaptureSupport {
             return trigger.matches(stack.triggerItem(), event) ? CaptureResult.matched(new LinkedHashMap<>()) : CaptureResult.noMatch();
         }
 
-        MatchResult matchResult = matchTemplate(trigger, text, capturersByName);
+        MatchResult matchResult = matchTemplate(trigger, text, capturersByName, room);
         if (!matchResult.matches) {
+            if (WiredManager.isDebugEnabled()) {
+                WiredManager.debug("[TextCapture] NO_MATCH room={} triggerId={} mode={} key='{}' text='{}' len={}",
+                        room.getId(),
+                        stack.triggerItem().getId(),
+                        trigger.getMatchMode(),
+                        safeForLog(trigger.getKey()),
+                        safeForLog(text),
+                        (text != null ? text.length() : 0));
+            }
             return CaptureResult.noMatch();
         }
 
@@ -78,10 +87,26 @@ public final class WiredTextInputCaptureSupport {
 
             Integer resolvedValue = capturer.resolveCapturedValue(room, capture.getValue());
             if (resolvedValue == null) {
+                if (WiredManager.isDebugEnabled()) {
+                    WiredManager.debug("[TextCapture] RESOLVE_FAIL room={} triggerId={} capturer='{}' raw='{}' rawLen={}",
+                            room.getId(),
+                            stack.triggerItem().getId(),
+                            capture.getKey(),
+                            safeForLog(capture.getValue()),
+                            (capture.getValue() != null ? capture.getValue().length() : 0));
+                }
                 return CaptureResult.noMatch();
             }
 
             capturedValues.put(capturer.getVariableItemId(), resolvedValue);
+        }
+
+        if (WiredManager.isDebugEnabled()) {
+            WiredManager.debug("[TextCapture] MATCH_OK room={} triggerId={} captures={} textLen={}",
+                    room.getId(),
+                    stack.triggerItem().getId(),
+                    capturedValues.size(),
+                    (text != null ? text.length() : 0));
         }
 
         return CaptureResult.matched(capturedValues);
@@ -108,12 +133,13 @@ public final class WiredTextInputCaptureSupport {
         return capturers;
     }
 
-    private static MatchResult matchTemplate(WiredTriggerHabboSaysKeyword trigger, String rawText, Map<String, WiredExtraTextInputVariable> capturersByName) {
-        String text = rawText != null ? rawText.trim() : "";
+    private static MatchResult matchTemplate(WiredTriggerHabboSaysKeyword trigger, String rawText, Map<String, WiredExtraTextInputVariable> capturersByName, Room room) {
+        String text = rawText != null ? rawText : "";
+        String normalizedText = text.trim();
         String template = trigger.getKey() != null ? trigger.getKey().trim() : "";
 
         if (trigger.getMatchMode() == MATCH_ALL_WORDS && template.isEmpty()) {
-            if (capturersByName.size() != 1 || text.isEmpty()) {
+            if (capturersByName.size() != 1 || normalizedText.isEmpty()) {
                 return MatchResult.noMatch();
             }
 
@@ -123,12 +149,24 @@ public final class WiredTextInputCaptureSupport {
             return MatchResult.matched(captures);
         }
 
+        MatchResult adjacentCaptureResult = matchAdjacentCapturers(template, rawText, capturersByName, room, trigger.getMatchMode());
+        if (adjacentCaptureResult != null) {
+            if (WiredManager.isDebugEnabled()) {
+                WiredManager.debug("[TextCapture] ADJACENT mode used key='{}' textLen={} matched={}",
+                        safeForLog(template),
+                        (rawText != null ? rawText.length() : 0),
+                        adjacentCaptureResult.matches);
+            }
+            return adjacentCaptureResult;
+        }
+
         TemplatePattern pattern = buildPattern(template);
         if (pattern == null) {
             return MatchResult.noMatch();
         }
 
-        Matcher matcher = pattern.pattern.matcher(text);
+        String matchText = pattern.placeholderNames.isEmpty() ? normalizedText : text;
+        Matcher matcher = pattern.pattern.matcher(matchText);
         boolean matches = (trigger.getMatchMode() == MATCH_CONTAINS) ? matcher.find() : matcher.matches();
         if (!matches) {
             return MatchResult.noMatch();
@@ -142,10 +180,134 @@ public final class WiredTextInputCaptureSupport {
             }
 
             String capturedValue = matcher.group(index + 1);
-            captures.put(placeholderName, capturedValue != null ? capturedValue.trim() : "");
+            captures.put(placeholderName, normalizeCapturedValue(capturedValue));
         }
 
         return MatchResult.matched(captures);
+    }
+
+    private static MatchResult matchAdjacentCapturers(String template, String rawText, Map<String, WiredExtraTextInputVariable> capturersByName, Room room, int matchMode) {
+        if (template == null || template.isEmpty() || rawText == null || capturersByName == null || capturersByName.isEmpty() || room == null) {
+            return null;
+        }
+
+        Matcher matcher = PLACEHOLDER_PATTERN.matcher(template);
+        List<String> placeholderNames = new ArrayList<>();
+        int cursor = 0;
+
+        while (matcher.find()) {
+            if (matcher.start() != cursor) {
+                return null;
+            }
+
+            String placeholderName = matcher.group(1) != null ? matcher.group(1).trim().toLowerCase() : "";
+            if (placeholderName.isEmpty() || !capturersByName.containsKey(placeholderName)) {
+                return null;
+            }
+
+            placeholderNames.add(placeholderName);
+            cursor = matcher.end();
+        }
+
+        if (placeholderNames.isEmpty() || cursor != template.length()) {
+            return null;
+        }
+
+        int placeholderCount = placeholderNames.size();
+        int textLength = rawText.length();
+
+        boolean[][] reachable = new boolean[placeholderCount + 1][textLength + 1];
+        int[][] previousIndex = new int[placeholderCount + 1][textLength + 1];
+        String[][] capturedValues = new String[placeholderCount + 1][textLength + 1];
+
+        for (int placeholderIndex = 0; placeholderIndex <= placeholderCount; placeholderIndex++) {
+            for (int textIndex = 0; textIndex <= textLength; textIndex++) {
+                previousIndex[placeholderIndex][textIndex] = -1;
+            }
+        }
+
+        reachable[0][0] = true;
+
+        for (int placeholderIndex = 0; placeholderIndex < placeholderCount; placeholderIndex++) {
+            String placeholderName = placeholderNames.get(placeholderIndex);
+            WiredExtraTextInputVariable capturer = capturersByName.get(placeholderName);
+            if (capturer == null) {
+                return MatchResult.noMatch();
+            }
+
+            for (int textIndex = 0; textIndex <= textLength; textIndex++) {
+                if (!reachable[placeholderIndex][textIndex]) {
+                    continue;
+                }
+
+                int minEndIndex = (textIndex < textLength) ? (textIndex + 1) : textIndex;
+                for (int endIndex = minEndIndex; endIndex <= textLength; endIndex++) {
+                    if (reachable[placeholderIndex + 1][endIndex]) {
+                        continue;
+                    }
+
+                    String candidate = rawText.substring(textIndex, endIndex);
+                    if (capturer.resolveCapturedValue(room, candidate) == null) {
+                        continue;
+                    }
+
+                    reachable[placeholderIndex + 1][endIndex] = true;
+                    previousIndex[placeholderIndex + 1][endIndex] = textIndex;
+                    capturedValues[placeholderIndex + 1][endIndex] = candidate;
+                }
+            }
+        }
+
+        int resultEndIndex = -1;
+        if (matchMode == MATCH_CONTAINS) {
+            for (int endIndex = textLength; endIndex >= 0; endIndex--) {
+                if (reachable[placeholderCount][endIndex]) {
+                    resultEndIndex = endIndex;
+                    break;
+                }
+            }
+        } else if (reachable[placeholderCount][textLength]) {
+            resultEndIndex = textLength;
+        }
+
+        if (resultEndIndex < 0) {
+            return MatchResult.noMatch();
+        }
+
+        LinkedHashMap<String, String> captures = new LinkedHashMap<>();
+        int backtrackTextIndex = resultEndIndex;
+        for (int placeholderIndex = placeholderCount; placeholderIndex > 0; placeholderIndex--) {
+            String placeholderName = placeholderNames.get(placeholderIndex - 1);
+            String capturedValue = capturedValues[placeholderIndex][backtrackTextIndex];
+            captures.put(placeholderName, capturedValue != null ? capturedValue : "");
+            backtrackTextIndex = previousIndex[placeholderIndex][backtrackTextIndex];
+            if (backtrackTextIndex < 0) {
+                return MatchResult.noMatch();
+            }
+        }
+
+        return MatchResult.matched(captures);
+    }
+
+    private static String normalizeCapturedValue(String value) {
+        return value != null ? value : "";
+    }
+
+    private static String safeForLog(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        String normalized = value
+                .replace("\r", "\\r")
+                .replace("\n", "\\n")
+                .replace("\u00A0", "⍽");
+
+        if (normalized.length() > 180) {
+            return normalized.substring(0, 180) + "...(" + normalized.length() + ")";
+        }
+
+        return normalized;
     }
 
     private static TemplatePattern buildPattern(String template) {
@@ -160,7 +322,7 @@ public final class WiredTextInputCaptureSupport {
 
         while (matcher.find()) {
             regex.append(Pattern.quote(template.substring(cursor, matcher.start())));
-            regex.append("(.+?)");
+            regex.append(hasPlaceholderAfter(template, matcher.end()) ? "(.+?)" : "(.+)");
 
             String placeholderName = matcher.group(1) != null ? matcher.group(1).trim().toLowerCase() : "";
             placeholderNames.add(placeholderName);
@@ -174,6 +336,10 @@ public final class WiredTextInputCaptureSupport {
         }
 
         return new TemplatePattern(Pattern.compile(regex.toString(), Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE), placeholderNames);
+    }
+
+    private static boolean hasPlaceholderAfter(String template, int cursor) {
+        return PLACEHOLDER_PATTERN.matcher(template.substring(cursor)).find();
     }
 
     public static void applyToContext(WiredContext ctx, Room room, CaptureResult captureResult) {

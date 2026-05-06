@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.core.DatabaseLoggable;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.users.UserCustomizationData;
 import com.eu.habbo.messages.ISerialize;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.Incoming;
@@ -204,23 +205,14 @@ public class RoomChatMessage implements Runnable, ISerialize, DatabaseLoggable {
             message.appendInt(this.getMessage().length());
 
             // Custom prefix data
-            String prefixText = "";
-            String prefixColor = "";
-            String prefixIcon = "";
-            String prefixEffect = "";
-            if (this.habbo != null && this.habbo.getInventory() != null && this.habbo.getInventory().getPrefixesComponent() != null) {
-                com.eu.habbo.habbohotel.users.UserPrefix activePrefix = this.habbo.getInventory().getPrefixesComponent().getActivePrefix();
-                if (activePrefix != null) {
-                    prefixText = activePrefix.getText();
-                    prefixColor = activePrefix.getColor();
-                    prefixIcon = activePrefix.getIcon();
-                    prefixEffect = activePrefix.getEffect();
-                }
-            }
-            message.appendString(prefixText);
-            message.appendString(prefixColor);
-            message.appendString(prefixIcon);
-            message.appendString(prefixEffect);
+            UserCustomizationData customizationData = (this.habbo != null) ? UserCustomizationData.fromHabbo(this.habbo) : UserCustomizationData.empty();
+            message.appendString(customizationData.prefixText);
+            message.appendString(customizationData.prefixColor);
+            message.appendString(customizationData.prefixIcon);
+            message.appendString(customizationData.prefixEffect);
+            message.appendString(customizationData.prefixFont);
+            message.appendString(customizationData.nickIcon);
+            message.appendString(customizationData.displayOrder);
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);
         }

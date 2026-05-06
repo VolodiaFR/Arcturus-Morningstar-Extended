@@ -170,13 +170,15 @@ public class WiredExtraTextInputVariable extends InteractionWiredExtra {
     }
 
     public Integer resolveCapturedValue(Room room, String rawValue) {
-        String normalizedValue = rawValue != null ? rawValue.trim() : "";
-        if (normalizedValue.isEmpty()) {
-            return null;
-        }
+        String capturedValue = rawValue != null ? rawValue : "";
+        String normalizedValue = capturedValue.trim();
 
         if (this.getDisplayType(room) == DISPLAY_TEXTUAL) {
-            return WiredVariableTextConnectorSupport.toValue(room, this.variableItemId, normalizedValue);
+            return WiredVariableTextConnectorSupport.toValue(room, this.variableItemId, capturedValue);
+        }
+
+        if (normalizedValue.isEmpty()) {
+            return null;
         }
 
         try {

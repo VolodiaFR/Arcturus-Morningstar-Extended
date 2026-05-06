@@ -348,6 +348,7 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
             ok.addProperty("username", rot.username);
             ok.addProperty("rememberToken", rot.jwt);
             ok.addProperty("expiresAt", rot.expiresAt);
+            ok.addProperty("rememberExpiresAt", rot.expiresAt);
             AccessTokenService.Issued access = AccessTokenService.issue(rot.userId);
             ok.addProperty("accessToken", access.token);
             ok.addProperty("accessTokenExpiresAt", access.expiresAt);
@@ -410,6 +411,7 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
             JsonObject ok = new JsonObject();
             ok.addProperty("rememberToken", rot.jwt);
             ok.addProperty("expiresAt", rot.expiresAt);
+            ok.addProperty("rememberExpiresAt", rot.expiresAt);
             AccessTokenService.Issued access = AccessTokenService.issue(rot.userId);
             ok.addProperty("accessToken", access.token);
             ok.addProperty("accessTokenExpiresAt", access.expiresAt);
@@ -423,7 +425,7 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
     private void handleLogin(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body, String ip) {
         String username = readString(body, "username").trim();
         String password = readString(body, "password");
-        boolean rememberMe = readBoolean(body, "remember", false);
+        boolean rememberMe = readBoolean(body, "remember", false) || readBoolean(body, "rememberMe", false);
 
         if (username.isEmpty() || password.isEmpty()) {
             sendJson(ctx, req, HttpResponseStatus.BAD_REQUEST, errorPayload("Missing credentials."));
@@ -1137,7 +1139,8 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
             response.headers().set("Access-Control-Allow-Credentials", "true");
         }
         response.headers().set("Access-Control-Allow-Methods", "GET, HEAD, POST, OPTIONS");
-        response.headers().set("Access-Control-Allow-Headers", "Content-Type, X-Requested-With");
+        response.headers().set("Access-Control-Allow-Headers", "Content-Type, X-Requested-With, X-Nitro-Key, X-Nitro-Api");
+        response.headers().set("Access-Control-Expose-Headers", "X-Nitro-Sec, X-Nitro-Key-Fp, X-Nitro-Derive-Fp");
     }
 
     private static boolean isKeepAlive(FullHttpRequest req) {

@@ -82,7 +82,7 @@ public class WiredEffectBotTalk extends InteractionWiredEffect {
 
         this.setDelay(delay);
         this.botName = data[0].substring(0, Math.min(data[0].length(), Emulator.getConfig().getInt("hotel.wired.message.max_length", 100)));
-        this.message = data[1].substring(0, Math.min(data[1].length(), Emulator.getConfig().getInt("hotel.wired.message.max_length", 100)));
+        this.message = data[1].substring(0, Math.min(data[1].length(), Emulator.getConfig().getInt("hotel.wired.bot.message.max_length", 100)));
         this.mode = mode;
 
         return true;

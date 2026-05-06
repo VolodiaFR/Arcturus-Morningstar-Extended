@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
+import com.eu.habbo.habbohotel.items.interactions.games.InteractionGameTimer;
 import com.eu.habbo.habbohotel.items.interactions.games.InteractionGameUpCounter;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -60,29 +61,74 @@ public class WiredEffectControlClock extends InteractionWiredEffect {
         }
 
         for (HabboItem item : effectiveItems) {
-            if (!(item instanceof InteractionGameUpCounter)) {
+            if (!(item instanceof InteractionGameTimer)) {
                 continue;
             }
 
-            InteractionGameUpCounter counter = (InteractionGameUpCounter) item;
-
-            switch (this.action) {
-                case ACTION_START:
-                    counter.restartFromZero(room);
-                    break;
-                case ACTION_STOP:
-                    counter.stopCounter(room);
-                    break;
-                case ACTION_RESET:
-                    counter.resetCounter(room);
-                    break;
-                case ACTION_PAUSE:
-                    counter.pauseCounter(room);
-                    break;
-                case ACTION_RESUME:
-                    counter.resumeCounter(room);
-                    break;
+            if (item instanceof InteractionGameUpCounter) {
+                this.controlUpCounter((InteractionGameUpCounter) item, room);
+                continue;
             }
+
+            this.controlGameTimer((InteractionGameTimer) item, room);
+        }
+    }
+
+    private void controlUpCounter(InteractionGameUpCounter counter, Room room) {
+        switch (this.action) {
+            case ACTION_START:
+                counter.restartFromZero(room);
+                break;
+            case ACTION_STOP:
+                counter.stopCounter(room);
+                break;
+            case ACTION_RESET:
+                counter.resetCounter(room);
+                break;
+            case ACTION_PAUSE:
+                counter.pauseCounter(room);
+                break;
+            case ACTION_RESUME:
+                counter.resumeCounter(room);
+                break;
+        }
+    }
+
+    private void controlGameTimer(InteractionGameTimer timer, Room room) {
+        switch (this.action) {
+            case ACTION_START:
+                timer.startTimer(room);
+                break;
+            case ACTION_STOP:
+                this.stopGameTimer(timer, room, false);
+                break;
+            case ACTION_RESET:
+                this.stopGameTimer(timer, room, true);
+                break;
+            case ACTION_PAUSE:
+                timer.pauseTimer(room);
+                break;
+            case ACTION_RESUME:
+                timer.resumeTimer(room);
+                break;
+        }
+    }
+
+    private void stopGameTimer(InteractionGameTimer timer, Room room, boolean resetTime) {
+        boolean wasActive = timer.isRunning() || timer.isPaused();
+
+        timer.endGame(room);
+
+        if (resetTime) {
+            timer.setTimeNow(timer.getBaseTime());
+            timer.setExtradata(timer.getTimeNow() + "\t" + timer.getBaseTime());
+        }
+
+        room.updateItem(timer);
+        timer.needsUpdate(true);
+
+        if (wasActive) {
+            WiredManager.triggerGameEnds(room);
         }
     }
 
@@ -206,7 +252,7 @@ public class WiredEffectControlClock extends InteractionWiredEffect {
                 throw new WiredSaveException(String.format("Item %s not found", itemId));
             }
 
-            if (!(item instanceof InteractionGameUpCounter)) {
+            if (!(item instanceof InteractionGameTimer)) {
                 throw new WiredSaveException("wiredfurni.error.require_counter_furni");
             }
 

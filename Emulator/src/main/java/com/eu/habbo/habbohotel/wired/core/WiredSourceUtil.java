@@ -151,8 +151,20 @@ public final class WiredSourceUtil {
         selectorCtx.setIncludeWiredSelectorItems(originalCtx.includeWiredSelectorItems());
 
         List<InteractionWiredEffect> selectorEffects = getOrderedSelectorEffects(originalCtx, room, triggerItem);
+        executeSelectorEffects(selectorCtx, selectorEffects, false);
+        executeSelectorEffects(selectorCtx, selectorEffects, true);
 
+        applySelectionFilterExtras(room, triggerItem, selectorCtx);
+
+        return selectorCtx;
+    }
+
+    private static void executeSelectorEffects(WiredContext selectorCtx, List<InteractionWiredEffect> selectorEffects, boolean deferred) {
         for (InteractionWiredEffect effect : selectorEffects) {
+            if (effect == null || effect.usesExistingSelectorTargets() != deferred) {
+                continue;
+            }
+
             if (effect.requiresActor() && !selectorCtx.hasActor()) {
                 continue;
             }
@@ -163,10 +175,6 @@ public final class WiredSourceUtil {
             } catch (Exception ignored) {
             }
         }
-
-        applySelectionFilterExtras(room, triggerItem, selectorCtx);
-
-        return selectorCtx;
     }
 
     private static WiredContext cloneSelectorContext(WiredContext originalCtx, boolean includeWiredItems) {

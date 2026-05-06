@@ -34,6 +34,8 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
     private static final long DELIVERY_DEDUP_TTL_MS = 60_000L;
     private static final int DELIVERY_DEDUP_CLEANUP_THRESHOLD = 512;
     private static final ConcurrentHashMap<String, Long> DELIVERY_DEDUP = new ConcurrentHashMap<>();
+    private static final int DEFAULT_SHOW_MESSAGE_MAX_LENGTH = 200;
+    private static final int DEFAULT_SHOW_MESSAGE_MAX_LINES = 8;
 
     protected String message = "";
     protected int userSource = WiredSourceUtil.SOURCE_TRIGGER;
@@ -96,8 +98,11 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
 
         if(gameClient.getHabbo() == null || !gameClient.getHabbo().hasPermission(Permission.ACC_SUPERWIRED)) {
             message = Emulator.getGameEnvironment().getWordFilter().filter(message, null);
-            message = message.substring(0, Math.min(message.length(), Emulator.getConfig().getInt("hotel.wired.message.max_length", 100)));
         }
+
+        int maxLength = Emulator.getConfig().getInt("hotel.wired.show_message.max_length", DEFAULT_SHOW_MESSAGE_MAX_LENGTH);
+        int maxLines = Emulator.getConfig().getInt("hotel.wired.show_message.max_lines", DEFAULT_SHOW_MESSAGE_MAX_LINES);
+        message = clampMessage(message, maxLength, maxLines);
 
         int delay = settings.getDelay();
 
@@ -107,6 +112,35 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
         this.message = message;
         this.setDelay(delay);
         return true;
+    }
+
+    private static String clampMessage(String value, int maxLength, int maxLines) {
+        if (value == null || value.isEmpty()) {
+            return "";
+        }
+
+        int safeMaxLength = Math.max(1, maxLength);
+        int safeMaxLines = Math.max(1, maxLines);
+
+        String normalized = value.replace("\r\n", "\n").replace('\r', '\n');
+        String[] lines = normalized.split("\n", -1);
+
+        StringBuilder builder = new StringBuilder();
+        int linesToWrite = Math.min(lines.length, safeMaxLines);
+
+        for (int index = 0; index < linesToWrite; index++) {
+            if (builder.length() > 0) {
+                builder.append('\n');
+            }
+
+            builder.append(lines[index]);
+        }
+
+        if (builder.length() > safeMaxLength) {
+            builder.setLength(safeMaxLength);
+        }
+
+        return builder.toString();
     }
 
     protected List<RoomUnit> resolveUsers(WiredContext ctx) {
@@ -212,7 +246,9 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
                 }
 
                 String msg = buildMessage(ctx, (sharedSourceHabbo != null) ? sharedSourceHabbo : habbo);
-                habbo.getClient().sendResponse(new RoomUserWhisperComposer(new RoomChatMessage(msg, habbo, habbo, RoomChatMessageBubbles.getBubble(this.bubbleStyle))));
+                habbo.getClient().sendResponse(new RoomUserWhisperComposer(
+                        new RoomChatMessage(msg, habbo.getRoomUnit(), RoomChatMessageBubbles.getBubble(this.bubbleStyle))
+                ));
 
                 if (habbo.getRoomUnit().isIdle()) {
                     habbo.getRoomUnit().getRoom().unIdle(habbo);

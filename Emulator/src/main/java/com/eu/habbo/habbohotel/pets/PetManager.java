@@ -370,8 +370,14 @@ public class PetManager {
             } else {
                 try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
                     LOGGER.error("Missing petdata for type {}. Adding this to the database...", type);
-                    try (PreparedStatement statement = connection.prepareStatement("INSERT INTO pet_actions (pet_type) VALUES (?)")) {
+                    try (PreparedStatement statement = connection.prepareStatement("INSERT INTO pet_actions (pet_type, pet_name, offspring_type, happy_actions, tired_actions, random_actions, can_swim) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
                         statement.setInt(1, type);
+                        statement.setString(2, getFallbackPetName(type));
+                        statement.setInt(3, getFallbackOffspringType(type));
+                        statement.setString(4, "");
+                        statement.setString(5, "");
+                        statement.setString(6, "");
+                        statement.setString(7, "0");
                         statement.execute();
                     }
 
@@ -409,6 +415,42 @@ public class PetManager {
 
     public Collection<PetData> getPetData() {
         return this.petData.values();
+    }
+
+    private static String getFallbackPetName(int type) {
+        switch (type) {
+            case 0:
+                return "Dog";
+            case 1:
+                return "Cat";
+            case 2:
+                return "Crocodile";
+            case 3:
+                return "Terrier";
+            case 4:
+                return "Bear";
+            case 5:
+                return "Pig";
+            default:
+                return "pet_type_" + type;
+        }
+    }
+
+    private static int getFallbackOffspringType(int type) {
+        switch (type) {
+            case 0:
+                return 29;
+            case 1:
+                return 28;
+            case 3:
+                return 25;
+            case 4:
+                return 24;
+            case 5:
+                return 30;
+            default:
+                return -1;
+        }
     }
 
     public Pet createPet(Item item, String name, String race, String color, GameClient client) {

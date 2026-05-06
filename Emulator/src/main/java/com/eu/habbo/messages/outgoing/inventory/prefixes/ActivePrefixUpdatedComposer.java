@@ -22,8 +22,10 @@ public class ActivePrefixUpdatedComposer extends MessageComposer {
             this.response.appendString(this.prefix.getColor());
             this.response.appendString(this.prefix.getIcon());
             this.response.appendString(this.prefix.getEffect());
+            this.response.appendString(this.prefix.getFont());
         } else {
             this.response.appendInt(0);
+            this.response.appendString("");
             this.response.appendString("");
             this.response.appendString("");
             this.response.appendString("");

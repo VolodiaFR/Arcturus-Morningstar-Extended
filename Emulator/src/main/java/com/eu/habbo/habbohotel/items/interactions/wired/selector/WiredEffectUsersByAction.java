@@ -93,6 +93,11 @@ public class WiredEffectUsersByAction extends InteractionWiredEffect {
     }
 
     @Override
+    public boolean usesExistingSelectorTargets() {
+        return this.filterExisting;
+    }
+
+    @Override
     public String getWiredData() {
         return WiredManager.getGson().toJson(new JsonData(
                 this.selectedAction,

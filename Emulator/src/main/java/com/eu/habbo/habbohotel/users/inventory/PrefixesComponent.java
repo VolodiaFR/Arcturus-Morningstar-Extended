@@ -62,6 +62,15 @@ public class PrefixesComponent {
         return null;
     }
 
+    public UserPrefix getPrefixByCatalogId(int catalogPrefixId) {
+        synchronized (this.prefixes) {
+            for (UserPrefix prefix : this.prefixes) {
+                if (prefix.getCatalogPrefixId() == catalogPrefixId) return prefix;
+            }
+        }
+        return null;
+    }
+
     public void addPrefix(UserPrefix prefix) {
         synchronized (this.prefixes) {
             this.prefixes.add(prefix);

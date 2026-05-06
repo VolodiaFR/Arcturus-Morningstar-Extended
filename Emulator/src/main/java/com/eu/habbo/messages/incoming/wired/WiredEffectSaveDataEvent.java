@@ -9,6 +9,7 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.generic.alerts.UpdateFailedComposer;
+import com.eu.habbo.messages.outgoing.rooms.items.ItemStateComposer;
 import com.eu.habbo.messages.outgoing.wired.WiredSavedComposer;
 
 public class WiredEffectSaveDataEvent extends MessageHandler {
@@ -39,6 +40,16 @@ public class WiredEffectSaveDataEvent extends MessageHandler {
                     if (saved) {
                         this.client.sendResponse(new WiredSavedComposer());
                         if (effect != null) {
+                            if (effect.isSelector()) {
+                                if (effect.usesExistingSelectorTargets()) {
+                                    effect.setExtradata("3");
+                                    room.sendComposer(new ItemStateComposer(effect).compose());
+                                } else if ("3".equals(effect.getExtradata()) || "4".equals(effect.getExtradata()) || "5".equals(effect.getExtradata())) {
+                                    effect.setExtradata("0");
+                                    room.sendComposer(new ItemStateComposer(effect).compose());
+                                }
+                            }
+
                             effect.needsUpdate(true);
                             Emulator.getThreading().run(effect);
                         } else {
