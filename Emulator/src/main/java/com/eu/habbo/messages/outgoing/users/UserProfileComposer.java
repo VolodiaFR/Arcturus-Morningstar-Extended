@@ -116,6 +116,7 @@ public class UserProfileComposer extends MessageComposer {
         this.response.appendInt(this.habboInfo.getInfostandBg());
         this.response.appendInt(this.habboInfo.getInfostandStand());
         this.response.appendInt(this.habboInfo.getInfostandOverlay());
+        this.response.appendInt(this.habboInfo.getInfostandCardBg());
         UserCustomizationData customizationData = (this.habbo != null) ? UserCustomizationData.fromHabbo(this.habbo) : UserCustomizationData.fromUserId(this.habboInfo.getId());
         this.response.appendString(customizationData.nickIcon);
         this.response.appendString(customizationData.prefixText);

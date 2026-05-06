@@ -44,6 +44,7 @@ public class RoomUsersComposer extends MessageComposer {
             this.response.appendInt(this.habbo.getHabboInfo().getInfostandBg());
             this.response.appendInt(this.habbo.getHabboInfo().getInfostandStand());
             this.response.appendInt(this.habbo.getHabboInfo().getInfostandOverlay());
+            this.response.appendInt(this.habbo.getHabboInfo().getInfostandCardBg());
             this.response.appendString(this.habbo.getHabboInfo().getLook());
             this.response.appendInt(this.habbo.getRoomUnit().getId()); //Room Unit ID
             this.response.appendInt(this.habbo.getRoomUnit().getX());
@@ -87,6 +88,7 @@ public class RoomUsersComposer extends MessageComposer {
 					this.response.appendInt(habbo.getHabboInfo().getInfostandBg());
                     this.response.appendInt(habbo.getHabboInfo().getInfostandStand());
                     this.response.appendInt(habbo.getHabboInfo().getInfostandOverlay());
+                    this.response.appendInt(habbo.getHabboInfo().getInfostandCardBg());
                     this.response.appendString(habbo.getHabboInfo().getLook());
                     this.response.appendInt(habbo.getRoomUnit().getId()); //Room Unit ID
                     this.response.appendInt(habbo.getRoomUnit().getX());
@@ -128,6 +130,7 @@ public class RoomUsersComposer extends MessageComposer {
 			this.response.appendInt(0);
             this.response.appendInt(0);
             this.response.appendInt(0);
+            this.response.appendInt(0);
             this.response.appendString(this.bot.getFigure());
             this.response.appendInt(this.bot.getRoomUnit().getId());
             this.response.appendInt(this.bot.getRoomUnit().getX());
@@ -157,6 +160,7 @@ public class RoomUsersComposer extends MessageComposer {
                 this.response.appendInt(0 - bot.getId());
                 this.response.appendString(bot.getName());
                 this.response.appendString(bot.getMotto());
+				this.response.appendInt(0);
 				this.response.appendInt(0);
 				this.response.appendInt(0);
 				this.response.appendInt(0);

@@ -33,9 +33,11 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
     private static final String CHECK_EMAIL_PATH     = "/api/auth/check-email";
     private static final String CHECK_USERNAME_PATH  = "/api/auth/check-username";
     private static final String ROOM_TEMPLATES_PATH  = "/api/auth/room-templates";
+    private static final String NEWS_PATH            = "/api/auth/news";
     private static final String REMEMBER_PATH        = "/api/auth/remember";
     private static final String REFRESH_PATH         = "/api/auth/refresh";
     private static final String SERVER_KEY_PATH      = "/api/auth/server-key";
+    private static final String SSO_TOKEN_PATH       = "/api/auth/sso-token";
     private static final String HEALTH_PATH          = "/api/health";
 
     private static final Pattern USERNAME_RE = Pattern.compile("^[A-Za-z0-9._-]{3,32}$");
@@ -57,9 +59,11 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
                 && !path.equals(FORGOT_PATH) && !path.equals(LOGOUT_PATH)
                 && !path.equals(CHECK_EMAIL_PATH) && !path.equals(CHECK_USERNAME_PATH)
                 && !path.equals(ROOM_TEMPLATES_PATH)
+                && !path.equals(NEWS_PATH)
                 && !path.equals(REMEMBER_PATH)
                 && !path.equals(REFRESH_PATH)
                 && !path.equals(SERVER_KEY_PATH)
+                && !path.equals(SSO_TOKEN_PATH)
                 && !path.equals(HEALTH_PATH)) {
             super.channelRead(ctx, msg);
             return;
@@ -95,6 +99,22 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
                 return;
             }
             handleRoomTemplates(ctx, req);
+            return;
+        }
+
+        if (path.equals(NEWS_PATH)) {
+            if (req.method() != HttpMethod.GET && req.method() != HttpMethod.HEAD) {
+                sendJson(ctx, req, HttpResponseStatus.METHOD_NOT_ALLOWED, errorPayload("Use GET."));
+                return;
+            }
+            String ip = resolveClientIp(ctx, req);
+            if (!AuthRateLimiter.tryProbe(ip)) {
+                long secs = AuthRateLimiter.secondsUntilProbeReset(ip);
+                sendJson(ctx, req, HttpResponseStatus.TOO_MANY_REQUESTS,
+                        errorPayload("Too many requests. Try again in " + secs + "s."));
+                return;
+            }
+            handleNews(ctx, req);
             return;
         }
 
@@ -154,6 +174,10 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
         }
         if (path.equals(REFRESH_PATH)) {
             handleRefresh(ctx, req, body, ip);
+            return;
+        }
+        if (path.equals(SSO_TOKEN_PATH)) {
+            handleSsoToken(ctx, req, body, ip);
             return;
         }
 
@@ -325,9 +349,48 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
             ok.addProperty("rememberToken", rot.jwt);
             ok.addProperty("expiresAt", rot.expiresAt);
             ok.addProperty("rememberExpiresAt", rot.expiresAt);
+            AccessTokenService.Issued access = AccessTokenService.issue(rot.userId);
+            ok.addProperty("accessToken", access.token);
+            ok.addProperty("accessTokenExpiresAt", access.expiresAt);
             sendJson(ctx, req, HttpResponseStatus.OK, ok);
         } catch (Exception e) {
             LOGGER.error("Remember login failed", e);
+            sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
+        }
+    }
+
+    private void handleSsoToken(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body, String ip) {
+        String ssoTicket = readString(body, "ssoTicket").trim();
+        if (ssoTicket.isEmpty() || ssoTicket.length() > 128) {
+            AuthRateLimiter.recordFailure(ip);
+            sendJson(ctx, req, HttpResponseStatus.BAD_REQUEST, errorPayload("Missing or invalid ssoTicket."));
+            return;
+        }
+
+        try (Connection conn = Emulator.getDatabase().getDataSource().getConnection();
+             PreparedStatement lookup = conn.prepareStatement(
+                     "SELECT id, username FROM users WHERE auth_ticket = ? LIMIT 1")) {
+            lookup.setString(1, ssoTicket);
+            try (ResultSet rs = lookup.executeQuery()) {
+                if (!rs.next()) {
+                    AuthRateLimiter.recordFailure(ip);
+                    sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, errorPayload("SSO ticket not recognised."));
+                    return;
+                }
+                int userId = rs.getInt("id");
+                String username = rs.getString("username");
+
+                AuthRateLimiter.recordSuccess(ip);
+
+                AccessTokenService.Issued access = AccessTokenService.issue(userId);
+                JsonObject ok = new JsonObject();
+                ok.addProperty("username", username);
+                ok.addProperty("accessToken", access.token);
+                ok.addProperty("accessTokenExpiresAt", access.expiresAt);
+                sendJson(ctx, req, HttpResponseStatus.OK, ok);
+            }
+        } catch (Exception e) {
+            LOGGER.error("[auth/sso-token] lookup failed", e);
             sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
         }
     }
@@ -349,6 +412,9 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
             ok.addProperty("rememberToken", rot.jwt);
             ok.addProperty("expiresAt", rot.expiresAt);
             ok.addProperty("rememberExpiresAt", rot.expiresAt);
+            AccessTokenService.Issued access = AccessTokenService.issue(rot.userId);
+            ok.addProperty("accessToken", access.token);
+            ok.addProperty("accessTokenExpiresAt", access.expiresAt);
             sendJson(ctx, req, HttpResponseStatus.OK, ok);
         } catch (Exception e) {
             LOGGER.error("Refresh failed", e);
@@ -366,62 +432,85 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
             return;
         }
 
-        try (Connection conn = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement stmt = conn.prepareStatement(
-                     "SELECT id, username, password FROM users WHERE username = ? LIMIT 1")) {
-            stmt.setString(1, username);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (!rs.next()) {
-                    LOGGER.info("[auth/login] user not found username='{}' ip={}", username, ip);
-                    AuthRateLimiter.recordFailure(ip);
-                    sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED,
-                            errorPayload("Invalid Habbo name or password."));
+        try (Connection conn = Emulator.getDatabase().getDataSource().getConnection()) {
+            if (ip != null && !ip.isEmpty()) {
+                BanInfo ipBan = lookupIpBan(conn, ip);
+                if (ipBan != null) {
+                    LOGGER.info("[auth/login] ip ban hit ip={} type={} expires={}",
+                            ip, ipBan.type, ipBan.expiresAt);
+                    sendJson(ctx, req, HttpResponseStatus.FORBIDDEN, bannedPayload(ipBan));
                     return;
                 }
+            }
 
-                int userId = rs.getInt("id");
-                String stored = rs.getString("password");
-                String storedPreview = stored == null
-                        ? "<null>"
-                        : (stored.isEmpty() ? "<empty>" : stored.substring(0, Math.min(7, stored.length())) + "…(" + stored.length() + " chars)");
-
-                if (stored == null || stored.isEmpty() || !checkPassword(password, stored)) {
-                    LOGGER.info("[auth/login] password mismatch for user id={} username='{}' stored='{}'",
-                            userId, username, storedPreview);
-                    AuthRateLimiter.recordFailure(ip);
-                    sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED,
-                            errorPayload("Invalid Habbo name or password."));
-                    return;
-                }
-
-                String ssoTicket = mintSsoTicket();
-
-                try (PreparedStatement upd = conn.prepareStatement(
-                        "UPDATE users SET auth_ticket = ?, ip_current = ? WHERE id = ? LIMIT 1")) {
-                    upd.setString(1, ssoTicket);
-                    upd.setString(2, ip == null ? "" : ip);
-                    upd.setInt(3, userId);
-                    upd.executeUpdate();
-                }
-
-                String rememberToken = null;
-                if (rememberMe) {
-                    try {
-                        RememberJwtService.RotationResult issued = RememberJwtService.issueForNewFamily(
-                                conn, userId, rs.getString("username"), ip);
-                        rememberToken = issued.jwt;
-                    } catch (SQLException e) {
-                        LOGGER.error("Failed to issue remember-me JWT for userId=" + userId, e);
+            try (PreparedStatement stmt = conn.prepareStatement(
+                    "SELECT id, username, password FROM users WHERE username = ? LIMIT 1")) {
+                stmt.setString(1, username);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (!rs.next()) {
+                        LOGGER.info("[auth/login] user not found username='{}' ip={}", username, ip);
+                        AuthRateLimiter.recordFailure(ip);
+                        sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED,
+                                errorPayload("Invalid Habbo name or password."));
+                        return;
                     }
+
+                    int userId = rs.getInt("id");
+                    String stored = rs.getString("password");
+                    String storedPreview = stored == null
+                            ? "<null>"
+                            : (stored.isEmpty() ? "<empty>" : stored.substring(0, Math.min(7, stored.length())) + "…(" + stored.length() + " chars)");
+
+                    if (stored == null || stored.isEmpty() || !checkPassword(password, stored)) {
+                        LOGGER.info("[auth/login] password mismatch for user id={} username='{}' stored='{}'",
+                                userId, username, storedPreview);
+                        AuthRateLimiter.recordFailure(ip);
+                        sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED,
+                                errorPayload("Invalid Habbo name or password."));
+                        return;
+                    }
+
+                    BanInfo accountBan = lookupAccountBan(conn, userId);
+                    if (accountBan != null) {
+                        LOGGER.info("[auth/login] account ban hit userId={} type={} expires={}",
+                                userId, accountBan.type, accountBan.expiresAt);
+                        AuthRateLimiter.recordSuccess(ip);
+                        sendJson(ctx, req, HttpResponseStatus.FORBIDDEN, bannedPayload(accountBan));
+                        return;
+                    }
+
+                    String ssoTicket = mintSsoTicket();
+
+                    try (PreparedStatement upd = conn.prepareStatement(
+                            "UPDATE users SET auth_ticket = ?, ip_current = ? WHERE id = ? LIMIT 1")) {
+                        upd.setString(1, ssoTicket);
+                        upd.setString(2, ip == null ? "" : ip);
+                        upd.setInt(3, userId);
+                        upd.executeUpdate();
+                    }
+
+                    String rememberToken = null;
+                    if (rememberMe) {
+                        try {
+                            RememberJwtService.RotationResult issued = RememberJwtService.issueForNewFamily(
+                                    conn, userId, rs.getString("username"), ip);
+                            rememberToken = issued.jwt;
+                        } catch (SQLException e) {
+                            LOGGER.error("Failed to issue remember-me JWT for userId=" + userId, e);
+                        }
+                    }
+
+                    AuthRateLimiter.recordSuccess(ip);
+
+                    JsonObject ok = new JsonObject();
+                    ok.addProperty("ssoTicket", ssoTicket);
+                    ok.addProperty("username", rs.getString("username"));
+                    if (rememberToken != null) ok.addProperty("rememberToken", rememberToken);
+                    AccessTokenService.Issued access = AccessTokenService.issue(userId);
+                    ok.addProperty("accessToken", access.token);
+                    ok.addProperty("accessTokenExpiresAt", access.expiresAt);
+                    sendJson(ctx, req, HttpResponseStatus.OK, ok);
                 }
-
-                AuthRateLimiter.recordSuccess(ip);
-
-                JsonObject ok = new JsonObject();
-                ok.addProperty("ssoTicket", ssoTicket);
-                ok.addProperty("username", rs.getString("username"));
-                if (rememberToken != null) ok.addProperty("rememberToken", rememberToken);
-                sendJson(ctx, req, HttpResponseStatus.OK, ok);
             }
         } catch (Exception e) {
             LOGGER.error("Login query failed for username=" + username, e);
@@ -664,6 +753,76 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
         sendJson(ctx, req, HttpResponseStatus.OK, res);
     }
 
+    private static final long NEWS_CACHE_TTL_MS = 30_000L;
+    private static final int NEWS_IMAGE_MAX_BYTES = 512 * 1024;
+    private static volatile NewsCacheEntry NEWS_CACHE = null;
+
+    private static final class NewsCacheEntry {
+        final byte[] jsonBytes;
+        final long expiresAt;
+        NewsCacheEntry(byte[] j, long e) { jsonBytes = j; expiresAt = e; }
+    }
+
+    private void handleNews(ChannelHandlerContext ctx, FullHttpRequest req) {
+        long now = System.currentTimeMillis();
+        NewsCacheEntry cached = NEWS_CACHE;
+
+        if (cached == null || cached.expiresAt < now) {
+            JsonArray items = new JsonArray();
+            int limit = Math.max(1, Math.min(20, Emulator.getConfig().getInt("login.news.limit", 5)));
+            try (Connection conn = Emulator.getDatabase().getDataSource().getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(
+                         "SELECT id, title, body, image, link_text, link_url " +
+                                 "FROM ui_news WHERE enabled = 1 " +
+                                 "ORDER BY sort_order ASC, id DESC LIMIT ?")) {
+                stmt.setInt(1, limit);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        int id = rs.getInt("id");
+                        JsonObject n = new JsonObject();
+                        n.addProperty("id", id);
+                        n.addProperty("title", rs.getString("title"));
+                        n.addProperty("body", rs.getString("body"));
+
+                        String image = rs.getString("image");
+                        if (image != null && image.length() > NEWS_IMAGE_MAX_BYTES) {
+                            LOGGER.warn("ui_news id={} image is {} bytes (>{}KB cap), omitting in response",
+                                    id, image.length(), NEWS_IMAGE_MAX_BYTES / 1024);
+                            image = null;
+                        }
+                        n.addProperty("image", image); // gson encodes null as JSON null
+
+                        n.addProperty("linkText", rs.getString("link_text"));
+                        n.addProperty("linkUrl", rs.getString("link_url"));
+                        items.add(n);
+                    }
+                }
+            } catch (Exception e) {
+                LOGGER.error("ui_news list failed", e);
+                sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
+                return;
+            }
+
+            JsonObject res = new JsonObject();
+            res.add("news", items);
+            byte[] bytes = res.toString().getBytes(StandardCharsets.UTF_8);
+            cached = new NewsCacheEntry(bytes, now + NEWS_CACHE_TTL_MS);
+            NEWS_CACHE = cached;
+        }
+
+        FullHttpResponse response = new DefaultFullHttpResponse(
+                HttpVersion.HTTP_1_1, HttpResponseStatus.OK,
+                Unpooled.wrappedBuffer(cached.jsonBytes));
+        response.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json; charset=utf-8");
+        response.headers().setInt(HttpHeaderNames.CONTENT_LENGTH, cached.jsonBytes.length);
+        response.headers().set(HttpHeaderNames.CACHE_CONTROL, "public, max-age=30");
+        applyCors(req, response);
+        boolean keepAlive = isKeepAlive(req);
+        if (keepAlive) response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
+        var future = ctx.writeAndFlush(response);
+        if (!keepAlive) future.addListener(ChannelFutureListener.CLOSE);
+    }
+
     private void handleServerKey(ChannelHandlerContext ctx, FullHttpRequest req) {
         try {
             JsonObject ok = new JsonObject();
@@ -804,6 +963,74 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
         }
 
         sendJson(ctx, req, HttpResponseStatus.OK, ok);
+    }
+
+    private static final long PERMANENT_BAN_THRESHOLD_SECONDS = 30L * 365L * 24L * 60L * 60L;
+
+    private static final class BanInfo {
+        final String type;
+        final String reason;
+        final int expiresAt;
+
+        BanInfo(String type, String reason, int expiresAt) {
+            this.type = type == null ? "account" : type;
+            this.reason = reason == null ? "" : reason;
+            this.expiresAt = expiresAt;
+        }
+
+        boolean isPermanent() {
+            return (long) expiresAt - Emulator.getIntUnixTimestamp() > PERMANENT_BAN_THRESHOLD_SECONDS;
+        }
+    }
+
+    private static BanInfo lookupAccountBan(Connection conn, int userId) throws SQLException {
+        try (PreparedStatement stmt = conn.prepareStatement(
+                "SELECT ban_expire, ban_reason, type FROM bans " +
+                        "WHERE user_id = ? AND ban_expire >= ? AND (type = 'account' OR type = 'super') " +
+                        "ORDER BY ban_expire DESC LIMIT 1")) {
+            stmt.setInt(1, userId);
+            stmt.setInt(2, Emulator.getIntUnixTimestamp());
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return new BanInfo(rs.getString("type"), rs.getString("ban_reason"), rs.getInt("ban_expire"));
+                }
+            }
+        }
+        return null;
+    }
+
+    private static BanInfo lookupIpBan(Connection conn, String ip) throws SQLException {
+        try (PreparedStatement stmt = conn.prepareStatement(
+                "SELECT ban_expire, ban_reason, type FROM bans " +
+                        "WHERE ip = ? AND ban_expire >= ? AND (type = 'ip' OR type = 'super') " +
+                        "ORDER BY ban_expire DESC LIMIT 1")) {
+            stmt.setString(1, ip);
+            stmt.setInt(2, Emulator.getIntUnixTimestamp());
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return new BanInfo(rs.getString("type"), rs.getString("ban_reason"), rs.getInt("ban_expire"));
+                }
+            }
+        }
+        return null;
+    }
+
+    private static JsonObject bannedPayload(BanInfo ban) {
+        boolean permanent = ban.isPermanent();
+        String message = permanent
+                ? "Your account has been permanently banned."
+                : "Your account is temporarily banned.";
+
+        JsonObject details = new JsonObject();
+        details.addProperty("type", ban.type);
+        details.addProperty("reason", ban.reason);
+        details.addProperty("permanent", permanent);
+        if (!permanent) details.addProperty("expiresAt", ban.expiresAt);
+
+        JsonObject obj = new JsonObject();
+        obj.addProperty("error", message);
+        obj.add("ban", details);
+        return obj;
     }
 
     private static boolean checkPassword(String plain, String stored) {
