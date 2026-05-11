@@ -299,10 +299,18 @@ public class NitroSecureAssetHandler extends ChannelInboundHandlerAdapter {
         String origin = req.headers().get(HttpHeaderNames.ORIGIN);
         if (origin != null && !origin.isEmpty()) {
             response.headers().set("Access-Control-Allow-Origin", origin);
-            response.headers().set("Vary", "Origin");
         }
         response.headers().set("Access-Control-Allow-Methods", "GET, HEAD, POST, OPTIONS");
-        response.headers().set("Access-Control-Allow-Headers", "Content-Type, X-Nitro-Key");
+
+        String requestedHeaders = req.headers().get("Access-Control-Request-Headers");
+        if (requestedHeaders != null && !requestedHeaders.isEmpty()) {
+            response.headers().set("Access-Control-Allow-Headers", requestedHeaders);
+        } else {
+            response.headers().set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Nitro-Key");
+        }
+
+        response.headers().set("Vary", "Origin, Access-Control-Request-Headers, Access-Control-Request-Method");
+        response.headers().set("Access-Control-Max-Age", "600");
         response.headers().set("Access-Control-Expose-Headers", "X-Nitro-Sec, X-Nitro-Key-Fp, X-Nitro-Derive-Fp");
     }
 
