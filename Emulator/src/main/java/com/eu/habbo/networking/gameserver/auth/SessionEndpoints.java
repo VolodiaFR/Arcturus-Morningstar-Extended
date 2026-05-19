@@ -50,7 +50,7 @@ final class SessionEndpoints {
 
             if (ssoTicket != null && !ssoTicket.isEmpty()) {
                 try (PreparedStatement lookup = conn.prepareStatement(
-                        "SELECT id FROM users WHERE auth_ticket = ? LIMIT 1")) {
+                        "SELECT id FROM users WHERE auth_ticket = ? AND (auth_ticket_expires_at IS NULL OR auth_ticket_expires_at >= NOW()) LIMIT 1")) {
                     lookup.setString(1, ssoTicket);
                     try (ResultSet rs = lookup.executeQuery()) {
                         if (rs.next()) userId = rs.getInt("id");
@@ -134,7 +134,7 @@ final class SessionEndpoints {
 
         try (Connection conn = Emulator.getDatabase().getDataSource().getConnection();
              PreparedStatement lookup = conn.prepareStatement(
-                     "SELECT id, username FROM users WHERE auth_ticket = ? LIMIT 1")) {
+                     "SELECT id, username FROM users WHERE auth_ticket = ? AND (auth_ticket_expires_at IS NULL OR auth_ticket_expires_at >= NOW()) LIMIT 1")) {
             lookup.setString(1, ssoTicket);
             try (ResultSet rs = lookup.executeQuery()) {
                 if (!rs.next()) {

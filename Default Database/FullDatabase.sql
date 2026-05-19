@@ -30682,6 +30682,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `points` int(11) NOT NULL DEFAULT 10,
   `online` enum('0','1','2') CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT '0',
   `auth_ticket` varchar(256) CHARACTER SET latin1 COLLATE latin1_swedish_ci NOT NULL DEFAULT '',
+  `auth_ticket_expires_at` timestamp NULL DEFAULT NULL,
   `remember_token_hash` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT '',
   `remember_token_expires_at` int(11) unsigned NOT NULL DEFAULT 0,
   `ip_register` varchar(45) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,

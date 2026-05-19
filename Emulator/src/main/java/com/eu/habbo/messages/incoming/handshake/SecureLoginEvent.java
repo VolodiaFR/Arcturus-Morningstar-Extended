@@ -104,7 +104,7 @@ public class SecureLoginEvent extends MessageHandler {
             // First, look up the user ID to check for ghost sessions
             int lookupUserId = 0;
             try (java.sql.Connection conn = Emulator.getDatabase().getDataSource().getConnection();
-                 java.sql.PreparedStatement stmt = conn.prepareStatement("SELECT id FROM users WHERE auth_ticket = ? LIMIT 1")) {
+                 java.sql.PreparedStatement stmt = conn.prepareStatement("SELECT id FROM users WHERE auth_ticket = ? AND (auth_ticket_expires_at IS NULL OR auth_ticket_expires_at >= NOW()) LIMIT 1")) {
                 stmt.setString(1, sso);
                 try (java.sql.ResultSet rs = stmt.executeQuery()) {
                     if (rs.next()) {
