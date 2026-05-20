@@ -651,6 +651,10 @@ public class ModToolManager {
             sender.getClient().sendResponse(new ModToolIssueHandledComposer(ModToolIssueHandledComposer.ABUSIVE));
         }
 
+        // Reporter (the user who opened the CFH) gets their abusive
+        // counter bumped — the legacy stat shown in the User Info table.
+        bumpUserSettingCounter(issue.senderId, "cfh_abusive");
+
         this.updateTicketToMods(issue);
 
         this.removeTicket(issue);
@@ -736,5 +740,39 @@ public class ModToolManager {
         }
 
         return issues;
+    }
+
+    /**
+     * Increments a single integer counter on `users_settings` for the
+     * given user. Used by the moderation sanction handlers to bump the
+     * legacy counters that `ModToolUserInfoComposer` surfaces (cfh_warnings,
+     * cfh_bans, cfh_abusive, tradelock_amount) — historically these were
+     * only ever incremented by the CFH submission path, so a user could
+     * accumulate any number of bans/mutes without the User Info table
+     * reflecting it.
+     *
+     * Restricted to a whitelisted column name to keep the dynamic SQL
+     * safe; the caller passes a Permission-style constant.
+     */
+    public static void bumpUserSettingCounter(int userId, String column) {
+        switch (column) {
+            case "cfh_warnings":
+            case "cfh_bans":
+            case "cfh_abusive":
+            case "tradelock_amount":
+                break;
+            default:
+                LOGGER.warn("Refusing to bump unrecognized user_settings column: {}", column);
+                return;
+        }
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                 "UPDATE users_settings SET " + column + " = " + column + " + 1 WHERE user_id = ?")) {
+            statement.setInt(1, userId);
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception bumping {} for user {}", column, userId, e);
+        }
     }
 }

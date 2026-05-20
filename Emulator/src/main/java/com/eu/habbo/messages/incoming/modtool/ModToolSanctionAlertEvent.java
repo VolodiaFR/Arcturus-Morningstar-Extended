@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.modtool;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.modtool.ModToolManager;
 import com.eu.habbo.habbohotel.modtool.ModToolSanctionItem;
 import com.eu.habbo.habbohotel.modtool.ModToolSanctions;
 import com.eu.habbo.habbohotel.permissions.Permission;
@@ -47,6 +48,8 @@ public class ModToolSanctionAlertEvent extends MessageHandler {
                 } else {
                     habbo.alert(message);
                 }
+
+                ModToolManager.bumpUserSettingCounter(userId, "cfh_warnings");
             } else {
                 this.client.sendResponse(new ModToolIssueHandledComposer(Emulator.getTexts().getValue("generic.user.not_found").replace("%user%", Emulator.getConfig().getValue("hotel.player.name"))));
             }
