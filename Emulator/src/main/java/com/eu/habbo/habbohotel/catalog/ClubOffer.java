@@ -72,7 +72,11 @@ public class ClubOffer implements ISerialize {
         this.type = OfferType.fromDatabase(set.getString("type"));
         this.vip = this.type == OfferType.VIP;
         this.deal = set.getString("deal").equals("1");
-        this.giftable = set.getString("giftable").equals("1");
+        boolean giftable = false;
+        try {
+            giftable = "1".equals(set.getString("giftable"));
+        } catch (SQLException ignored) {}
+        this.giftable = giftable;
     }
 
     public int getId() {

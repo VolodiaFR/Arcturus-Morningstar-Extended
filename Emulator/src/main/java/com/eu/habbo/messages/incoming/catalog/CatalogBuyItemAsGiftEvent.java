@@ -2,10 +2,8 @@ package com.eu.habbo.messages.incoming.catalog;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.achievements.AchievementManager;
-import com.eu.habbo.habbohotel.catalog.CatalogItem;
-import com.eu.habbo.habbohotel.catalog.CatalogLimitedConfiguration;
-import com.eu.habbo.habbohotel.catalog.CatalogManager;
-import com.eu.habbo.habbohotel.catalog.CatalogPage;
+import com.eu.habbo.habbohotel.catalog.*;
+import com.eu.habbo.habbohotel.catalog.layouts.*;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.*;
@@ -14,6 +12,7 @@ import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboBadge;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.users.subscriptions.Subscription;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.catalog.*;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
@@ -22,16 +21,14 @@ import com.eu.habbo.messages.outgoing.generic.alerts.GenericAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.HotelWillCloseInMinutesComposer;
 import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
+import com.eu.habbo.messages.outgoing.users.UserClubComposer;
 import com.eu.habbo.threading.runnables.ShutdownEmulator;
 import gnu.trove.map.hash.THashMap;
 import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.Calendar;
 
 public class CatalogBuyItemAsGiftEvent extends MessageHandler {
@@ -81,6 +78,12 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                 );
 
                 int userId = 0;
+
+                CatalogPage clubGiftPage = Emulator.getGameEnvironment().getCatalogManager().catalogPages.get(pageId);
+                if (this.isClubOfferPage(clubGiftPage)) {
+                    this.handleClubOfferGift(clubGiftPage, itemId, username);
+                    return;
+                }
 
                 if (!Emulator.getGameEnvironment().getCatalogManager().giftWrappers.containsKey(spriteId)
                         && !Emulator.getGameEnvironment().getCatalogManager().giftFurnis.containsKey(spriteId)) {
@@ -552,6 +555,168 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
         } else {
             LOGGER.error("DEBUG GIFT: cooldown blocked purchase");
             this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+        }
+    }
+
+    private boolean isClubOfferPage(CatalogPage page) {
+        return page instanceof ClubBuyLayout
+                || page instanceof VipBuyLayout
+                || page instanceof BuildersClubFrontPageLayout
+                || page instanceof BuildersClubAddonsLayout
+                || page instanceof BuildersClubLoyaltyLayout;
+    }
+
+    private int getClubOfferWindowId(CatalogPage page) {
+        if (page instanceof BuildersClubAddonsLayout) {
+            return ClubOffer.WINDOW_BUILDERS_CLUB_ADDONS;
+        }
+
+        if (page instanceof BuildersClubFrontPageLayout || page instanceof BuildersClubLoyaltyLayout) {
+            return ClubOffer.WINDOW_BUILDERS_CLUB;
+        }
+
+        return ClubOffer.WINDOW_HABBO_CLUB;
+    }
+
+    private void handleClubOfferGift(CatalogPage page, int offerId, String username) {
+        ClubOffer offer = Emulator.getGameEnvironment().getCatalogManager().clubOffers.get(offerId);
+
+        if (offer == null || !offer.belongsToWindow(this.getClubOfferWindowId(page))) {
+            this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+            return;
+        }
+
+        if (!offer.isGiftable()) {
+            this.client.sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+            return;
+        }
+
+        if (offer.isBuildersClubAddon()) {
+            this.client.sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+            return;
+        }
+
+        int totalCredits = offer.getCredits();
+        int totalPoints = offer.getPoints();
+
+        if (totalCredits > this.client.getHabbo().getHabboInfo().getCredits()
+                || totalPoints > this.client.getHabbo().getHabboInfo().getCurrencyAmount(offer.getPointsType())) {
+            this.client.sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+            return;
+        }
+
+        Habbo recipient = Emulator.getGameEnvironment().getHabboManager().getHabbo(username);
+        int recipientId = 0;
+
+        if (recipient != null) {
+            recipientId = recipient.getHabboInfo().getId();
+        } else {
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                 PreparedStatement statement = connection.prepareStatement("SELECT id FROM users WHERE username = ?")) {
+                statement.setString(1, username);
+                try (ResultSet set = statement.executeQuery()) {
+                    if (set.next()) recipientId = set.getInt(1);
+                }
+            } catch (SQLException e) {
+                LOGGER.error("Caught SQL exception while resolving club gift recipient", e);
+            }
+        }
+
+        if (recipientId == 0) {
+            this.client.sendResponse(new GiftReceiverNotFoundComposer());
+            return;
+        }
+
+        if (recipientId == this.client.getHabbo().getHabboInfo().getId()) {
+            this.client.sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+            return;
+        }
+
+        String subscriptionType = offer.isBuildersClubSubscription() ? Subscription.BUILDERS_CLUB : Subscription.HABBO_CLUB;
+        int duration = offer.getDays() * 86400;
+
+        boolean extended;
+        if (recipient != null) {
+            extended = (recipient.getHabboStats().createSubscription(subscriptionType, duration) != null);
+        } else {
+            extended = this.extendOfflineSubscription(recipientId, subscriptionType, duration);
+        }
+
+        if (!extended) {
+            this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+            return;
+        }
+
+        if (totalCredits > 0 && !this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_CREDITS)) {
+            this.client.getHabbo().giveCredits(-totalCredits);
+        }
+
+        if (totalPoints > 0) {
+            if (offer.getPointsType() == 0 && !this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_PIXELS)) {
+                this.client.getHabbo().givePixels(-totalPoints);
+            } else if (!this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_POINTS)) {
+                this.client.getHabbo().givePoints(offer.getPointsType(), -totalPoints);
+            }
+        }
+
+        if (recipient != null) {
+            recipient.getClient().sendResponse(new UserClubComposer(recipient, subscriptionType, UserClubComposer.RESPONSE_TYPE_NORMAL));
+
+            String prefix = Emulator.getTexts().getValue("prereg.reward.you.received", "You have received:");
+            String daysWord = Emulator.getTexts().getValue("generic.days", "days");
+            String clubLabel = offer.isBuildersClubSubscription() ? "Builders Club" : "HC";
+            String giftDescription = clubLabel + " (" + offer.getDays() + " " + daysWord + ")";
+            THashMap<String, String> keys = new THashMap<>();
+            keys.put("display", "BUBBLE");
+            keys.put("image", "${image.library.url}notifications/gift.gif");
+            keys.put("message", prefix + " " + giftDescription);
+            recipient.getClient().sendResponse(new BubbleAlertComposer(BubbleAlertKeys.RECEIVED_GIFT.key, keys));
+        }
+
+        if (this.client.getHabbo().getHabboInfo().getId() != recipientId) {
+            AchievementManager.progressAchievement(
+                    this.client.getHabbo(),
+                    Emulator.getGameEnvironment().getAchievementManager().getAchievement("GiftGiver")
+            );
+        }
+
+        this.client.sendResponse(new PurchaseOKComposer(null));
+    }
+
+    private boolean extendOfflineSubscription(int userId, String subscriptionType, int duration) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            try (PreparedStatement select = connection.prepareStatement(
+                    "SELECT id, duration FROM users_subscriptions WHERE user_id = ? AND subscription_type = ? AND active = 1 ORDER BY id DESC LIMIT 1")) {
+                select.setInt(1, userId);
+                select.setString(2, subscriptionType);
+                try (ResultSet set = select.executeQuery()) {
+                    if (set.next()) {
+                        int subId = set.getInt("id");
+                        int existing = set.getInt("duration");
+                        try (PreparedStatement update = connection.prepareStatement(
+                                "UPDATE users_subscriptions SET duration = ? WHERE id = ?")) {
+                            update.setInt(1, existing + duration);
+                            update.setInt(2, subId);
+                            update.executeUpdate();
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            try (PreparedStatement insert = connection.prepareStatement(
+                    "INSERT INTO users_subscriptions (user_id, subscription_type, timestamp_start, duration, active) VALUES (?, ?, ?, ?, 1)",
+                    Statement.RETURN_GENERATED_KEYS)) {
+                insert.setInt(1, userId);
+                insert.setString(2, subscriptionType);
+                insert.setInt(3, Emulator.getIntUnixTimestamp());
+                insert.setInt(4, duration);
+                insert.executeUpdate();
+                return true;
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception while extending offline subscription", e);
+            return false;
         }
     }
 }
