@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.modtool;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.modtool.ModToolManager;
 import com.eu.habbo.habbohotel.modtool.ModToolSanctionItem;
 import com.eu.habbo.habbohotel.modtool.ModToolSanctionLevelItem;
 import com.eu.habbo.habbohotel.modtool.ModToolSanctions;
@@ -59,6 +60,8 @@ public class ModToolSanctionMuteEvent extends MessageHandler {
                     habbo.alert(message);
                     this.client.getHabbo().whisper(Emulator.getTexts().getValue("commands.succes.cmd_mute.muted").replace("%user%", habbo.getHabboInfo().getUsername()));
                 }
+
+                ModToolManager.bumpUserSettingCounter(userId, "cfh_warnings");
             } else {
                 this.client.sendResponse(new ModToolIssueHandledComposer(Emulator.getTexts().getValue("generic.user.not_found").replace("%user%", Emulator.getConfig().getValue("hotel.player.name"))));
             }
