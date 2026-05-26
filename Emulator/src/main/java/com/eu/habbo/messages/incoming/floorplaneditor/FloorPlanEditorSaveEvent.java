@@ -15,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.StringJoiner;
 import java.util.regex.Pattern;
@@ -27,7 +26,7 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
     public static int MAXIMUM_FLOORPLAN_SIZE = 64 * 64;
 
     private static final int SAVE_COOLDOWN_SECONDS = 3;
-    private static final Pattern ALLOWED_MAP_CHARS = Pattern.compile("[a-qA-Q0-9xX\r]+");
+    private static final Pattern ALLOWED_MAP_CHARS = Pattern.compile("[a-zA-Z0-9\r]+");
 
     @Override
     public int getRatelimit() {
@@ -135,6 +134,8 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
 
         THashSet<RoomTile> locked_tileList = room.getLockedTiles();
         THashSet<RoomTile> new_tileList = new THashSet<>();
+        int blockedX = -1;
+        int blockedY = -1;
         blockingRoomItemScan:
         for (int y = 0; y < mapRows.length; y++) {
             for (int x = 0; x < firstRowSize; x++) {
@@ -145,7 +146,8 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
                 short height;
 
                 if (square.equalsIgnoreCase("x") && room.getTopItemAt(x, y) != null) {
-                    errors.add("${notification.floorplan_editor.error.message.change_blocked_by_room_item}");
+                    blockedX = x;
+                    blockedY = y;
                     break blockingRoomItemScan;
                 }
 
@@ -155,30 +157,36 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
                     } else if (Emulator.isNumeric(square)) {
                         height = Short.parseShort(square);
                     } else {
-                        int idx = "abcdefghijklmnopq".indexOf(square.toLowerCase());
+                        int idx = "abcdefghijklmnopqrstuvwxyz".indexOf(square.toLowerCase());
                         if (idx < 0) {
                             return;
                         }
-                        height = (short) (10 + idx);
+                        height = (short) Math.min(26, 10 + idx);
                     }
                 } catch (NumberFormatException e) {
                     return;
                 }
 
                 if (tile != null && tile.state != RoomTileState.INVALID && height != tile.z && room.getTopItemAt(x, y) != null) {
-                    errors.add("${notification.floorplan_editor.error.message.change_blocked_by_room_item}");
+                    blockedX = x;
+                    blockedY = y;
                     break blockingRoomItemScan;
                 }
             }
         }
 
-        locked_tileList.removeAll(new_tileList);
-        if (!locked_tileList.isEmpty()) {
-            errors.add("${notification.floorplan_editor.error.message.change_blocked_by_room_item}");
+        if (blockedX < 0) {
+            locked_tileList.removeAll(new_tileList);
+            if (!locked_tileList.isEmpty()) {
+                RoomTile first = locked_tileList.iterator().next();
+                blockedX = first.x;
+                blockedY = first.y;
+            }
         }
 
-        if (errors.length() > 0) {
-            this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FLOORPLAN_EDITOR_ERROR.key, errors.toString()));
+        if (blockedX >= 0) {
+            this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FLOORPLAN_EDITOR_ERROR.key,
+                    "${notification.floorplan_editor.error.message.change_blocked_by_room_item} (" + blockedX + ", " + blockedY + ")"));
             return;
         }
 
