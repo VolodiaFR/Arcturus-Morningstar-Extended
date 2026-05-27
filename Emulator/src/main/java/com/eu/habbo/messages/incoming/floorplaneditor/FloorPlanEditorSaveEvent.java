@@ -4,19 +4,20 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.*;
 import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
 import com.eu.habbo.messages.outgoing.generic.alerts.GenericAlertComposer;
+import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
+import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.rooms.ForwardToRoomComposer;
 import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.StringJoiner;
+import java.util.*;
 import java.util.regex.Pattern;
 
 public class FloorPlanEditorSaveEvent extends MessageHandler {
@@ -26,6 +27,7 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
     public static int MAXIMUM_FLOORPLAN_SIZE = 64 * 64;
 
     private static final int SAVE_COOLDOWN_SECONDS = 3;
+    private static final int MAX_AUTO_PICKUP_ITEMS = 500;
     private static final Pattern ALLOWED_MAP_CHARS = Pattern.compile("[a-zA-Z0-9\r]+");
 
     @Override
@@ -127,6 +129,11 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
             errors.add("${notification.floorplan_editor.error.message.invalid_walls_fixed_height}");
         }
 
+        boolean autoPickup = false;
+        if (this.packet.bytesAvailable() >= 1) {
+            autoPickup = this.packet.readBoolean();
+        }
+
         if (errors.length() > 0) {
             this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FLOORPLAN_EDITOR_ERROR.key, errors.toString()));
             return;
@@ -134,6 +141,7 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
 
         THashSet<RoomTile> locked_tileList = room.getLockedTiles();
         THashSet<RoomTile> new_tileList = new THashSet<>();
+        THashSet<HabboItem> itemsToPickup = new THashSet<>();
         int blockedX = -1;
         int blockedY = -1;
         blockingRoomItemScan:
@@ -146,6 +154,11 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
                 short height;
 
                 if (square.equalsIgnoreCase("x") && room.getTopItemAt(x, y) != null) {
+                    if (autoPickup) {
+                        THashSet<HabboItem> here = room.getItemsAt(x, y);
+                        if (here != null) itemsToPickup.addAll(here);
+                        continue;
+                    }
                     blockedX = x;
                     blockedY = y;
                     break blockingRoomItemScan;
@@ -168,6 +181,11 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
                 }
 
                 if (tile != null && tile.state != RoomTileState.INVALID && height != tile.z && room.getTopItemAt(x, y) != null) {
+                    if (autoPickup) {
+                        THashSet<HabboItem> here = room.getItemsAt(x, y);
+                        if (here != null) itemsToPickup.addAll(here);
+                        continue;
+                    }
                     blockedX = x;
                     blockedY = y;
                     break blockingRoomItemScan;
@@ -178,9 +196,16 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
         if (blockedX < 0) {
             locked_tileList.removeAll(new_tileList);
             if (!locked_tileList.isEmpty()) {
-                RoomTile first = locked_tileList.iterator().next();
-                blockedX = first.x;
-                blockedY = first.y;
+                if (autoPickup) {
+                    for (RoomTile lt : locked_tileList) {
+                        THashSet<HabboItem> here = room.getItemsAt(lt.x, lt.y);
+                        if (here != null) itemsToPickup.addAll(here);
+                    }
+                } else {
+                    RoomTile first = locked_tileList.iterator().next();
+                    blockedX = first.x;
+                    blockedY = first.y;
+                }
             }
         }
 
@@ -188,6 +213,35 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
             this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FLOORPLAN_EDITOR_ERROR.key,
                     "${notification.floorplan_editor.error.message.change_blocked_by_room_item} (" + blockedX + ", " + blockedY + ")"));
             return;
+        }
+
+        if (autoPickup && !itemsToPickup.isEmpty()) {
+            if (itemsToPickup.size() > MAX_AUTO_PICKUP_ITEMS) {
+                LOGGER.warn("Floorplan auto-pickup rejected (over cap): user={} room={} itemCount={} cap={}",
+                        this.client.getHabbo().getHabboInfo().getId(), room.getId(), itemsToPickup.size(), MAX_AUTO_PICKUP_ITEMS);
+                this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FLOORPLAN_EDITOR_ERROR.key,
+                        "Too many items would be picked up (" + itemsToPickup.size() + " > " + MAX_AUTO_PICKUP_ITEMS + "). Remove some furniture manually and save again."));
+                return;
+            }
+
+            Map<Integer, ArrayList<HabboItem>> byOwner = new HashMap<>();
+            for (HabboItem itm : itemsToPickup) {
+                if (itm == null) continue;
+                byOwner.computeIfAbsent(itm.getUserId(), k -> new ArrayList<>()).add(itm);
+                room.pickUpItem(itm, null);
+            }
+
+            for (Map.Entry<Integer, ArrayList<HabboItem>> entry : byOwner.entrySet()) {
+                Habbo owner = Emulator.getGameEnvironment().getHabboManager().getHabbo(entry.getKey());
+                if (owner == null) continue;
+                for (HabboItem itm : entry.getValue()) {
+                    owner.getClient().sendResponse(new AddHabboItemComposer(itm));
+                }
+                owner.getClient().sendResponse(new InventoryRefreshComposer());
+            }
+
+            LOGGER.info("Floorplan auto-pickup: user={} room={} itemCount={} owners={}",
+                    this.client.getHabbo().getHabboInfo().getId(), room.getId(), itemsToPickup.size(), byOwner.size());
         }
 
         RoomLayout layout = room.getLayout();
