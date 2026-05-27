@@ -176,6 +176,15 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                     CatalogItem item = page.getCatalogItem(itemId);
 
                     if (item == null) {
+                        for (CatalogItem candidate : page.getCatalogItems().valueCollection()) {
+                            if (candidate != null && candidate.getOfferId() == itemId) {
+                                item = candidate;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (item == null) {
                         LOGGER.debug("catalog item null -> {}", itemId);
                         this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
                         return;
