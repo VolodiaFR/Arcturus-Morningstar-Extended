@@ -600,5 +600,7 @@ public class Outgoing {
     public static final int WheelResultComposer = 9402;
     public static final int WheelRecentWinsComposer = 9403;
     public static final int WheelAdminPrizesComposer = 9404;
+    public static final int SoundboardSettingsComposer = 9405;
+    public static final int SoundboardPlayComposer = 9406;
 
 }

@@ -753,5 +753,8 @@ public class PacketManager {
         this.registerHandler(Incoming.WheelBuySpinEvent, com.eu.habbo.messages.incoming.wheel.WheelBuySpinEvent.class);
         this.registerHandler(Incoming.WheelAdminGetPrizesEvent, com.eu.habbo.messages.incoming.wheel.WheelAdminGetPrizesEvent.class);
         this.registerHandler(Incoming.WheelAdminSavePrizesEvent, com.eu.habbo.messages.incoming.wheel.WheelAdminSavePrizesEvent.class);
+
+        this.registerHandler(Incoming.SoundboardPlayEvent, com.eu.habbo.messages.incoming.soundboard.SoundboardPlayEvent.class);
+        this.registerHandler(Incoming.SoundboardSetEnabledEvent, com.eu.habbo.messages.incoming.soundboard.SoundboardSetEnabledEvent.class);
     }
 }

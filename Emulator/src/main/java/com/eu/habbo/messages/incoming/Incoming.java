@@ -494,4 +494,6 @@ public class Incoming {
     public static final int WheelBuySpinEvent = 9303;
     public static final int WheelAdminGetPrizesEvent = 9304;
     public static final int WheelAdminSavePrizesEvent = 9305;
+    public static final int SoundboardPlayEvent = 9306;
+    public static final int SoundboardSetEnabledEvent = 9307;
 }
