@@ -8,6 +8,11 @@ import com.eu.habbo.messages.outgoing.rooms.users.RoomUserDataComposer;
 
 public class SetDisplayOrderEvent extends MessageHandler {
     @Override
+    public int getRatelimit() {
+        return 1000;
+    }
+
+    @Override
     public void handle() throws Exception {
         Habbo habbo = this.client.getHabbo();
 
