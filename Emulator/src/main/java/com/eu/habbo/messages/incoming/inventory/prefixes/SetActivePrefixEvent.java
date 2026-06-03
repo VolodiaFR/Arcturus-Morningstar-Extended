@@ -2,11 +2,16 @@ package com.eu.habbo.messages.incoming.inventory.prefixes;
 
 import com.eu.habbo.habbohotel.users.UserPrefix;
 import com.eu.habbo.messages.incoming.MessageHandler;
-import com.eu.habbo.messages.outgoing.inventory.prefixes.ActivePrefixUpdatedComposer;
 import com.eu.habbo.messages.outgoing.inventory.nickicons.UserNickIconsComposer;
+import com.eu.habbo.messages.outgoing.inventory.prefixes.ActivePrefixUpdatedComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserDataComposer;
 
 public class SetActivePrefixEvent extends MessageHandler {
+    @Override
+    public int getRatelimit() {
+        return 1000;
+    }
+
     @Override
     public void handle() throws Exception {
         int prefixId = this.packet.readInt();

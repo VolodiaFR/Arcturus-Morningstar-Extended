@@ -38,7 +38,6 @@ public class GuildForumThreadsMessagesEvent extends MessageHandler {
             return;
         }
 
-        // Verify thread belongs to the requested guild
         if (thread.getGuildId() != guildId) {
             this.client.sendResponse(new ConnectionErrorComposer(403));
             return;
@@ -46,6 +45,11 @@ public class GuildForumThreadsMessagesEvent extends MessageHandler {
 
         GuildMember member = Emulator.getGameEnvironment().getGuildManager().getGuildMember(guildId, this.client.getHabbo().getHabboInfo().getId());
         boolean isGuildAdministrator = (guild.getOwnerId() == this.client.getHabbo().getHabboInfo().getId() || (member != null && member.getRank().equals(GuildRank.ADMIN)));
+
+        if (!guild.canHabboReadForum(this.client.getHabbo().getHabboInfo().getId(), member, hasStaffPermissions)) {
+            this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FORUMS_ACCESS_DENIED.key).compose());
+            return;
+        }
 
         if (thread.getState() != ForumThreadState.HIDDEN_BY_GUILD_ADMIN || hasStaffPermissions || isGuildAdministrator) {
             this.client.sendResponse(new GuildForumCommentsComposer(guildId, threadId, index, thread.getComments(limit, index)));

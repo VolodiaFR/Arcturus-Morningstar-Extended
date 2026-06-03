@@ -63,15 +63,6 @@ CREATE TABLE IF NOT EXISTS `custom_prefix_settings` (
     PRIMARY KEY (`key_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ------------------------------------------------------------
--- 5. Blacklist table
--- ------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `custom_prefix_blacklist` (
-    `id` INT(11) NOT NULL AUTO_INCREMENT,
-    `word` VARCHAR(100) NOT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_word` (`word`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
 -- Schema upgrades for existing installations
@@ -296,14 +287,6 @@ INSERT IGNORE INTO `custom_prefixes_catalog`
     (2, 'Legend', 'Legend', '#8B5CF6', '', 'discord-neon', '', 15, 0, 1, 2),
     (3, 'Staff Pick', 'Staff', '#3B82F6', '*', 'cartoon', '', 20, 0, 1, 3);
 
--- ============================================================
--- Example blacklist entries
--- ============================================================
-INSERT IGNORE INTO `custom_prefix_blacklist` (`word`) VALUES
-    ('admin'),
-    ('staff'),
-    ('mod'),
-    ('owner');
 
 -- ============================================================
 -- Notes

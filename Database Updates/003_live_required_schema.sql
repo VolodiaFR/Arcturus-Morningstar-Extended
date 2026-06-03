@@ -322,13 +322,6 @@ CREATE TABLE IF NOT EXISTS `custom_prefix_settings` (
     PRIMARY KEY (`key_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `custom_prefix_blacklist` (
-    `id` INT(11) NOT NULL AUTO_INCREMENT,
-    `word` VARCHAR(100) NOT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_custom_prefix_blacklist_word` (`word`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 INSERT IGNORE INTO `custom_prefix_settings` (`key_name`, `value`) VALUES
     ('max_length', '15'),
     ('min_rank_to_buy', '1'),

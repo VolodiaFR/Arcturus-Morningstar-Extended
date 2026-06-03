@@ -252,6 +252,25 @@ public class Guild implements Runnable {
         return this.readForum;
     }
 
+    public boolean canHabboReadForum(int habboId, GuildMember member, boolean staff) {
+        if (staff || this.getOwnerId() == habboId) {
+            return true;
+        }
+
+        switch (this.readForum) {
+            case EVERYONE:
+                return true;
+            case MEMBERS:
+                return member != null && member.getRank().type <= GuildRank.MEMBER.type;
+            case ADMINS:
+                return member != null && member.getRank().type < GuildRank.MEMBER.type;
+            case OWNER:
+                return false;
+            default:
+                return true;
+        }
+    }
+
     public void setReadForum(SettingsState readForum) {
         this.readForum = readForum;
     }
