@@ -9,8 +9,18 @@ import com.eu.habbo.habbohotel.users.HabboManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class MentionManager {
@@ -19,11 +29,8 @@ public class MentionManager {
 
     private static final int ROOM_NAME_MAX_LENGTH = 64;
     private static final int MESSAGE_MAX_LENGTH = 255;
-
     private final ConcurrentHashMap<Integer, Long> cooldowns = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Integer, Long> roomBroadcastCooldowns = new ConcurrentHashMap<>();
-
-    // Per-user request rate limits for the incoming packets that hit the DB.
     private final ConcurrentHashMap<Integer, Long> requestListCooldowns = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Integer, Long> markReadCooldowns = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Integer, Long> markAllCooldowns = new ConcurrentHashMap<>();
@@ -39,17 +46,12 @@ public class MentionManager {
     /** Broadcast category resolved from a mention alias. */
     public enum BroadcastScope {
         NONE,
-        // @room / @stanza - reaches the people currently in the room.
         ROOM,
-        // @friends / @amici - reaches the sender's online friends, requires acc_mention_friends.
         FRIENDS,
-        // @all / @everyone / @tutti - reaches every online user, requires acc_mention_everyone.
         EVERYONE
     }
 
-    /** Permission key (DB column) required to send an "everyone" broadcast. */
     public static final String PERMISSION_EVERYONE = "acc_mention_everyone";
-    /** Permission key (DB column) required to send a "friends" broadcast. */
     public static final String PERMISSION_FRIENDS = "acc_mention_friends";
 
     private Set<String> parseAliases(String configKey, String defaultValue) {
@@ -76,14 +78,6 @@ public class MentionManager {
         return parseAliases("mentions.everyone.aliases", "all,everyone,tutti");
     }
 
-    /**
-     * Classify an alias candidate (lowercased, punctuation-trimmed) into a
-     * broadcast scope. {@link BroadcastScope#EVERYONE} wins over
-     * {@link BroadcastScope#FRIENDS} which wins over {@link BroadcastScope#ROOM}
-     * so an admin who's also configured the same word into two lists gets the
-     * most permissive scope (which is also the one requiring the strongest
-     * permission, so it can't be misused).
-     */
     private BroadcastScope classifyAlias(String alias,
                                          Set<String> everyone,
                                          Set<String> friends,
@@ -135,8 +129,6 @@ public class MentionManager {
                 BroadcastScope scope = this.classifyAlias(aliasCandidate, everyoneAliases, friendsAliases, roomAliases);
 
                 if (scope != BroadcastScope.NONE) {
-                    // Promote to the strongest detected scope so a message with
-                    // both @room and @all routes through the @all permission.
                     if (scope.ordinal() > broadcastScope.ordinal()) {
                         broadcastScope = scope;
                     }
@@ -145,9 +137,6 @@ public class MentionManager {
                 }
             }
 
-            // Gate the broadcast on the matching permission. If the sender does
-            // not have the right to use it, drop the broadcast entirely but
-            // keep processing any direct @nick tokens in the same message.
             if (broadcastScope == BroadcastScope.EVERYONE && !sender.hasPermission(PERMISSION_EVERYONE)) {
                 broadcastScope = BroadcastScope.NONE;
             } else if (broadcastScope == BroadcastScope.FRIENDS && !sender.hasPermission(PERMISSION_FRIENDS)) {
@@ -158,9 +147,6 @@ public class MentionManager {
                 return;
             }
 
-            // Stricter cooldown for broadcasts: one @all/@friends/@room expands to
-            // up to mentions.max.targets DB writes and packet sends, so rate-limit it
-            // separately from direct mentions.
             if (broadcastScope != BroadcastScope.NONE) {
                 long roomCooldownMs = Emulator.getConfig().getInt("mentions.room.cooldown.ms", 15000);
                 Long lastRoom = this.roomBroadcastCooldowns.get(senderId);
@@ -171,9 +157,6 @@ public class MentionManager {
 
             int maxTargets = Emulator.getConfig().getInt("mentions.max.targets", 50);
             if (maxTargets <= 0) maxTargets = 1;
-
-            // Bound the number of direct tokens we even attempt to resolve so a
-            // crafted message can't push us through the room iteration N times.
             int maxDirectTokens = Math.min(directTokens.size(), maxTargets);
 
             List<Habbo> targets = new ArrayList<>();
@@ -187,7 +170,7 @@ public class MentionManager {
                     this.collectFriendsTargets(sender, senderId, targets, seen, maxTargets);
                     break;
                 case ROOM:
-                    this.collectRoomTargets(room, senderId, targets, seen, maxTargets);
+                    this.collectRoomTargets(room, senderId, targets, seen, maxTargets, true);
                     break;
                 case NONE:
                 default:
@@ -196,6 +179,9 @@ public class MentionManager {
                         if (processed++ >= maxDirectTokens) break;
                         Habbo habbo = this.resolveHabbo(room, token);
                         if (habbo == null || habbo.getHabboInfo().getId() == senderId) {
+                            continue;
+                        }
+                        if (!acceptsMention(habbo, false)) {
                             continue;
                         }
                         if (seen.add(habbo.getHabboInfo().getId())) {
@@ -229,9 +215,10 @@ public class MentionManager {
         }
     }
 
-    private void collectRoomTargets(Room room, int senderId, List<Habbo> targets, Set<Integer> seen, int maxTargets) {
+    private void collectRoomTargets(Room room, int senderId, List<Habbo> targets, Set<Integer> seen, int maxTargets, boolean isBroadcast) {
         for (Habbo habbo : room.getHabbos()) {
             if (habbo == null || habbo.getHabboInfo().getId() == senderId) continue;
+            if (!acceptsMention(habbo, isBroadcast)) continue;
             if (seen.add(habbo.getHabboInfo().getId())) targets.add(habbo);
             if (targets.size() >= maxTargets) break;
         }
@@ -246,6 +233,7 @@ public class MentionManager {
             if (buddyId == senderId) continue;
             Habbo online = habboManager.getHabbo(buddyId);
             if (online == null) continue;
+            if (!acceptsMention(online, true)) continue;
             if (seen.add(buddyId)) targets.add(online);
             if (targets.size() >= maxTargets) break;
         }
@@ -254,9 +242,17 @@ public class MentionManager {
     private void collectEveryoneTargets(int senderId, List<Habbo> targets, Set<Integer> seen, int maxTargets) {
         for (Habbo habbo : Emulator.getGameEnvironment().getHabboManager().getOnlineHabbos().values()) {
             if (habbo == null || habbo.getHabboInfo().getId() == senderId) continue;
+            if (!acceptsMention(habbo, true)) continue;
             if (seen.add(habbo.getHabboInfo().getId())) targets.add(habbo);
             if (targets.size() >= maxTargets) break;
         }
+    }
+
+    private boolean acceptsMention(Habbo recipient, boolean isBroadcast) {
+        if (recipient == null || recipient.getHabboStats() == null) return true;
+        if (!recipient.getHabboStats().mentionsEnabled()) return false;
+        if (isBroadcast && !recipient.getHabboStats().massMentionsEnabled()) return false;
+        return true;
     }
 
     private void store(Habbo target, Habbo sender, Room room, String message, int mentionType, int timestamp, String roomName) {
@@ -281,9 +277,6 @@ public class MentionManager {
                 }
             }
 
-            // Don't push a notification to the client when the INSERT did not
-            // return an id - the client dedup keys on id and a 0 would skip
-            // dedup entirely, opening a flood path on the next packet.
             if (generatedId <= 0) {
                 return;
             }
@@ -319,7 +312,6 @@ public class MentionManager {
     }
 
     public void markRead(int userId, int mode, int mentionId) {
-        // Caller has already validated mode and mentionId; this method is defensive only.
         if (mode != 0 && mode != 1) return;
         if (mode == 1 && mentionId <= 0) return;
 
@@ -351,20 +343,11 @@ public class MentionManager {
         }
     }
 
-    /**
-     * Per-user rate limit for {@code RequestMentionsEvent}. Returns true when
-     * the caller should be served, false when it must be silently dropped.
-     */
     public boolean tryAcquireRequestList(int userId) {
         long cooldownMs = Emulator.getConfig().getInt("mentions.request.cooldown.ms", 2000);
         return tryAcquire(this.requestListCooldowns, userId, cooldownMs);
     }
 
-    /**
-     * Per-user rate limit for {@code MarkMentionsReadEvent}. The mark-single
-     * path (mode == 1) is cheap and gets a short window; the mark-all path
-     * (mode != 1) is a bulk UPDATE and gets a longer one.
-     */
     public boolean tryAcquireMarkRead(int userId, int mode) {
         long cooldownMs;
         ConcurrentHashMap<Integer, Long> bucket;
@@ -378,9 +361,6 @@ public class MentionManager {
         return tryAcquire(bucket, userId, cooldownMs);
     }
 
-    /**
-     * Per-user rate limit for {@code DeleteMentionEvent}.
-     */
     public boolean tryAcquireDelete(int userId) {
         long cooldownMs = Emulator.getConfig().getInt("mentions.delete.cooldown.ms", 500);
         return tryAcquire(this.deleteCooldowns, userId, cooldownMs);
@@ -397,11 +377,6 @@ public class MentionManager {
         return true;
     }
 
-    /**
-     * Periodically drop cooldown entries older than the largest window so the
-     * maps don't accumulate one entry per user-that-ever-played for the entire
-     * server lifetime.
-     */
     private void pruneCooldownsIfDue(long now) {
         if (now - this.lastPrune < PRUNE_INTERVAL_MS) return;
         this.lastPrune = now;
@@ -448,12 +423,6 @@ public class MentionManager {
         return value.substring(0, max);
     }
 
-    /**
-     * Resolve a present room occupant from a raw mention token. Tries the token
-     * verbatim first (so usernames containing allowed punctuation such as '-',
-     * '.', '!' still match), then falls back to a trailing-punctuation-trimmed
-     * form so a mention written as "@Bob!" still resolves the user "Bob".
-     */
     private Habbo resolveHabbo(Room room, String rawToken) {
         Habbo habbo = room.getHabbo(rawToken);
         if (habbo != null) {

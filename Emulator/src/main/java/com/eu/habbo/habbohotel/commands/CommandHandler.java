@@ -191,6 +191,8 @@ public class CommandHandler {
         addCommand(new CreditsCommand());
         addCommand(new DanceCommand());
         addCommand(new DiagonalCommand());
+        addCommand(new DisableMassMentionsCommand());
+        addCommand(new DisableMentionsCommand());
         addCommand(new DisconnectCommand());
         addCommand(new EjectAllCommand());
         addCommand(new EmptyInventoryCommand());

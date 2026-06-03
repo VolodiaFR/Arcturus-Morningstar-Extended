@@ -94,6 +94,8 @@ public class HabboStats implements Runnable {
     public boolean hasGottenDefaultSavedSearches;
     private HabboInfo habboInfo;
     private boolean allowTrade;
+    private boolean mentionsEnabled;
+    private boolean massMentionsEnabled;
     private int clubExpireTimestamp;
     private int muteEndTime;
     public int maxFriends;
@@ -131,6 +133,8 @@ public class HabboStats implements Runnable {
         this.guilds = new ArrayList<>();
         this.tags = set.getString("tags").split(";");
         this.allowTrade = set.getString("can_trade").equals("1");
+        this.mentionsEnabled = "1".equals(safeColumnString(set, "mentions_enabled", "1"));
+        this.massMentionsEnabled = "1".equals(safeColumnString(set, "mass_mentions_enabled", "1"));
         this.votedRooms = new TIntArrayStack();
         this.clubExpireTimestamp = set.getInt("club_expire_timestamp");
         this.loginStreak = set.getInt("login_streak");
@@ -749,13 +753,6 @@ public class HabboStats implements Runnable {
         return 0;
     }
 
-    /**
-     * Ignore an user.
-     *
-     * @param gameClient The client to which this HabboStats instance belongs.
-     * @param userId The user to ignore.
-     * @return true if successfully ignored, false otherwise.
-     */
     public boolean ignoreUser(GameClient gameClient, int userId) {
         final Habbo target = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
 
@@ -803,6 +800,44 @@ public class HabboStats implements Runnable {
         if (AchievementManager.TALENTTRACK_ENABLED && RoomTrade.TRADING_REQUIRES_PERK)
             return this.perkTrade && this.allowTrade;
         else return this.allowTrade;
+    }
+
+    public boolean mentionsEnabled() {
+        return this.mentionsEnabled;
+    }
+
+    public boolean massMentionsEnabled() {
+        return this.massMentionsEnabled;
+    }
+
+    public void setMentionsEnabled(boolean enabled) {
+        this.mentionsEnabled = enabled;
+        persistFlag("mentions_enabled", enabled);
+    }
+
+    public void setMassMentionsEnabled(boolean enabled) {
+        this.massMentionsEnabled = enabled;
+        persistFlag("mass_mentions_enabled", enabled);
+    }
+
+    private void persistFlag(String column, boolean enabled) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+             PreparedStatement statement = connection.prepareStatement("UPDATE users_settings SET `" + column + "` = ? WHERE user_id = ? LIMIT 1")) {
+            statement.setString(1, enabled ? "1" : "0");
+            statement.setInt(2, this.habboInfo.getId());
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            LOGGER.error("Failed to persist users_settings.{} for user {}", column, this.habboInfo.getId(), e);
+        }
+    }
+
+    private static String safeColumnString(ResultSet set, String column, String defaultValue) {
+        try {
+            String value = set.getString(column);
+            return value == null ? defaultValue : value;
+        } catch (SQLException e) {
+            return defaultValue;
+        }
     }
 
     public void setAllowTrade(boolean allowTrade) {
