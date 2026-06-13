@@ -12,6 +12,10 @@ class RCONServerHandlerContractTest {
         return Files.readString(Path.of("src/main/java/com/eu/habbo/networking/rconserver/RCONServer.java"));
     }
 
+    private static String handlerSource() throws Exception {
+        return Files.readString(Path.of("src/main/java/com/eu/habbo/networking/rconserver/RCONServerHandler.java"));
+    }
+
     private static String emulatorSource() throws Exception {
         return Files.readString(Path.of("src/main/java/com/eu/habbo/Emulator.java"));
     }
@@ -44,5 +48,15 @@ class RCONServerHandlerContractTest {
         assertTrue(source.contains("register(\"rcon.rate_limit.timeout_ms\", \"0\")"),
                 "RCON rate limit must reject immediately by default instead of blocking event loops");
         assertTrue(registerIndex < serverIndex, "RCON rate limit defaults must be registered before RCONServer is constructed");
+    }
+
+    @Test
+    void inboundByteBufIsReleasedFromFinallyBlock() throws Exception {
+        String source = handlerSource();
+        int finallyIndex = source.indexOf("finally");
+        int releaseIndex = source.indexOf("data.release()");
+
+        assertTrue(finallyIndex >= 0, "RCON channelRead must release inbound ByteBufs from a finally block");
+        assertTrue(releaseIndex > finallyIndex, "RCON channelRead must release the inbound ByteBuf after finally starts");
     }
 }
