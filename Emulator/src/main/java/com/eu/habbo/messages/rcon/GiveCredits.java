@@ -3,6 +3,7 @@ package com.eu.habbo.messages.rcon;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.google.gson.Gson;
+import jakarta.validation.constraints.Positive;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,9 +41,11 @@ public class GiveCredits extends RCONMessage<GiveCredits.JSONGiveCredits> {
 
     static class JSONGiveCredits {
 
+        @Positive(message = "invalid user")
         public int user_id;
 
 
+        @Positive(message = "invalid credits")
         public int credits;
     }
 }

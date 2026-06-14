@@ -119,7 +119,10 @@ public class RCONServer extends Server {
             try {
                 RCONMessage rcon = message.getDeclaredConstructor().newInstance();
                 Gson gson = this.gsonBuilder.create();
-                rcon.handle(gson, gson.fromJson(body, rcon.type));
+                Object payload = gson.fromJson(body, rcon.type);
+                if (rcon.validate(payload)) {
+                    rcon.handle(gson, payload);
+                }
                 LOGGER.info("Handled RCON Message: {}", message.getSimpleName());
                 result = gson.toJson(rcon, RCONMessage.class);
 

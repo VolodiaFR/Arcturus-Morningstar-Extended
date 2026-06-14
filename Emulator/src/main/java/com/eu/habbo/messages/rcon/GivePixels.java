@@ -3,6 +3,7 @@ package com.eu.habbo.messages.rcon;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.google.gson.Gson;
+import jakarta.validation.constraints.Positive;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,9 +41,11 @@ public class GivePixels extends RCONMessage<GivePixels.JSONGivePixels> {
 
     static class JSONGivePixels {
 
+        @Positive(message = "invalid user")
         public int user_id;
 
 
+        @Positive(message = "invalid pixels")
         public int pixels;
     }
 }

@@ -5,6 +5,10 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboBadge;
 import com.eu.habbo.messages.outgoing.users.AddUserBadgeComposer;
 import com.google.gson.Gson;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,9 +93,13 @@ public class GiveBadge extends RCONMessage<GiveBadge.GiveBadgeJSON> {
 
     static class GiveBadgeJSON {
 
+        @Positive(message = "invalid user")
         public int user_id = -1;
 
 
+        @NotBlank(message = "invalid badge")
+        @Size(max = 512, message = "invalid badge")
+        @Pattern(regexp = "[A-Za-z0-9_\\-;]+", message = "invalid badge")
         public String badge;
     }
 }
