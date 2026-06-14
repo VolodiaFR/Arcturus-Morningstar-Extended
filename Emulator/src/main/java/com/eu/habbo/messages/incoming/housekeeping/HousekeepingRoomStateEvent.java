@@ -41,6 +41,11 @@ public class HousekeepingRoomStateEvent extends MessageHandler {
             return;
         }
 
+        if (!HousekeepingRoomGuard.canManageRoom(this.client.getHabbo(), room)) {
+            this.client.sendResponse(new HousekeepingActionResultComposer(actionKey, false, 0, "housekeeping.error.rank_too_high"));
+            return;
+        }
+
         room.setState(open ? RoomState.OPEN : RoomState.LOCKED);
         room.save();
 

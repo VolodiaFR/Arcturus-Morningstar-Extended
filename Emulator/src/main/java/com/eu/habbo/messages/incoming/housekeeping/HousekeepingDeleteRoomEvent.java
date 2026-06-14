@@ -42,11 +42,14 @@ public class HousekeepingDeleteRoomEvent extends MessageHandler {
 
         Room room = Emulator.getGameEnvironment().getRoomManager().loadRoom(roomId, false);
 
-        if (room != null) {
-            room.ejectAll();
-            room.preventUnloading = false;
-            room.dispose();
-            Emulator.getGameEnvironment().getRoomManager().uncacheRoom(room);
+        if (room == null) {
+            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.room_not_found"));
+            return;
+        }
+
+        if (!HousekeepingRoomGuard.canManageRoom(this.client.getHabbo(), room)) {
+            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
+            return;
         }
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
@@ -62,6 +65,11 @@ public class HousekeepingDeleteRoomEvent extends MessageHandler {
             this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.db_failed"));
             return;
         }
+
+        room.ejectAll();
+        room.preventUnloading = false;
+        room.dispose();
+        Emulator.getGameEnvironment().getRoomManager().uncacheRoom(room);
 
         com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.log(
                 this.client.getHabbo().getHabboInfo().getId(),

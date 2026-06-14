@@ -31,7 +31,7 @@ public class HousekeepingMuteRoomEvent extends MessageHandler {
         int roomId = this.packet.readInt();
         int minutes = this.packet.readInt();
 
-        if (roomId <= 0) {
+        if (roomId <= 0 || minutes < 0) {
             this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.invalid_input"));
             return;
         }
@@ -40,6 +40,11 @@ public class HousekeepingMuteRoomEvent extends MessageHandler {
 
         if (room == null) {
             this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.room_not_found"));
+            return;
+        }
+
+        if (!HousekeepingRoomGuard.canManageRoom(this.client.getHabbo(), room)) {
+            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
             return;
         }
 

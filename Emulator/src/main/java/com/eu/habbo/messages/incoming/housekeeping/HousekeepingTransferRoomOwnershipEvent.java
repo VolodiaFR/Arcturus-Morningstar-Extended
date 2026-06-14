@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.permissions.Permission;
+import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
@@ -39,6 +40,19 @@ public class HousekeepingTransferRoomOwnershipEvent extends MessageHandler {
             return;
         }
 
+        Room room = Emulator.getGameEnvironment().getRoomManager().loadRoom(roomId, false);
+
+        if (room == null) {
+            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.room_not_found"));
+            return;
+        }
+
+        if (!HousekeepingRoomGuard.canManageRoom(this.client.getHabbo(), room) ||
+                !HousekeepingTargetRankGuard.canTargetUser(this.client.getHabbo(), newOwnerId)) {
+            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
+            return;
+        }
+
         HabboInfo newOwner = Emulator.getGameEnvironment().getHabboManager().getHabboInfo(newOwnerId);
 
         if (newOwner == null) {
@@ -61,6 +75,9 @@ public class HousekeepingTransferRoomOwnershipEvent extends MessageHandler {
             this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.db_failed"));
             return;
         }
+
+        room.setOwnerId(newOwnerId);
+        room.setOwnerName(newOwner.getUsername());
 
         com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.log(
                 this.client.getHabbo().getHabboInfo().getId(),
