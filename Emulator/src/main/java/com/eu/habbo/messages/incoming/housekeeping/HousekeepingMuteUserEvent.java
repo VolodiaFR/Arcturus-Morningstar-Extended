@@ -28,10 +28,10 @@ public class HousekeepingMuteUserEvent extends MessageHandler {
         }
 
         int userId = this.packet.readInt();
-        String reason = this.packet.readString();
+        String reason = HousekeepingInputGuard.normalize(this.packet.readString());
         int minutes = this.packet.readInt();
 
-        if (userId <= 0 || minutes <= 0) {
+        if (userId <= 0 || minutes <= 0 || !HousekeepingInputGuard.isWithinLimit(reason, HousekeepingInputGuard.MAX_REASON_LENGTH)) {
             this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.invalid_input"));
             return;
         }
@@ -50,14 +50,14 @@ public class HousekeepingMuteUserEvent extends MessageHandler {
 
         target.mute(HousekeepingSanctionDuration.secondsFromMinutes(minutes), false);
 
-        if (reason != null && !reason.isEmpty()) {
+        if (!reason.isEmpty()) {
             target.alert(reason);
         }
 
         com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.log(
                 this.client.getHabbo().getHabboInfo().getId(),
                 this.client.getHabbo().getHabboInfo().getUsername(),
-                ACTION_KEY, userId, "minutes=" + minutes + " reason=" + (reason != null ? reason : ""),
+                ACTION_KEY, userId, "minutes=" + minutes + " reason=" + HousekeepingInputGuard.auditValue(reason),
                 this.client.getHabbo().getHabboInfo().getIpLogin());
         this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, userId, ""));
     }
