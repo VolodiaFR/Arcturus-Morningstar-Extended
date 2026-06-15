@@ -33,16 +33,22 @@ public class SavePostItStickyPoleEvent extends MessageHandler {
                 LOGGER.info("Scripter Alert! {} | {}", this.client.getHabbo().getHabboInfo().getUsername(), this.packet.readString());
             }
         } else {
-            String text = this.packet.readString();
+            String text = Emulator.getGameEnvironment().getWordFilter().filter(this.packet.readString().replace(((char) 9) + "", ""), this.client.getHabbo());
+
+            if (text.length() > Emulator.getConfig().getInt("postit.charlimit"))
+                return;
 
             Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
+            if (room == null)
+                return;
+
             HabboItem sticky = room.getHabboItem(itemId);
 
-            if (sticky != null) {
+            if (sticky instanceof InteractionPostIt) {
                 if (sticky.getUserId() == this.client.getHabbo().getHabboInfo().getId()) {
                     sticky.setUserId(room.getOwnerId());
 
-                    if (color.equalsIgnoreCase(PostItColor.YELLOW.hexColor)) {
+                    if (PostItColor.isCustomColor(color) || color.equalsIgnoreCase(PostItColor.YELLOW.hexColor)) {
                         color = PostItColor.randomColorNotYellow().hexColor;
                     }
                     if (!InteractionPostIt.STICKYPOLE_PREFIX_TEXT.isEmpty()) {
