@@ -13,6 +13,10 @@ class CatalogAdminOfferMutationContractTest {
             "src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminCreateOfferEvent.java");
     private static final Path SAVE_SOURCE = Path.of(
             "src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSaveOfferEvent.java");
+    private static final Path DELETE_SOURCE = Path.of(
+            "src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminDeleteOfferEvent.java");
+    private static final Path MOVE_SOURCE = Path.of(
+            "src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminMoveOfferEvent.java");
 
     @Test
     void createAndSaveValidatePayloadAndTargetPageBeforeWriting() throws IOException {
@@ -39,5 +43,26 @@ class CatalogAdminOfferMutationContractTest {
 
         assertTrue(save.contains("statement.executeUpdate() == 0"));
         assertTrue(save.contains("Offer not found: "));
+    }
+
+    @Test
+    void deleteOfferRejectsInvalidIdsAndReportsMissingRows() throws IOException {
+        String delete = Files.readString(DELETE_SOURCE);
+
+        assertTrue(delete.contains("offerId <= 0"));
+        assertTrue(delete.contains("Invalid offer id"));
+        assertTrue(delete.contains("statement.executeUpdate() == 0"));
+        assertTrue(delete.contains("Offer not found: "));
+    }
+
+    @Test
+    void moveOfferRejectsInvalidIdsClampsOrderAndReportsMissingRows() throws IOException {
+        String move = Files.readString(MOVE_SOURCE);
+
+        assertTrue(move.contains("offerId <= 0"));
+        assertTrue(move.contains("Invalid offer id"));
+        assertTrue(move.contains("if (orderNumber < 0) orderNumber = 0;"));
+        assertTrue(move.contains("statement.executeUpdate() == 0"));
+        assertTrue(move.contains("Offer not found: "));
     }
 }

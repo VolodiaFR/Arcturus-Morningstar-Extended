@@ -41,7 +41,7 @@ public class SellItemEvent extends MessageHandler {
                 return;
             }
 
-            if (credits < 0) {
+            if (!MarketPlace.isValidListingPrice(credits)) {
                 String message = Emulator.getTexts().getValue("scripter.warning.marketplace.negative").replace("%username%", this.client.getHabbo().getHabboInfo().getUsername()).replace("%itemname%", item.getBaseItem().getName()).replace("%credits%", credits + "");
                 ScripterManager.scripterDetected(this.client, message);
                 LOGGER.info(message);

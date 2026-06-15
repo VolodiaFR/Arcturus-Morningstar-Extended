@@ -28,6 +28,8 @@ import java.util.List;
 
 public class MarketPlace {
     private static final Logger LOGGER = LoggerFactory.getLogger(MarketPlace.class);
+    public static final int MINIMUM_LISTING_PRICE = 1;
+    public static final int MAXIMUM_LISTING_PRICE = 1_000_000_000;
 
     //Configuration. Loaded from database & updated accordingly.
     public static boolean MARKETPLACE_ENABLED = true;
@@ -119,7 +121,7 @@ public class MarketPlace {
 
     public static List<MarketPlaceOffer> getOffers(int minPrice, int maxPrice, String search, int sort) {
         List<MarketPlaceOffer> offers = new ArrayList<>(10);
-        String query = "SELECT B.* FROM marketplace_items a INNER JOIN (SELECT b.item_id AS base_item_id, b.limited_data AS ltd_data, marketplace_items.*, AVG(price) as avg, MIN(marketplace_items.price) as minPrice, MAX(marketplace_items.price) as maxPrice, COUNT(*) as number, (SELECT COUNT(*) FROM marketplace_items c INNER JOIN items as items_b ON c.item_id = items_b.id WHERE state = 2 AND items_b.item_id = base_item_id AND DATE(from_unixtime(sold_timestamp)) = CURDATE()) as sold_count_today FROM marketplace_items INNER JOIN items b ON marketplace_items.item_id = b.id INNER JOIN items_base bi ON b.item_id = bi.id INNER JOIN catalog_items ci ON bi.id = ci.item_ids WHERE price = (SELECT MIN(e.price) FROM marketplace_items e, items d WHERE e.item_id = d.id AND d.item_id = b.item_id AND e.state = 1 AND e.timestamp > ? GROUP BY d.item_id) AND state = 1 AND timestamp > ?";
+        String query = "SELECT B.* FROM marketplace_items a INNER JOIN (SELECT b.item_id AS base_item_id, b.limited_data AS ltd_data, marketplace_items.*, AVG(price) as avg, MIN(marketplace_items.price) as minPrice, MAX(marketplace_items.price) as maxPrice, COUNT(*) as number, (SELECT COUNT(*) FROM marketplace_items c INNER JOIN items as items_b ON c.item_id = items_b.id WHERE state = 2 AND items_b.item_id = base_item_id AND DATE(from_unixtime(sold_timestamp)) = CURDATE()) as sold_count_today FROM marketplace_items INNER JOIN items b ON marketplace_items.item_id = b.id INNER JOIN items_base bi ON b.item_id = bi.id INNER JOIN catalog_items ci ON bi.id = ci.item_ids WHERE price = (SELECT MIN(e.price) FROM marketplace_items e, items d WHERE e.item_id = d.id AND d.item_id = b.item_id AND e.state = 1 AND e.timestamp > ? AND e.price BETWEEN ? AND ? GROUP BY d.item_id) AND state = 1 AND timestamp > ? AND marketplace_items.price BETWEEN ? AND ?";
         if (minPrice > 0) {
             query += " AND CEIL(price + (price / 100)) >= ?";
         }
@@ -163,7 +165,11 @@ public class MarketPlace {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement(query)) {
             int paramIndex = 1;
             statement.setInt(paramIndex++, Emulator.getIntUnixTimestamp() - 172800);
+            statement.setInt(paramIndex++, MINIMUM_LISTING_PRICE);
+            statement.setInt(paramIndex++, MAXIMUM_LISTING_PRICE);
             statement.setInt(paramIndex++, Emulator.getIntUnixTimestamp() - 172800);
+            statement.setInt(paramIndex++, MINIMUM_LISTING_PRICE);
+            statement.setInt(paramIndex++, MAXIMUM_LISTING_PRICE);
             if (minPrice > 0) {
                 statement.setInt(paramIndex++, minPrice);
             }
@@ -265,7 +271,13 @@ public class MarketPlace {
                                 itemSet.first();
 
                                 if (itemSet.getRow() > 0) {
-                                    int price = MarketPlace.calculateCommision(set.getInt("price"));
+                                    int rawPrice = set.getInt("price");
+                                    if (!isValidListingPrice(rawPrice)) {
+                                        sendErrorMessage(client, set.getInt("item_id"), offerId);
+                                        return;
+                                    }
+
+                                    int price = MarketPlace.calculateCommision(rawPrice);
                                     if (set.getInt("state") != 1) {
                                         sendErrorMessage(client, set.getInt("item_id"), offerId);
                                     } else if ((MARKETPLACE_CURRENCY == 0 && price > client.getHabbo().getHabboInfo().getCredits()) || (MARKETPLACE_CURRENCY > 0 && price > client.getHabbo().getHabboInfo().getCurrencyAmount(MARKETPLACE_CURRENCY))) {
@@ -358,7 +370,7 @@ public class MarketPlace {
         if (item == null || client == null)
             return false;
 
-        if (!item.getBaseItem().allowMarketplace() || price < 0)
+        if (!item.getBaseItem().allowMarketplace() || !isValidListingPrice(price))
             return false;
 
         MarketPlaceItemOfferedEvent event = new MarketPlaceItemOfferedEvent(client.getHabbo(), item, price);
@@ -430,6 +442,11 @@ public class MarketPlace {
 
 
     public static int calculateCommision(int price) {
-        return price + (int) Math.ceil(price / 100.0);
+        long commission = price + (long) Math.ceil(price / 100.0);
+        return commission > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) commission;
+    }
+
+    public static boolean isValidListingPrice(int price) {
+        return price >= MINIMUM_LISTING_PRICE && price <= MAXIMUM_LISTING_PRICE;
     }
 }
