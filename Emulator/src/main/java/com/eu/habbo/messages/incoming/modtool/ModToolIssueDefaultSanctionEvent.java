@@ -21,6 +21,10 @@ public class ModToolIssueDefaultSanctionEvent extends MessageHandler {
 
             ModToolIssue issue = Emulator.getGameEnvironment().getModToolManager().getTicket(issueId);
 
+            if (issue == null) {
+                return;
+            }
+
             if (issue.modId == this.client.getHabbo().getHabboInfo().getId()) {
                 CfhTopic modToolCategory = Emulator.getGameEnvironment().getModToolManager().getCfhTopic(category);
 

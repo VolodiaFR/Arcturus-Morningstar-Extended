@@ -18,6 +18,13 @@ public class ModToolKickEvent extends MessageHandler {
             return;
         }
 
-        Emulator.getGameEnvironment().getModToolManager().kick(this.client.getHabbo(), Emulator.getGameEnvironment().getHabboManager().getHabbo(this.packet.readInt()), this.packet.readString());
+        int userId = this.packet.readInt();
+        String message = ModToolInputGuard.normalize(this.packet.readString());
+
+        if (!ModToolInputGuard.isSafeMessage(message)) {
+            return;
+        }
+
+        Emulator.getGameEnvironment().getModToolManager().kick(this.client.getHabbo(), Emulator.getGameEnvironment().getHabboManager().getHabbo(userId), message);
     }
 }

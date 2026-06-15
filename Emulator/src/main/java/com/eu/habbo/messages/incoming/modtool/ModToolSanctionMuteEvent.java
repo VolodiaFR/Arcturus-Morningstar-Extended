@@ -23,8 +23,12 @@ public class ModToolSanctionMuteEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         int userId = this.packet.readInt();
-        String message = this.packet.readString();
+        String message = ModToolInputGuard.normalize(this.packet.readString());
         int cfhTopic = this.packet.readInt();
+
+        if (!ModToolInputGuard.isSafeMessage(message)) {
+            return;
+        }
 
         if (this.client.getHabbo().hasPermission(Permission.ACC_SUPPORTTOOL)) {
             Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
