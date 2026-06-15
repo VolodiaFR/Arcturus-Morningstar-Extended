@@ -86,4 +86,27 @@ class ModToolPermissionContractTest {
         assertTrue(defaultSanction.contains("if (issue == null)"),
                 "default sanctions must tolerate stale or missing ticket ids");
     }
+
+    @Test
+    void staffSuppliedModToolMessagesAreBounded() throws Exception {
+        Path base = Path.of("src/main/java/com/eu/habbo/messages/incoming/modtool");
+
+        for (String handler : List.of(
+                "ModToolAlertEvent.java",
+                "ModToolWarnEvent.java",
+                "ModToolKickEvent.java",
+                "ModToolRoomAlertEvent.java",
+                "ModToolSanctionAlertEvent.java",
+                "ModToolSanctionBanEvent.java",
+                "ModToolSanctionMuteEvent.java",
+                "ModToolSanctionTradeLockEvent.java"
+        )) {
+            String source = Files.readString(base.resolve(handler));
+
+            assertTrue(source.contains("ModToolInputGuard.normalize"),
+                    handler + " must normalize staff-supplied text before use");
+            assertTrue(source.contains("ModToolInputGuard.isSafeMessage"),
+                    handler + " must reject empty or oversized staff-supplied text");
+        }
+    }
 }
