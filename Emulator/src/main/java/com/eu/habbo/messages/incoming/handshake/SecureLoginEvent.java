@@ -72,17 +72,17 @@ public class SecureLoginEvent extends MessageHandler {
             return;
         }
 
-        String sso = this.packet.readString().replace(" ", "");
+        String sso = SecureLoginInputGuard.normalizeSsoTicket(this.packet.readString());
+
+        if (!SecureLoginInputGuard.isValidSsoTicket(sso)) {
+            Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
+            LOGGER.debug("Client is trying to connect with an invalid SSO ticket! Closed connection...");
+            return;
+        }
 
         if (Emulator.getPluginManager().fireEvent(new SSOAuthenticationEvent(sso)).isCancelled()) {
             Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
             LOGGER.info("SSO Authentication is cancelled by a plugin. Closed connection...");
-            return;
-        }
-
-        if (sso.isEmpty()) {
-            Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
-            LOGGER.debug("Client is trying to connect without SSO ticket! Closed connection...");
             return;
         }
 
