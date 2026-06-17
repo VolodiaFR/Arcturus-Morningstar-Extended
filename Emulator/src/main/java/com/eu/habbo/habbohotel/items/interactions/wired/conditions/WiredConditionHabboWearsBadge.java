@@ -103,14 +103,28 @@ public class WiredConditionHabboWearsBadge extends InteractionWiredCondition {
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
         String wiredData = set.getString("wired_data");
+        if (wiredData == null) {
+            this.onPickUp();
+            return;
+        }
 
         if (wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-            this.badge = data.badge;
-            this.userSource = data.userSource;
+            JsonData data;
+            try {
+                data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            } catch (RuntimeException ignored) {
+                this.onPickUp();
+                return;
+            }
+            if (data == null) {
+                this.onPickUp();
+                return;
+            }
+            this.badge = WiredUserConditionInputGuard.normalizeBadgeCode(data.badge);
+            this.userSource = WiredUserConditionInputGuard.normalizeUserSource(data.userSource);
             this.quantifier = this.normalizeQuantifier(data.quantifier, QUANTIFIER_ANY);
         } else {
-            this.badge = wiredData;
+            this.badge = WiredUserConditionInputGuard.normalizeBadgeCode(wiredData);
             this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
             this.quantifier = QUANTIFIER_ANY;
         }
@@ -147,9 +161,9 @@ public class WiredConditionHabboWearsBadge extends InteractionWiredCondition {
 
     @Override
     public boolean saveData(WiredSettings settings) {
-        this.badge = settings.getStringParam();
+        this.badge = WiredUserConditionInputGuard.normalizeBadgeCode(settings.getStringParam());
         int[] params = settings.getIntParams();
-        this.userSource = (params.length > 0) ? params[0] : WiredSourceUtil.SOURCE_TRIGGER;
+        this.userSource = (params.length > 0) ? WiredUserConditionInputGuard.normalizeUserSource(params[0]) : WiredSourceUtil.SOURCE_TRIGGER;
         this.quantifier = (params.length > 1) ? this.normalizeQuantifier(params[1], QUANTIFIER_ANY) : QUANTIFIER_ANY;
 
         return true;
