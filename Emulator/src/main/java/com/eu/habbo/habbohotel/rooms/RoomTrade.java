@@ -204,11 +204,12 @@ public class RoomTrade {
             int userOneId = userOne.getHabbo().getHabboInfo().getId();
             int userTwoId = userTwo.getHabbo().getHabboInfo().getId();
 
-            try (PreparedStatement statement = connection.prepareStatement("UPDATE items SET user_id = ? WHERE id = ? LIMIT 1")) {
+            try (PreparedStatement statement = connection.prepareStatement("UPDATE items SET user_id = ? WHERE id = ? AND user_id = ? LIMIT 1")) {
                 try (PreparedStatement stmt = connection.prepareStatement("INSERT INTO room_trade_log_items (id, item_id, user_id) VALUES (?, ?, ?)")) {
                     for (HabboItem item : userOne.getItems()) {
                         statement.setInt(1, userTwoId);
                         statement.setInt(2, item.getId());
+                        statement.setInt(3, userOneId);
                         statement.addBatch();
 
                         if (logTrades) {
@@ -222,6 +223,7 @@ public class RoomTrade {
                     for (HabboItem item : userTwo.getItems()) {
                         statement.setInt(1, userOneId);
                         statement.setInt(2, item.getId());
+                        statement.setInt(3, userTwoId);
                         statement.addBatch();
 
                         if (logTrades) {
@@ -237,7 +239,12 @@ public class RoomTrade {
                     }
                 }
 
-                statement.executeBatch();
+                int expectedUpdates = userOne.getItems().size() + userTwo.getItems().size();
+                int[] updateCounts = statement.executeBatch();
+                if (!RoomTrade.allOwnershipUpdatesSucceeded(updateCounts, expectedUpdates)) {
+                    this.sendMessageToUsers(new TradeClosedComposer(userOne.getHabbo().getRoomUnit().getId(), TradeClosedComposer.ITEMS_NOT_FOUND));
+                    return false;
+                }
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
@@ -362,6 +369,20 @@ public class RoomTrade {
 
     public List<RoomTradeUser> getRoomTradeUsers() {
         return this.users;
+    }
+
+    static boolean allOwnershipUpdatesSucceeded(int[] updateCounts, int expectedUpdates) {
+        if (updateCounts == null || updateCounts.length != expectedUpdates) {
+            return false;
+        }
+
+        for (int updateCount : updateCounts) {
+            if (updateCount == Statement.EXECUTE_FAILED || updateCount == 0) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public static int getCreditsByItem(HabboItem item) {
