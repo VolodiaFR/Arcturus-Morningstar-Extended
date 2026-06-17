@@ -29,6 +29,9 @@ import java.util.List;
  */
 public class WiredTriggerAtTimeLong extends InteractionWiredTrigger implements WiredTickable, WiredTriggerReset {
     private static final WiredTriggerType type = WiredTriggerType.AT_GIVEN_TIME;
+    static final int DEFAULT_EXECUTE_TIME = 20 * 500;
+    static final int MIN_EXECUTE_TIME = 500;
+    static final int MAX_EXECUTE_TIME = 60 * 60 * 1000;
     
     /** The time in milliseconds until the trigger fires */
     private int executeTime;
@@ -67,23 +70,36 @@ public class WiredTriggerAtTimeLong extends InteractionWiredTrigger implements W
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
         String wiredData = set.getString("wired_data");
+        this.executeTime = parseExecuteTime(wiredData);
 
-        if (wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-            this.executeTime = data.executeTime;
-        } else {
-            if (wiredData.length() >= 1) {
-                this.executeTime = (Integer.parseInt(wiredData));
-            }
-        }
-
-        if (this.executeTime < 500) {
-            this.executeTime = 20 * 500;
-        }
-        
         // Initialize for tick system
         this.accumulatedTime = 0;
         this.hasFired = false;
+    }
+
+    static int parseExecuteTime(String wiredData) {
+        if (wiredData == null || wiredData.isBlank()) {
+            return DEFAULT_EXECUTE_TIME;
+        }
+
+        try {
+            if (wiredData.startsWith("{")) {
+                JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+                return clampExecuteTime(data != null ? data.executeTime : DEFAULT_EXECUTE_TIME);
+            }
+
+            return clampExecuteTime(Integer.parseInt(wiredData));
+        } catch (RuntimeException e) {
+            return DEFAULT_EXECUTE_TIME;
+        }
+    }
+
+    static int clampExecuteTime(int executeTime) {
+        if (executeTime < MIN_EXECUTE_TIME) {
+            return DEFAULT_EXECUTE_TIME;
+        }
+
+        return Math.min(executeTime, MAX_EXECUTE_TIME);
     }
 
     @Override
@@ -134,11 +150,20 @@ public class WiredTriggerAtTimeLong extends InteractionWiredTrigger implements W
     @Override
     public boolean saveData(WiredSettings settings) {
         if (settings.getIntParams().length < 1) return false;
-        this.executeTime = settings.getIntParams()[0] * 500;
+        this.executeTime = clampExecuteTime(safeMultiply(settings.getIntParams()[0], MIN_EXECUTE_TIME));
         
         this.resetTimer();
 
         return true;
+    }
+
+    private static int safeMultiply(int value, int factor) {
+        if (value <= 0) {
+            return DEFAULT_EXECUTE_TIME;
+        }
+
+        long multiplied = (long) value * factor;
+        return multiplied > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) multiplied;
     }
 
     // ========== WiredTickable Implementation ==========

@@ -30,6 +30,8 @@ import java.util.List;
 public class WiredTriggerRepeater extends InteractionWiredTrigger implements WiredTickable, WiredTriggerReset {
     public static final WiredTriggerType type = WiredTriggerType.PERIODICALLY;
     public static final int DEFAULT_DELAY = 10 * 500; // 5 seconds default
+    static final int MIN_DELAY = 500;
+    static final int MAX_DELAY = 60 * 60 * 1000;
 
     /** The interval in milliseconds between triggers */
     protected int repeatTime = DEFAULT_DELAY;
@@ -62,19 +64,32 @@ public class WiredTriggerRepeater extends InteractionWiredTrigger implements Wir
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
         String wiredData = set.getString("wired_data");
+        this.repeatTime = parseRepeatTime(wiredData);
+    }
 
-        if (wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-            this.repeatTime = data.repeatTime;
-        } else {
-            if (wiredData.length() >= 1) {
-                this.repeatTime = (Integer.parseInt(wiredData));
+    static int parseRepeatTime(String wiredData) {
+        if (wiredData == null || wiredData.isBlank()) {
+            return DEFAULT_DELAY;
+        }
+
+        try {
+            if (wiredData.startsWith("{")) {
+                JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+                return normalizeRepeatTime(data != null ? data.repeatTime : DEFAULT_DELAY);
             }
+
+            return normalizeRepeatTime(Integer.parseInt(wiredData));
+        } catch (RuntimeException e) {
+            return DEFAULT_DELAY;
+        }
+    }
+
+    static int normalizeRepeatTime(int repeatTime) {
+        if (repeatTime < MIN_DELAY) {
+            return DEFAULT_DELAY;
         }
 
-        if (this.repeatTime < 500) {
-            this.repeatTime = 20 * 500;
-        }
+        return Math.min(repeatTime, MAX_DELAY);
     }
 
     @Override
@@ -123,15 +138,18 @@ public class WiredTriggerRepeater extends InteractionWiredTrigger implements Wir
     @Override
     public boolean saveData(WiredSettings settings) {
         if (settings.getIntParams().length < 1) return false;
-        int newRepeatTime = settings.getIntParams()[0] * 500;
-
-        if (newRepeatTime < 500) {
-            newRepeatTime = 500;
-        }
-
-        this.repeatTime = newRepeatTime;
+        this.repeatTime = normalizeRepeatTime(safeMultiply(settings.getIntParams()[0], MIN_DELAY));
 
         return true;
+    }
+
+    private static int safeMultiply(int value, int factor) {
+        if (value <= 0) {
+            return DEFAULT_DELAY;
+        }
+
+        long multiplied = (long) value * factor;
+        return multiplied > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) multiplied;
     }
 
     // ========== WiredTickable Implementation ==========
