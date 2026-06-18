@@ -53,7 +53,7 @@ public class WiredConditionDateRangeActive extends InteractionWiredCondition {
     @Override
     public boolean saveData(WiredSettings settings) {
         if(settings.getIntParams().length < 2) return false;
-        this.setRange(settings.getIntParams()[0], settings.getIntParams()[1]);
+        this.applyRange(settings.getIntParams()[0], settings.getIntParams()[1]);
         return true;
     }
 
@@ -82,31 +82,25 @@ public class WiredConditionDateRangeActive extends InteractionWiredCondition {
         this.onPickUp();
         String wiredData = set.getString("wired_data");
         if (wiredData == null || wiredData.isEmpty()) {
+            this.applyRange(0, 0);
             return;
         }
 
         if (wiredData.startsWith("{")) {
-            JsonData data;
-            try {
-                data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-            } catch (RuntimeException exception) {
-                this.onPickUp();
-                return;
-            }
-
+            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
             if (data == null) {
+                this.applyRange(0, 0);
                 return;
             }
-
-            this.setRange(data.startDate, data.endDate);
+            this.applyRange(data.startDate, data.endDate);
         } else {
             String[] data = wiredData.split("\t");
 
             if (data.length == 2) {
                 try {
-                    this.setRange(Integer.parseInt(data[0]), Integer.parseInt(data[1]));
+                    this.applyRange(Integer.parseInt(data[0]), Integer.parseInt(data[1]));
                 } catch (Exception e) {
-                    this.onPickUp();
+                    this.applyRange(0, 0);
                 }
             }
         }
@@ -118,22 +112,10 @@ public class WiredConditionDateRangeActive extends InteractionWiredCondition {
         this.endDate = 0;
     }
 
-    void setRange(int startDate, int endDate) {
-        int normalizedStart = this.normalizeTimestamp(startDate);
-        int normalizedEnd = this.normalizeTimestamp(endDate);
-
-        if (normalizedStart > normalizedEnd) {
-            this.startDate = normalizedEnd;
-            this.endDate = normalizedStart;
-            return;
-        }
-
-        this.startDate = normalizedStart;
-        this.endDate = normalizedEnd;
-    }
-
-    int normalizeTimestamp(int value) {
-        return Math.max(0, value);
+    private void applyRange(int startDate, int endDate) {
+        int[] range = WiredDateRangeInputGuard.normalizeRange(startDate, endDate);
+        this.startDate = range[0];
+        this.endDate = range[1];
     }
 
     static class JsonData {
