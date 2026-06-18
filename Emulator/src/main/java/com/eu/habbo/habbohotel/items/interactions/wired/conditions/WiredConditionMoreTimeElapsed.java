@@ -16,6 +16,7 @@ import java.sql.SQLException;
 
 public class WiredConditionMoreTimeElapsed extends InteractionWiredCondition {
     private static final WiredConditionType type = WiredConditionType.TIME_MORE_THAN;
+    static final int MAX_CYCLES = 1_000_000;
 
     private int cycles;
 
@@ -58,6 +59,7 @@ public class WiredConditionMoreTimeElapsed extends InteractionWiredCondition {
                     this.cycles = WiredConditionInputGuard.normalizeTimerCycles(Integer.parseInt(wiredData));
             }
         } catch (Exception e) {
+            this.cycles = 0;
         }
     }
 
@@ -92,6 +94,10 @@ public class WiredConditionMoreTimeElapsed extends InteractionWiredCondition {
         if(settings.getIntParams().length < 1) return false;
         this.cycles = WiredConditionInputGuard.normalizeTimerCycles(settings.getIntParams()[0]);
         return true;
+    }
+
+    int normalizeCycles(int value) {
+        return Math.max(0, Math.min(MAX_CYCLES, value));
     }
 
     static class JsonData {

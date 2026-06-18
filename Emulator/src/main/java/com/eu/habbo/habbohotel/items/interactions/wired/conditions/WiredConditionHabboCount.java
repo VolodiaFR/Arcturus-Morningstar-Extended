@@ -16,6 +16,7 @@ import java.sql.SQLException;
 
 public class WiredConditionHabboCount extends InteractionWiredCondition {
     public static final WiredConditionType type = WiredConditionType.USER_COUNT;
+    static final int MAX_USER_COUNT_LIMIT = 1000;
 
     private int lowerLimit = 0;
     private int upperLimit = 50;
@@ -31,6 +32,10 @@ public class WiredConditionHabboCount extends InteractionWiredCondition {
 
     @Override
     public boolean evaluate(WiredContext ctx) {
+        if (ctx == null || ctx.room() == null) {
+            return false;
+        }
+
         int count = (this.userSource == WiredSourceUtil.SOURCE_TRIGGER)
                 ? ctx.room().getUserCount()
                 : WiredSourceUtil.resolveUsers(ctx, this.userSource).size();
@@ -55,7 +60,12 @@ public class WiredConditionHabboCount extends InteractionWiredCondition {
 
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        this.onPickUp();
+
         String wiredData = set.getString("wired_data");
+        if (wiredData == null || wiredData.isEmpty()) {
+            return;
+        }
 
         if (wiredData.startsWith("{")) {
             JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
@@ -71,8 +81,8 @@ public class WiredConditionHabboCount extends InteractionWiredCondition {
                     // malformed legacy data — keep the constructed defaults
                 }
             }
-            this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
         }
+        this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
     }
 
     @Override
