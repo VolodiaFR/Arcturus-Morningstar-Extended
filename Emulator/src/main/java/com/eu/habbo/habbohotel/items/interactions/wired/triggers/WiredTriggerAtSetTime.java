@@ -71,6 +71,7 @@ public class WiredTriggerAtSetTime extends InteractionWiredTrigger implements Wi
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
         String wiredData = set.getString("wired_data");
+        this.executeTime = parseExecuteTime(wiredData);
 
         Integer storedExecuteTime = null;
         try {
@@ -83,6 +84,7 @@ public class WiredTriggerAtSetTime extends InteractionWiredTrigger implements Wi
         } catch (RuntimeException ignored) {
             storedExecuteTime = null;
         }
+    }
 
         this.executeTime = WiredTimerInputGuard.normalizeStoredMillis(storedExecuteTime, MIN_DELAY, LEGACY_FALLBACK_DELAY);
         
@@ -144,6 +146,15 @@ public class WiredTriggerAtSetTime extends InteractionWiredTrigger implements Wi
         this.resetTimer();
 
         return true;
+    }
+
+    private static int safeMultiply(int value, int factor) {
+        if (value <= 0) {
+            return DEFAULT_EXECUTE_TIME;
+        }
+
+        long multiplied = (long) value * factor;
+        return multiplied > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) multiplied;
     }
 
     // ========== WiredTickable Implementation ==========
