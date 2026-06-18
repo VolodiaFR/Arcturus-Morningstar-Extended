@@ -89,8 +89,11 @@ public class WiredConditionFurniHaveHabbo extends InteractionWiredCondition {
 
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
-        this.items.clear();
+        this.onPickUp();
         String wiredData = set.getString("wired_data");
+        if (wiredData == null || wiredData.isEmpty()) {
+            return;
+        }
 
         if (wiredData.startsWith("{")) {
             JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
@@ -100,8 +103,10 @@ public class WiredConditionFurniHaveHabbo extends InteractionWiredCondition {
             for(int id : WiredFurniConditionInputGuard.sanitizeItemIds(data.itemIds, WiredManager.MAXIMUM_FURNI_SELECTION)) {
                 HabboItem item = room.getHabboItem(id);
 
-                if (item != null) {
-                    this.items.add(item);
+                    HabboItem item = room.getHabboItem(id);
+                    if (item != null) {
+                        this.items.add(item);
+                    }
                 }
             }
         } else {
@@ -111,8 +116,10 @@ public class WiredConditionFurniHaveHabbo extends InteractionWiredCondition {
                 for (int id : WiredFurniConditionInputGuard.parseLegacyItemIds(data[1], WiredManager.MAXIMUM_FURNI_SELECTION)) {
                     HabboItem item = room.getHabboItem(id);
 
-                    if (item != null)
-                        this.items.add(item);
+                        if (item != null)
+                            this.items.add(item);
+                    } catch (NumberFormatException ignored) {
+                    }
                 }
             }
             this.furniSource = this.items.isEmpty() ? WiredSourceUtil.SOURCE_TRIGGER : WiredSourceUtil.SOURCE_SELECTED;
@@ -177,6 +184,18 @@ public class WiredConditionFurniHaveHabbo extends InteractionWiredCondition {
         }
 
         return true;
+    }
+
+    int normalizeFurniSource(int value) {
+        switch (value) {
+            case WiredSourceUtil.SOURCE_SELECTED:
+            case WiredSourceUtil.SOURCE_SELECTOR:
+            case WiredSourceUtil.SOURCE_SIGNAL:
+            case WiredSourceUtil.SOURCE_TRIGGER:
+                return value;
+            default:
+                return WiredSourceUtil.SOURCE_TRIGGER;
+        }
     }
 
     protected boolean hasAvatarOnItem(HabboItem item, Room room, Collection<Habbo> habbos, Collection<Bot> bots, Collection<Pet> pets) {

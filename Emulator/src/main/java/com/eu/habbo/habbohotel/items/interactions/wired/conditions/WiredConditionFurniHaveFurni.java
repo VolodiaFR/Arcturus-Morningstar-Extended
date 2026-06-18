@@ -92,21 +92,37 @@ public class WiredConditionFurniHaveFurni extends InteractionWiredCondition {
 
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        this.onPickUp();
         String wiredData = set.getString("wired_data");
+        if (wiredData == null || wiredData.isEmpty()) {
+            return;
+        }
 
         if (wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            JsonData data;
+            try {
+                data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            } catch (RuntimeException exception) {
+                this.onPickUp();
+                return;
+            }
+
+            if (data == null) {
+                return;
+            }
+
             this.all = data.all;
             this.furniSource = WiredFurniConditionInputGuard.normalizeFurniSource(data.furniSource);
 
             for(int id : WiredFurniConditionInputGuard.sanitizeItemIds(data.itemIds, WiredManager.MAXIMUM_FURNI_SELECTION)) {
                 HabboItem item = room.getHabboItem(id);
 
-                if (item != null) {
-                    this.items.add(item);
+                    HabboItem item = room.getHabboItem(id);
+                    if (item != null) {
+                        this.items.add(item);
+                    }
                 }
             }
-
         } else {
             String[] data = wiredData.split(":");
 
@@ -117,8 +133,10 @@ public class WiredConditionFurniHaveFurni extends InteractionWiredCondition {
                     for (int id : WiredFurniConditionInputGuard.parseLegacyItemIds(data[1], WiredManager.MAXIMUM_FURNI_SELECTION)) {
                         HabboItem item = room.getHabboItem(id);
 
-                        if (item != null)
-                            this.items.add(item);
+                            if (item != null)
+                                this.items.add(item);
+                        } catch (NumberFormatException ignored) {
+                        }
                     }
                 }
             }
@@ -190,6 +208,18 @@ public class WiredConditionFurniHaveFurni extends InteractionWiredCondition {
             }
         }
         return true;
+    }
+
+    int normalizeFurniSource(int value) {
+        switch (value) {
+            case WiredSourceUtil.SOURCE_SELECTED:
+            case WiredSourceUtil.SOURCE_SELECTOR:
+            case WiredSourceUtil.SOURCE_SIGNAL:
+            case WiredSourceUtil.SOURCE_TRIGGER:
+                return value;
+            default:
+                return WiredSourceUtil.SOURCE_TRIGGER;
+        }
     }
 
     private void refresh() {

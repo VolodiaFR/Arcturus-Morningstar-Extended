@@ -42,6 +42,10 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
 
     @Override
     public boolean evaluate(WiredContext ctx) {
+        if (ctx == null || ctx.room() == null) {
+            return false;
+        }
+
         this.refresh();
 
         List<RoomUnit> userTargets = WiredSourceUtil.resolveUsers(ctx, this.userSource);
@@ -104,8 +108,11 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
 
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
-        this.items.clear();
+        this.onPickUp();
         String wiredData = set.getString("wired_data");
+        if (wiredData == null || wiredData.isEmpty()) {
+            return;
+        }
 
         if (wiredData.startsWith("{")) {
             JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
@@ -116,16 +123,20 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
             for(int id : WiredFurniConditionInputGuard.sanitizeItemIds(data.itemIds, WiredManager.MAXIMUM_FURNI_SELECTION)) {
                 HabboItem item = room.getHabboItem(id);
 
-                if (item != null) {
-                    this.items.add(item);
+                    HabboItem item = room.getHabboItem(id);
+                    if (item != null) {
+                        this.items.add(item);
+                    }
                 }
             }
         } else {
             for (int id : WiredFurniConditionInputGuard.parseLegacyItemIds(wiredData, WiredManager.MAXIMUM_FURNI_SELECTION)) {
                 HabboItem item = room.getHabboItem(id);
 
-                if (item != null) {
-                    this.items.add(item);
+                    if (item != null) {
+                        this.items.add(item);
+                    }
+                } catch (NumberFormatException ignored) {
                 }
             }
             this.furniSource = this.items.isEmpty() ? WiredSourceUtil.SOURCE_TRIGGER : WiredSourceUtil.SOURCE_SELECTED;
@@ -225,6 +236,22 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
 
     protected int normalizeQuantifier(int value) {
         return (value == QUANTIFIER_ANY) ? QUANTIFIER_ANY : QUANTIFIER_ALL;
+    }
+
+    int normalizeFurniSource(int value) {
+        switch (value) {
+            case WiredSourceUtil.SOURCE_SELECTED:
+            case WiredSourceUtil.SOURCE_SELECTOR:
+            case WiredSourceUtil.SOURCE_SIGNAL:
+            case WiredSourceUtil.SOURCE_TRIGGER:
+                return value;
+            default:
+                return WiredSourceUtil.SOURCE_TRIGGER;
+        }
+    }
+
+    int normalizeUserSource(int value) {
+        return WiredSourceUtil.isDefaultUserSource(value) ? value : WiredSourceUtil.SOURCE_TRIGGER;
     }
 
     @Override
