@@ -18,6 +18,7 @@ import java.util.List;
 public class WiredConditionHabboHasEffect extends InteractionWiredCondition {
     protected static final int QUANTIFIER_ALL = 0;
     protected static final int QUANTIFIER_ANY = 1;
+    protected static final int MAX_EFFECT_ID = 10_000;
 
     public static final WiredConditionType type = WiredConditionType.ACTOR_WEARS_EFFECT;
 
@@ -86,6 +87,7 @@ public class WiredConditionHabboHasEffect extends InteractionWiredCondition {
 
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        this.onPickUp();
         String wiredData = set.getString("wired_data");
         if (wiredData == null || wiredData.isEmpty()) {
             this.onPickUp();
@@ -169,6 +171,14 @@ public class WiredConditionHabboHasEffect extends InteractionWiredCondition {
         }
 
         return (value == QUANTIFIER_ANY) ? QUANTIFIER_ANY : QUANTIFIER_ALL;
+    }
+
+    protected int normalizeEffectId(int value) {
+        return Math.max(0, Math.min(MAX_EFFECT_ID, value));
+    }
+
+    protected int normalizeUserSource(int value) {
+        return WiredSourceUtil.isDefaultUserSource(value) ? value : WiredSourceUtil.SOURCE_TRIGGER;
     }
 
     static class JsonData {

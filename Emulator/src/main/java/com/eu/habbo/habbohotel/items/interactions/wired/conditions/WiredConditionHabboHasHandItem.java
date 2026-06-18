@@ -18,6 +18,7 @@ import java.util.List;
 public class WiredConditionHabboHasHandItem extends InteractionWiredCondition {
     protected static final int QUANTIFIER_ALL = 0;
     protected static final int QUANTIFIER_ANY = 1;
+    protected static final int MAX_HAND_ITEM_ID = 10_000;
 
     public static final WiredConditionType type = WiredConditionType.ACTOR_HAS_HANDITEM;
 
@@ -169,6 +170,10 @@ public class WiredConditionHabboHasHandItem extends InteractionWiredCondition {
 
     protected int normalizeQuantifier(int value) {
         return (value == QUANTIFIER_ANY) ? QUANTIFIER_ANY : QUANTIFIER_ALL;
+    }
+
+    protected int normalizeUserSource(int value) {
+        return WiredSourceUtil.isDefaultUserSource(value) ? value : WiredSourceUtil.SOURCE_TRIGGER;
     }
 
     static class JsonData {
