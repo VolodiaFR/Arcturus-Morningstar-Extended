@@ -804,7 +804,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     this.tileManager.updateTile(tile);
   }
 
-  public void updateTiles(THashSet<RoomTile> tiles) {
+  public void updateTiles(Collection<RoomTile> tiles) {
     this.tileManager.updateTiles(tiles);
   }
 

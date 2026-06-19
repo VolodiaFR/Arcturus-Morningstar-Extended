@@ -12,6 +12,8 @@ import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
+
 /**
  * Manages tile state calculations and heightmap operations for a room.
  */
@@ -38,7 +40,7 @@ public class RoomTileManager {
     /**
      * Updates multiple tiles and sends the update to clients.
      */
-    public void updateTiles(THashSet<RoomTile> tiles) {
+    public void updateTiles(Collection<RoomTile> tiles) {
         for (RoomTile tile : tiles) {
             this.room.getItemManager().tileCache.remove(tile);
             tile.setStackHeight(this.getStackHeight(tile.x, tile.y, false));
