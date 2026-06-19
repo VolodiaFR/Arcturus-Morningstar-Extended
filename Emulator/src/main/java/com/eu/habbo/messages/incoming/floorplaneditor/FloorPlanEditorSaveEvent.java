@@ -13,13 +13,13 @@ import com.eu.habbo.messages.outgoing.generic.alerts.GenericAlertComposer;
 import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.rooms.ForwardToRoomComposer;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -144,9 +144,9 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
             return;
         }
 
-        THashSet<RoomTile> locked_tileList = room.getLockedTiles();
-        THashSet<RoomTile> new_tileList = new THashSet<>();
-        THashSet<HabboItem> itemsToPickup = new THashSet<>();
+        Set<RoomTile> locked_tileList = room.getLockedTiles();
+        Set<RoomTile> new_tileList = new HashSet<>();
+        Set<HabboItem> itemsToPickup = new HashSet<>();
         int blockedX = -1;
         int blockedY = -1;
         blockingRoomItemScan:

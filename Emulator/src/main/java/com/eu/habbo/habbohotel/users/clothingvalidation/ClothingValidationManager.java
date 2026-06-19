@@ -1,13 +1,14 @@
 package com.eu.habbo.habbohotel.users.clothingvalidation;
 
 import com.eu.habbo.habbohotel.users.Habbo;
-import gnu.trove.map.hash.THashMap;
 import it.unimi.dsi.fastutil.ints.IntCollection;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 public class ClothingValidationManager {
@@ -98,7 +99,7 @@ public class ClothingValidationManager {
         String[] newLookParts = look.split(Pattern.quote("."));
         ArrayList<String> lookParts = new ArrayList<>();
 
-        THashMap<String, String[]> parts = new THashMap<>();
+        Map<String, String[]> parts = new HashMap<>();
 
         // add mandatory settypes
         for(String lookpart : newLookParts) {
