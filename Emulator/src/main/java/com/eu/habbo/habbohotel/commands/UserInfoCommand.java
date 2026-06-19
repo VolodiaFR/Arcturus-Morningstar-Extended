@@ -58,10 +58,8 @@ public class UserInfoCommand extends Command {
 
         message.append("<b>").append(Emulator.getTexts().getValue("command.cmd_userinfo.currencies")).append("</b>\r");
         message.append(Emulator.getTexts().getValue("command.cmd_userinfo.credits")).append(": ").append(habbo.getCredits()).append("\r");
-        habbo.getCurrencies().forEachEntry((type, amount) -> {
-            message.append(Emulator.getTexts().getValue("seasonal.name." + type)).append(": ").append(amount).append("\r");
-            return true;
-        });
+        habbo.getCurrencies().int2IntEntrySet().forEach(entry ->
+                message.append(Emulator.getTexts().getValue("seasonal.name." + entry.getIntKey())).append(": ").append(entry.getIntValue()).append("\r"));
         message.append("\r").append(onlineHabbo != null ? "<b>" + Emulator.getTexts().getValue("command.cmd_userinfo.current_activity") + "</b>\r" : "").append(onlineHabbo != null ? Emulator.getTexts().getValue("command.cmd_userinfo.room") + ": " + (onlineHabbo.getHabboInfo().getCurrentRoom() != null ? onlineHabbo.getHabboInfo().getCurrentRoom().getName() + "(" + onlineHabbo.getHabboInfo().getCurrentRoom().getId() + ")\r" : "-") : "").append(onlineHabbo != null ? Emulator.getTexts().getValue("command.cmd_userinfo.respect_left") + ": " + onlineHabbo.getHabboStats().respectPointsToGive + "\r" : "").append(onlineHabbo != null ? Emulator.getTexts().getValue("command.cmd_userinfo.pet_respect_left") + ": " + onlineHabbo.getHabboStats().petRespectPointsToGive + "\r" : "").append(onlineHabbo != null ? Emulator.getTexts().getValue("command.cmd_userinfo.allow_trade") + ": " + ((onlineHabbo.getHabboStats().allowTrade()) ? Emulator.getTexts().getValue("generic.yes") : Emulator.getTexts().getValue("generic.no")) + "\r" : "").append(onlineHabbo != null ? Emulator.getTexts().getValue("command.cmd_userinfo.allow_follow") + ": " + ((onlineHabbo.getHabboStats().blockFollowing) ? Emulator.getTexts().getValue("generic.no") : Emulator.getTexts().getValue("generic.yes")) + "\r" : "").append(onlineHabbo != null ? Emulator.getTexts().getValue("command.cmd_userinfo.allow_friend_request") + ": " + ((onlineHabbo.getHabboStats().blockFriendRequests) ? Emulator.getTexts().getValue("generic.no") : Emulator.getTexts().getValue("generic.yes")) + "\r" : "");
 
         SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
