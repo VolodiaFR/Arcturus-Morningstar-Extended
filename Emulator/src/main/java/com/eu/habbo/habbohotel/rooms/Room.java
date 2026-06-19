@@ -46,6 +46,7 @@ import gnu.trove.map.hash.THashMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.hash.THashSet;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1577,14 +1578,10 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
   public Color getBackgroundTonerColor() {
     Color color = new Color(0, 0, 0);
-    TIntObjectMap<HabboItem> items = this.itemManager.getRoomItems();
-    TIntObjectIterator<HabboItem> iterator = items.iterator();
+    Int2ObjectMap<HabboItem> items = this.itemManager.getRoomItems();
 
-    for (int i = items.size(); i > 0; i--) {
-      try {
-        iterator.advance();
-        HabboItem object = iterator.value();
-
+    synchronized (items) {
+      for (HabboItem object : items.values()) {
         if (object instanceof InteractionBackgroundToner) {
           String[] extraData = object.getExtradata().split(":");
 
@@ -1595,7 +1592,6 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
             }
           }
         }
-      } catch (Exception e) {
       }
     }
 
@@ -1769,7 +1765,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     return this.itemManager.getFurniOwnerName(userId);
   }
 
-  public TIntIntMap getFurniOwnerCount() {
+  public Int2IntMap getFurniOwnerCount() {
     return this.itemManager.getFurniOwnerCount();
   }
 
@@ -2683,23 +2679,15 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
   public void refreshGuildColors(Guild guild) {
     if (guild.getRoomId() == this.id) {
-      TIntObjectMap<HabboItem> items = this.itemManager.getRoomItems();
-      TIntObjectIterator<HabboItem> iterator = items.iterator();
-
-      for (int i = items.size(); i-- > 0; ) {
-        try {
-          iterator.advance();
-        } catch (Exception e) {
-          break;
-        }
-
-        HabboItem habboItem = iterator.value();
-
+      Int2ObjectMap<HabboItem> items = this.itemManager.getRoomItems();
+      synchronized (items) {
+      for (HabboItem habboItem : items.values()) {
         if (habboItem instanceof InteractionGuildFurni) {
           if (((InteractionGuildFurni) habboItem).getGuildId() == guild.getId()) {
             this.updateItem(habboItem);
           }
         }
+      }
       }
     }
   }
