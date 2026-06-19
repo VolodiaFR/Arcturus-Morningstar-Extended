@@ -167,6 +167,9 @@ public final class Emulator {
             Emulator.config.register("rcon.execute_command.denied_permissions", "cmd_shutdown;cmd_give_rank");
             Emulator.config.register("rcon.execute_command.allowed_permissions", "");
             Emulator.config.register("rcon.max_payload_bytes", "65536");
+            Emulator.config.register("nitro.secure.api.max_payload_bytes", "65536");
+            Emulator.config.register("nitro.secure.config.max_file_bytes", "2097152");
+            Emulator.config.register("nitro.secure.gamedata.max_file_bytes", "16777216");
             registerEarningsSettings();
             String hotelTimezoneId = Emulator.getConfig().getValue("hotel.timezone", java.time.ZoneId.systemDefault().getId());
             System.out.println(startupCard(hotelTimezoneId));

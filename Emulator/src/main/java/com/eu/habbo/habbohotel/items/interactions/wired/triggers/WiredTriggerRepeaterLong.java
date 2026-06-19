@@ -66,8 +66,6 @@ public class WiredTriggerRepeaterLong extends InteractionWiredTrigger implements
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
         String wiredData = set.getString("wired_data");
-        this.repeatTime = parseRepeatTime(wiredData);
-    }
 
         Integer storedRepeatTime = null;
         try {
@@ -80,7 +78,6 @@ public class WiredTriggerRepeaterLong extends InteractionWiredTrigger implements
         } catch (RuntimeException ignored) {
             storedRepeatTime = null;
         }
-    }
 
         this.repeatTime = WiredTimerInputGuard.normalizeStoredMillis(storedRepeatTime, MIN_DELAY, LEGACY_FALLBACK_DELAY);
     }
@@ -134,15 +131,6 @@ public class WiredTriggerRepeaterLong extends InteractionWiredTrigger implements
         this.repeatTime = WiredTimerInputGuard.fromClientUnits(settings.getIntParams()[0], STEP_MS, MIN_DELAY);
         // No accumulated time reset needed - using global tick count
         return true;
-    }
-
-    private static int safeMultiply(int value, int factor) {
-        if (value <= 0) {
-            return DEFAULT_DELAY;
-        }
-
-        long multiplied = (long) value * factor;
-        return multiplied > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) multiplied;
     }
 
     // ========== WiredTickable Implementation ==========

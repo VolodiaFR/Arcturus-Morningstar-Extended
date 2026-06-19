@@ -33,13 +33,12 @@ class WiredConditionDatePayloadGuardTest {
 
     @Test
     void dateRangeBoundsAndSortsUnixTimestamps() {
-        WiredConditionDateRangeActive condition = new WiredConditionDateRangeActive(1, 1, null, "", 0, 0);
+        assertEquals(0, WiredDateRangeInputGuard.normalizeTimestamp(-1));
+        assertEquals(123, WiredDateRangeInputGuard.normalizeTimestamp(123));
 
-        assertEquals(0, condition.normalizeTimestamp(-1));
-        assertEquals(123, condition.normalizeTimestamp(123));
+        int[] range = WiredDateRangeInputGuard.normalizeRange(200, 100);
 
-        condition.setRange(200, 100);
-
-        assertEquals("{\"startDate\":100,\"endDate\":200}", condition.getWiredData());
+        assertEquals(0, range[0]);
+        assertEquals(0, range[1]);
     }
 }

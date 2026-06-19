@@ -103,10 +103,8 @@ public class WiredConditionFurniHaveHabbo extends InteractionWiredCondition {
             for(int id : WiredFurniConditionInputGuard.sanitizeItemIds(data.itemIds, WiredManager.MAXIMUM_FURNI_SELECTION)) {
                 HabboItem item = room.getHabboItem(id);
 
-                    HabboItem item = room.getHabboItem(id);
-                    if (item != null) {
-                        this.items.add(item);
-                    }
+                if (item != null) {
+                    this.items.add(item);
                 }
             }
         } else {
@@ -116,9 +114,8 @@ public class WiredConditionFurniHaveHabbo extends InteractionWiredCondition {
                 for (int id : WiredFurniConditionInputGuard.parseLegacyItemIds(data[1], WiredManager.MAXIMUM_FURNI_SELECTION)) {
                     HabboItem item = room.getHabboItem(id);
 
-                        if (item != null)
-                            this.items.add(item);
-                    } catch (NumberFormatException ignored) {
+                    if (item != null) {
+                        this.items.add(item);
                     }
                 }
             }

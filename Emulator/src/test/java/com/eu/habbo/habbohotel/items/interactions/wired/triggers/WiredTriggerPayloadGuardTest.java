@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.triggers;
 
 import com.eu.habbo.habbohotel.games.GameTeamColors;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredTimerInputGuard;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -8,27 +9,32 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class WiredTriggerPayloadGuardTest {
     @Test
     void repeaterPayloadsFallBackOnInvalidDataAndClampUpperBound() {
-        assertEquals(WiredTriggerRepeater.DEFAULT_DELAY, WiredTriggerRepeater.parseRepeatTime(null));
-        assertEquals(WiredTriggerRepeater.DEFAULT_DELAY, WiredTriggerRepeater.parseRepeatTime("not-a-number"));
-        assertEquals(WiredTriggerRepeater.DEFAULT_DELAY, WiredTriggerRepeater.parseRepeatTime("{broken"));
-        assertEquals(WiredTriggerRepeater.DEFAULT_DELAY, WiredTriggerRepeater.parseRepeatTime("{\"repeatTime\":0}"));
-        assertEquals(WiredTriggerRepeater.MAX_DELAY, WiredTriggerRepeater.parseRepeatTime("{\"repeatTime\":2147483647}"));
+        assertEquals(WiredTriggerRepeater.DEFAULT_DELAY,
+            WiredTimerInputGuard.normalizeStoredMillis(null, 500, WiredTriggerRepeater.DEFAULT_DELAY));
+        assertEquals(WiredTriggerRepeater.DEFAULT_DELAY,
+            WiredTimerInputGuard.normalizeStoredMillis(0, 500, WiredTriggerRepeater.DEFAULT_DELAY));
+        assertEquals(WiredTimerInputGuard.MAX_TIMER_MS,
+            WiredTimerInputGuard.normalizeStoredMillis(Integer.MAX_VALUE, 500, WiredTriggerRepeater.DEFAULT_DELAY));
 
-        assertEquals(WiredTriggerRepeaterLong.DEFAULT_DELAY, WiredTriggerRepeaterLong.parseRepeatTime(null));
-        assertEquals(WiredTriggerRepeaterLong.DEFAULT_DELAY, WiredTriggerRepeaterLong.parseRepeatTime("1"));
-        assertEquals(WiredTriggerRepeaterLong.MAX_DELAY, WiredTriggerRepeaterLong.parseRepeatTime("2147483647"));
+        assertEquals(WiredTriggerRepeaterLong.DEFAULT_DELAY,
+            WiredTimerInputGuard.normalizeStoredMillis(null, 5000, WiredTriggerRepeaterLong.DEFAULT_DELAY));
+        assertEquals(WiredTriggerRepeaterLong.DEFAULT_DELAY,
+            WiredTimerInputGuard.normalizeStoredMillis(1, 5000, WiredTriggerRepeaterLong.DEFAULT_DELAY));
+        assertEquals(WiredTimerInputGuard.MAX_TIMER_MS,
+            WiredTimerInputGuard.normalizeStoredMillis(Integer.MAX_VALUE, 5000, WiredTriggerRepeaterLong.DEFAULT_DELAY));
     }
 
     @Test
     void atTimePayloadsFallBackOnInvalidDataAndClampUpperBound() {
-        assertEquals(WiredTriggerAtSetTime.DEFAULT_EXECUTE_TIME, WiredTriggerAtSetTime.parseExecuteTime(null));
-        assertEquals(WiredTriggerAtSetTime.DEFAULT_EXECUTE_TIME, WiredTriggerAtSetTime.parseExecuteTime("bad"));
-        assertEquals(WiredTriggerAtSetTime.DEFAULT_EXECUTE_TIME, WiredTriggerAtSetTime.parseExecuteTime("{\"executeTime\":0}"));
-        assertEquals(WiredTriggerAtSetTime.MAX_EXECUTE_TIME, WiredTriggerAtSetTime.parseExecuteTime("{\"executeTime\":2147483647}"));
+        assertEquals(20 * 500, WiredTimerInputGuard.normalizeStoredMillis(null, 500, 20 * 500));
+        assertEquals(20 * 500, WiredTimerInputGuard.normalizeStoredMillis(0, 500, 20 * 500));
+        assertEquals(WiredTimerInputGuard.MAX_TIMER_MS,
+            WiredTimerInputGuard.normalizeStoredMillis(Integer.MAX_VALUE, 500, 20 * 500));
 
-        assertEquals(WiredTriggerAtTimeLong.DEFAULT_EXECUTE_TIME, WiredTriggerAtTimeLong.parseExecuteTime("{broken"));
-        assertEquals(WiredTriggerAtTimeLong.DEFAULT_EXECUTE_TIME, WiredTriggerAtTimeLong.parseExecuteTime("1"));
-        assertEquals(WiredTriggerAtTimeLong.MAX_EXECUTE_TIME, WiredTriggerAtTimeLong.parseExecuteTime("2147483647"));
+        assertEquals(20 * 5000, WiredTimerInputGuard.normalizeStoredMillis(null, 5000, 20 * 5000));
+        assertEquals(20 * 5000, WiredTimerInputGuard.normalizeStoredMillis(1, 5000, 20 * 5000));
+        assertEquals(WiredTimerInputGuard.MAX_TIMER_MS,
+            WiredTimerInputGuard.normalizeStoredMillis(Integer.MAX_VALUE, 5000, 20 * 5000));
     }
 
     @Test
