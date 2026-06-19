@@ -20,7 +20,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Manages roller mechanics within a room.
@@ -82,7 +84,7 @@ public class RoomRollerManager {
             return;
         }
 
-        THashSet<HabboItem> itemsOnRoller = new THashSet<>();
+        Set<HabboItem> itemsOnRoller = new HashSet<>();
         for (HabboItem item : this.room.getItemsAt(rollerTile)) {
             if (item.getZ() >= roller.getZ() + Item.getCurrentHeight(roller)) {
                 itemsOnRoller.add(item);
@@ -148,7 +150,7 @@ public class RoomRollerManager {
             return;
         }
 
-        THashSet<HabboItem> itemsNewTile = new THashSet<>();
+        Set<HabboItem> itemsNewTile = new HashSet<>();
         itemsNewTile.addAll(this.room.getItemsAt(tileInFront));
         itemsNewTile.removeAll(itemsOnRoller);
 
@@ -242,8 +244,8 @@ public class RoomRollerManager {
      */
     private void processUnitsOnRoller(InteractionRoller roller, RoomTile rollerTile,
                                       RoomTile tileInFront, HabboItem topItem,
-                                      THashSet<HabboItem> itemsOnRoller,
-                                      THashSet<HabboItem> itemsNewTile,
+                                      Set<HabboItem> itemsOnRoller,
+                                      Set<HabboItem> itemsNewTile,
                                       boolean stackContainsRoller, boolean allowFurniture,
                                       double zOffset, THashSet<MessageComposer> messages,
                                       THashSet<Integer> rolledUnitIds, THashSet<RoomUnit> updatedUnit) {
@@ -366,7 +368,7 @@ public class RoomRollerManager {
     /**
      * Processes furniture items on a roller.
      */
-    private void processFurnitureOnRoller(InteractionRoller roller, THashSet<HabboItem> itemsOnRoller,
+    private void processFurnitureOnRoller(InteractionRoller roller, Set<HabboItem> itemsOnRoller,
                                           HabboItem newRoller, HabboItem topItem, RoomTile tileInFront,
                                           double zOffset, THashSet<MessageComposer> messages,
                                           THashSet<Integer> rollerFurniIds) {
@@ -401,7 +403,7 @@ public class RoomRollerManager {
         }
     }
 
-    private double calculateTargetZ(RoomTile targetTile, THashSet<HabboItem> itemsBeingRolled) {
+    private double calculateTargetZ(RoomTile targetTile, Set<HabboItem> itemsBeingRolled) {
         HabboItem topItem = this.room.getTopItemAt(targetTile.x, targetTile.y);
 
         // Ignore items that are being rolled along with the unit

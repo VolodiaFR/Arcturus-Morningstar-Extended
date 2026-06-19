@@ -2454,8 +2454,8 @@ public class RoomItemManager {
         return false;
     }
 
-    private THashSet<HabboItem> getPhysicsItemsAt(RoomTile tile, HabboItem exclude, WiredMovementPhysics physics) {
-        THashSet<HabboItem> items = new THashSet<>();
+    private Set<HabboItem> getPhysicsItemsAt(RoomTile tile, HabboItem exclude, WiredMovementPhysics physics) {
+        Set<HabboItem> items = new HashSet<>();
 
         for (HabboItem item : this.getItemsAt(tile)) {
             if (item == null || item == exclude) {
