@@ -20,7 +20,6 @@ import com.eu.habbo.plugin.events.users.UserIdleEvent;
 import com.eu.habbo.plugin.events.users.UsernameTalkEvent;
 import com.eu.habbo.threading.runnables.YouAreAPirate;
 import com.eu.habbo.util.pathfinding.Rotation;
-import gnu.trove.iterator.TIntObjectIterator;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import org.slf4j.Logger;
@@ -592,12 +591,8 @@ public class RoomChatManager {
      */
     private void notifyBots(RoomChatMessage roomChatMessage) {
         synchronized (this.room.getUnitManager().getCurrentBots()) {
-            TIntObjectIterator<Bot> botIterator = this.room.getUnitManager().getCurrentBots().iterator();
-
-            for (int i = this.room.getUnitManager().getCurrentBots().size(); i-- > 0; ) {
+            for (Bot bot : this.room.getUnitManager().getCurrentBots().valueCollection()) {
                 try {
-                    botIterator.advance();
-                    Bot bot = botIterator.value();
                     bot.onUserSay(roomChatMessage);
 
                 } catch (Exception e) {

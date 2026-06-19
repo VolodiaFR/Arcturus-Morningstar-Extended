@@ -8,11 +8,11 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionStackWalkHelper;
 import com.eu.habbo.habbohotel.items.interactions.InteractionTileWalkMagic;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.plugin.events.furniture.FurnitureStackHeightEvent;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -547,7 +547,7 @@ public class RoomTileManager {
             }
 
             // Collect unique tiles occupied by items (handles rotation)
-            THashSet<RoomTile> tilesToUpdate = new THashSet<>();
+            Set<RoomTile> tilesToUpdate = new HashSet<>();
             for (HabboItem item : floorItems) {
                 RoomTile baseTile = layout.getTile(item.getX(), item.getY());
                 if (baseTile != null) {
