@@ -50,10 +50,6 @@ import com.eu.habbo.plugin.events.rooms.UserVoteRoomEvent;
 import com.eu.habbo.plugin.events.users.HabboAddedToRoomEvent;
 import com.eu.habbo.plugin.events.users.UserEnterRoomEvent;
 import com.eu.habbo.plugin.events.users.UserExitRoomEvent;
-import gnu.trove.iterator.TIntObjectIterator;
-import gnu.trove.map.hash.THashMap;
-import gnu.trove.procedure.TObjectProcedure;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,7 +67,7 @@ public class RoomManager {
     public static int MAXIMUM_ROOMS_HC = 35;
     public static int HOME_ROOM_ID = 0;
     public static boolean SHOW_PUBLIC_IN_POPULAR_TAB = false;
-    private final THashMap<Integer, RoomCategory> roomCategories;
+    private final Map<Integer, RoomCategory> roomCategories;
     private final List<String> mapNames;
     private final ConcurrentHashMap<String, RoomLayoutData> layoutCache;
     private final ConcurrentHashMap<Integer, Room> activeRooms;
@@ -80,7 +76,7 @@ public class RoomManager {
 
     public RoomManager() {
         long millis = System.currentTimeMillis();
-        this.roomCategories = new THashMap<>();
+        this.roomCategories = new HashMap<>();
         this.mapNames = new ArrayList<>();
         this.layoutCache = new ConcurrentHashMap<>();
         this.activeRooms = new ConcurrentHashMap<>();
@@ -174,8 +170,8 @@ public class RoomManager {
         }
     }
 
-    public THashMap<Integer, List<Room>> findRooms(NavigatorFilterField filterField, String value, int category, boolean showInvisible) {
-        THashMap<Integer, List<Room>> rooms = new THashMap<>();
+    public Map<Integer, List<Room>> findRooms(NavigatorFilterField filterField, String value, int category, boolean showInvisible) {
+        Map<Integer, List<Room>> rooms = new HashMap<>();
         String query = filterField.databaseQuery + " AND rooms.state NOT LIKE " + (showInvisible ? "''" : "'invisible'") + (category >= 0 ? "AND rooms.category = '" + category + "'" : "") + "  ORDER BY rooms.users, rooms.id DESC LIMIT " + (page * NavigatorManager.MAXIMUM_RESULTS_PER_PAGE) + "" + ((page * NavigatorManager.MAXIMUM_RESULTS_PER_PAGE) + NavigatorManager.MAXIMUM_RESULTS_PER_PAGE);
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setString(1, (filterField.comparator == NavigatorFilterComparator.EQUALS ? value : "%" + value + "%"));
@@ -244,7 +240,7 @@ public class RoomManager {
         return category != null && category.getMinRank() <= habbo.getHabboInfo().getRank().getId();
     }
 
-    public THashMap<Integer, RoomCategory> getRoomCategories() {
+    public Map<Integer, RoomCategory> getRoomCategories() {
         return this.roomCategories;
     }
 
@@ -425,7 +421,7 @@ public class RoomManager {
     }
 
     public void clearInactiveRooms() {
-        THashSet<Room> roomsToDispose = new THashSet<>();
+        Set<Room> roomsToDispose = new HashSet<>();
         for (Map.Entry<Integer, Set<Integer>> entry : this.roomsByOwner.entrySet()) {
             int ownerId = entry.getKey();
             if (!Emulator.getGameServer().getGameClientManager().containsHabbo(ownerId)) {
@@ -870,9 +866,9 @@ public class RoomManager {
 
         habbo.getClient().sendResponse(new RoomWallItemsComposer(room));
         {
-            final THashSet<HabboItem> floorItems = new THashSet<>();
+            final Set<HabboItem> floorItems = new HashSet<>();
 
-            THashSet<HabboItem> allFloorItems = new THashSet<>(room.getFloorItems());
+            Set<HabboItem> allFloorItems = new HashSet<>(room.getFloorItems());
 
             if (Emulator.getPluginManager().isRegistered(RoomFloorItemsLoadEvent.class, true)) {
                 RoomFloorItemsLoadEvent roomFloorItemsLoadEvent = Emulator.getPluginManager().fireEvent(new RoomFloorItemsLoadEvent(habbo, allFloorItems));
@@ -881,21 +877,17 @@ public class RoomManager {
                 }
             }
 
-            allFloorItems.forEach(new TObjectProcedure<HabboItem>() {
-                @Override
-                public boolean execute(HabboItem object) {
-                    if (room.isHideWired() && object instanceof InteractionWired)
-                        return true;
-
-                    floorItems.add(object);
-                    if (floorItems.size() == 250) {
-                        habbo.getClient().sendResponse(new RoomFloorItemsComposer(room.getFurniOwnerNames(), floorItems));
-                        floorItems.clear();
-                    }
-
-                    return true;
+            for (HabboItem object : allFloorItems) {
+                if (room.isHideWired() && object instanceof InteractionWired) {
+                    continue;
                 }
-            });
+
+                floorItems.add(object);
+                if (floorItems.size() == 250) {
+                    habbo.getClient().sendResponse(new RoomFloorItemsComposer(room.getFurniOwnerNames(), floorItems));
+                    floorItems.clear();
+                }
+            }
 
             habbo.getClient().sendResponse(new RoomFloorItemsComposer(room.getFurniOwnerNames(), floorItems));
             floorItems.clear();
