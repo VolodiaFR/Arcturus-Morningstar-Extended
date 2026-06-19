@@ -19,7 +19,7 @@ import com.eu.habbo.plugin.events.users.UserCreditsEvent;
 import com.eu.habbo.plugin.events.users.UserDisconnectEvent;
 import com.eu.habbo.plugin.events.users.UserGetIPAddressEvent;
 import com.eu.habbo.plugin.events.users.UserPointsEvent;
-import gnu.trove.TIntCollection;
+import it.unimi.dsi.fastutil.ints.IntCollection;
 import gnu.trove.map.hash.THashMap;
 import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
@@ -505,7 +505,7 @@ public class Habbo implements Runnable {
     }
 
     public Set<Integer> getForbiddenClothing() {
-        TIntCollection clothingIDs = this.getInventory().getWardrobeComponent().getClothing();
+        IntCollection clothingIDs = this.getInventory().getWardrobeComponent().getClothing();
 
         return Emulator.getGameEnvironment().getCatalogManager().clothing.values().stream()
                 .filter(c -> !clothingIDs.contains(c.id))
