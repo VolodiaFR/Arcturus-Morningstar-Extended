@@ -18,15 +18,11 @@ import com.eu.habbo.messages.outgoing.rooms.users.RoomUserIgnoredComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
 import com.eu.habbo.plugin.events.users.UserExitRoomEvent;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import gnu.trove.iterator.TIntObjectIterator;
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.procedure.TIntObjectProcedure;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.NoSuchElementException;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -85,7 +81,7 @@ public class RoomCycleManager {
             if (!this.room.getCurrentHabbos().isEmpty()) {
                 this.idleCycles = 0;
 
-                THashSet<RoomUnit> updatedUnit = new THashSet<>();
+                Set<RoomUnit> updatedUnit = new HashSet<>();
                 ArrayList<Habbo> toKick = new ArrayList<>();
 
                 final long millis = System.currentTimeMillis();
@@ -295,7 +291,7 @@ public class RoomCycleManager {
     /**
      * Processes all bots in the room.
      */
-    private void processBots(THashSet<RoomUnit> updatedUnit) {
+    private void processBots(Set<RoomUnit> updatedUnit) {
         Int2ObjectMap<Bot> currentBots = this.room.getCurrentBots();
         if (currentBots.isEmpty()) {
             return;
@@ -337,7 +333,7 @@ public class RoomCycleManager {
     /**
      * Processes all pets in the room.
      */
-    private void processPets(THashSet<RoomUnit> updatedUnit) {
+    private void processPets(Set<RoomUnit> updatedUnit) {
         Int2ObjectMap<Pet> currentPets = this.room.getCurrentPets();
         if (currentPets.isEmpty() || !this.room.isAllowBotsWalk()) {
             return;
@@ -381,7 +377,7 @@ public class RoomCycleManager {
     /**
      * Processes roller cycle.
      */
-    private void processRollers(THashSet<RoomUnit> updatedUnit) {
+    private void processRollers(Set<RoomUnit> updatedUnit) {
         Integer controlledRollerSpeed = RoomQueueSpeedControlSupport.getEffectiveRollerSpeed(this.room);
         int rollerSpeed = (controlledRollerSpeed != null) ? controlledRollerSpeed : this.room.getRollerSpeed();
         if (rollerSpeed != -1 && this.rollerCycle >= rollerSpeed) {
