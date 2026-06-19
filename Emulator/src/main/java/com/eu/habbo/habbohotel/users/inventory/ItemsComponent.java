@@ -8,7 +8,6 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.plugin.events.inventory.InventoryItemAddedEvent;
 import com.eu.habbo.plugin.events.inventory.InventoryItemRemovedEvent;
 import com.eu.habbo.plugin.events.inventory.InventoryItemsAddedEvent;
-import gnu.trove.set.hash.THashSet;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
@@ -79,7 +78,7 @@ public class ItemsComponent {
     }
 
     public void addItems(Collection<HabboItem> items) {
-        InventoryItemsAddedEvent event = new InventoryItemsAddedEvent(this.inventory, new THashSet<>(items));
+        InventoryItemsAddedEvent event = new InventoryItemsAddedEvent(this.inventory, new HashSet<>(items));
         if (Emulator.getPluginManager().fireEvent(event).isCancelled()) {
             return;
         }
