@@ -18,7 +18,6 @@ import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.FloorItemOnRollerComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
-import gnu.trove.set.hash.THashSet;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -784,7 +783,7 @@ public final class WiredMoveCarryHelper {
 
             Habbo habbo = room.getHabbo(carriedMove.roomUnit);
             if (habbo != null && shouldRefreshPostureWithTileUpdate(carriedMove.roomUnit)) {
-                THashSet<Habbo> movedHabbos = new THashSet<>();
+                Set<Habbo> movedHabbos = new HashSet<>();
                 movedHabbos.add(habbo);
                 room.updateHabbosAt(carriedMove.destinationTile.x, carriedMove.destinationTile.y, movedHabbos);
             }

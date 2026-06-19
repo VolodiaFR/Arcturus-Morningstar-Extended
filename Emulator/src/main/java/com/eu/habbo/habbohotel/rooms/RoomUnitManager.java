@@ -370,7 +370,7 @@ public class RoomUnitManager {
     /**
      * Updates specific Habbos at a position.
      */
-    public void updateHabbosAt(short x, short y, THashSet<Habbo> habbos) {
+    public void updateHabbosAt(short x, short y, Collection<Habbo> habbos) {
         RoomTile tile = this.room.getLayout().getTile(x, y);
 
         if (tile == null) {
