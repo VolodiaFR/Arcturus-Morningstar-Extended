@@ -8,10 +8,10 @@ import com.eu.habbo.messages.outgoing.Outgoing;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.THashMap;
-import gnu.trove.set.hash.THashSet;
 
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 public class RoomWallItemsComposer extends MessageComposer {
     private final Room room;
@@ -43,7 +43,7 @@ public class RoomWallItemsComposer extends MessageComposer {
             this.response.appendString(set.getValue());
         }
 
-        THashSet<HabboItem> items = this.room.getWallItems();
+        Set<HabboItem> items = this.room.getWallItems();
 
         this.response.appendInt(items.size());
         for (HabboItem item : items) {

@@ -1883,15 +1883,15 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     this.itemManager.removeHabboItem(item);
   }
 
-  public THashSet<HabboItem> getFloorItems() {
+  public Set<HabboItem> getFloorItems() {
     return this.itemManager.getFloorItems();
   }
 
-  public THashSet<HabboItem> getWallItems() {
+  public Set<HabboItem> getWallItems() {
     return this.itemManager.getWallItems();
   }
 
-  public THashSet<HabboItem> getPostItNotes() {
+  public Set<HabboItem> getPostItNotes() {
     return this.itemManager.getPostItNotes();
   }
 

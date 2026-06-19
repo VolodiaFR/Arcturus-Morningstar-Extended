@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.Set;
 
 /**
  * Manages tile state calculations and heightmap operations for a room.
@@ -534,7 +535,7 @@ public class RoomTileManager {
     public void loadHeightmap() {
         RoomLayout layout = this.room.getLayout();
         if (layout != null) {
-            THashSet<HabboItem> floorItems = this.room.getFloorItems();
+            Set<HabboItem> floorItems = this.room.getFloorItems();
 
             if (floorItems.isEmpty()) {
                 // No items - only update door tile

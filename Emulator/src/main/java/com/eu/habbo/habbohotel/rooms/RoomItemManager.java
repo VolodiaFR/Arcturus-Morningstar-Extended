@@ -47,7 +47,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -165,8 +167,8 @@ public class RoomItemManager {
     /**
      * Gets all floor items.
      */
-    public THashSet<HabboItem> getFloorItems() {
-        THashSet<HabboItem> items = new THashSet<>();
+    public Set<HabboItem> getFloorItems() {
+        Set<HabboItem> items = new HashSet<>();
         // roomItems is a TCollections.synchronizedMap; its iterator is not safe
         // against concurrent put/remove (item place/pickup), so hold the map
         // monitor for the whole traversal, matching the mutation sites.
@@ -192,8 +194,8 @@ public class RoomItemManager {
     /**
      * Gets all wall items.
      */
-    public THashSet<HabboItem> getWallItems() {
-        THashSet<HabboItem> items = new THashSet<>();
+    public Set<HabboItem> getWallItems() {
+        Set<HabboItem> items = new HashSet<>();
         synchronized (this.roomItems) {
             TIntObjectIterator<HabboItem> iterator = this.roomItems.iterator();
 
@@ -216,8 +218,8 @@ public class RoomItemManager {
     /**
      * Gets all post-it notes.
      */
-    public THashSet<HabboItem> getPostItNotes() {
-        THashSet<HabboItem> items = new THashSet<>();
+    public Set<HabboItem> getPostItNotes() {
+        Set<HabboItem> items = new HashSet<>();
         synchronized (this.roomItems) {
             TIntObjectIterator<HabboItem> iterator = this.roomItems.iterator();
 
