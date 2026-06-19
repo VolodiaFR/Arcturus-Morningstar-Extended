@@ -62,6 +62,6 @@ public class MoodLightSaveSettingsEvent extends MessageHandler {
         }
 
         room.setNeedsUpdate(true);
-        this.client.sendResponse(new MoodLightDataComposer(room.getMoodlightData()));
+        this.client.sendResponse(new MoodLightDataComposer(room.getMoodlightData().valueCollection()));
     }
 }
