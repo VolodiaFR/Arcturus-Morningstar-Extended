@@ -52,7 +52,6 @@ import com.eu.habbo.plugin.events.users.UserEnterRoomEvent;
 import com.eu.habbo.plugin.events.users.UserExitRoomEvent;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.hash.THashMap;
-import gnu.trove.procedure.TIntProcedure;
 import gnu.trove.procedure.TObjectProcedure;
 import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
@@ -493,7 +492,7 @@ public class RoomManager {
 
             room.setScore(room.getScore() + 1);
             room.setNeedsUpdate(true);
-            habbo.getHabboStats().votedRooms.push(room.getId());
+            habbo.getHabboStats().votedRooms.add(room.getId());
             for (Habbo h : room.getHabbos()) {
                 h.getClient().sendResponse(new RoomScoreComposer(room.getScore(), !this.hasVotedForRoom(h, room)));
             }
@@ -512,7 +511,7 @@ public class RoomManager {
         if (room.getOwnerId() == habbo.getHabboInfo().getId())
             return true;
 
-        for (int i : habbo.getHabboStats().votedRooms.toArray()) {
+        for (int i : habbo.getHabboStats().votedRooms) {
             if (i == room.getId())
                 return true;
         }
@@ -1366,21 +1365,17 @@ public class RoomManager {
     public ArrayList<Room> getRoomsFavourite(Habbo habbo) {
         final ArrayList<Room> rooms = new ArrayList<>();
 
-        habbo.getHabboStats().getFavoriteRooms().forEach(new TIntProcedure() {
-            @Override
-            public boolean execute(int value) {
-                Room room = RoomManager.this.getRoom(value);
+        for (int value : habbo.getHabboStats().getFavoriteRooms()) {
+            Room room = RoomManager.this.getRoom(value);
 
-                if (room != null) {
-                    if (room.getState() == RoomState.INVISIBLE) {
-                        room.loadData();
-                        if (!room.hasRights(habbo)) return true;
-                    }
-                    rooms.add(room);
+            if (room != null) {
+                if (room.getState() == RoomState.INVISIBLE) {
+                    room.loadData();
+                    if (!room.hasRights(habbo)) continue;
                 }
-                return true;
+                rooms.add(room);
             }
-        });
+        }
 
         return rooms;
     }

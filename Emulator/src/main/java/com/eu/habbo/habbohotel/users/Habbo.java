@@ -468,7 +468,7 @@ public class Habbo implements Runnable {
         int currentTimestamp = Emulator.getIntUnixTimestamp();
         int twentyFourHoursInSeconds = 24 * 60 * 60; // 24 hours in seconds
 
-        THashMap<Integer, List<Integer>> newLog = new THashMap<>();
+        Map<Integer, List<Integer>> newLog = new HashMap<>();
 
         for (Map.Entry<Integer, List<Integer>> ltdLog : this.habboStats.ltdPurchaseLog.entrySet()) {
             List<Integer> filteredTimestamps = new ArrayList<>();
