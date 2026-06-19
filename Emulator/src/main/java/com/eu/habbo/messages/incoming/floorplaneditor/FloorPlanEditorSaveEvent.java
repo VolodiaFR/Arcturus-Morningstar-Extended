@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.regex.Pattern;
 
@@ -159,7 +160,7 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
 
                 if (square.equalsIgnoreCase("x") && room.getTopItemAt(x, y) != null) {
                     if (autoPickup) {
-                        THashSet<HabboItem> here = room.getItemsAt(x, y);
+                        Set<HabboItem> here = room.getItemsAt(x, y);
                         if (here != null) itemsToPickup.addAll(here);
                         continue;
                     }
@@ -186,7 +187,7 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
 
                 if (tile != null && tile.state != RoomTileState.INVALID && height != tile.z && room.getTopItemAt(x, y) != null) {
                     if (autoPickup) {
-                        THashSet<HabboItem> here = room.getItemsAt(x, y);
+                        Set<HabboItem> here = room.getItemsAt(x, y);
                         if (here != null) itemsToPickup.addAll(here);
                         continue;
                     }
@@ -202,7 +203,7 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
             if (!locked_tileList.isEmpty()) {
                 if (autoPickup) {
                     for (RoomTile lt : locked_tileList) {
-                        THashSet<HabboItem> here = room.getItemsAt(lt.x, lt.y);
+                        Set<HabboItem> here = room.getItemsAt(lt.x, lt.y);
                         if (here != null) itemsToPickup.addAll(here);
                     }
                 } else {

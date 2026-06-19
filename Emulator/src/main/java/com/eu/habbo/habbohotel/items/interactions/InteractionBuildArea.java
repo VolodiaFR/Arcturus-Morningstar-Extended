@@ -22,6 +22,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Set;
 
 public class InteractionBuildArea extends InteractionCustomValues {
     public static THashMap<String, String> defaultValues = new THashMap<String, String>() {
@@ -86,7 +87,7 @@ public class InteractionBuildArea extends InteractionCustomValues {
 
         if (!canBuild.isEmpty()) {
             for (RoomTile tile : this.tiles) {
-                THashSet<HabboItem> tileItems = room.getItemsAt(tile);
+                Set<HabboItem> tileItems = room.getItemsAt(tile);
                 for (HabboItem tileItem : tileItems) {
                     if (canBuild.contains(tileItem.getUserId()) && tileItem != this) {
                         room.pickUpItem(tileItem, null);
@@ -136,7 +137,7 @@ public class InteractionBuildArea extends InteractionCustomValues {
 
         if (!canBuild.isEmpty()) {
             for (RoomTile tile : oldTiles) {
-                THashSet<HabboItem> tileItems = room.getItemsAt(tile);
+                Set<HabboItem> tileItems = room.getItemsAt(tile);
                 if(newTiles.contains(tile)) continue;
                 for (HabboItem tileItem : tileItems) {
                     if (canBuild.contains(tileItem.getUserId()) && tileItem != this) {
@@ -211,7 +212,7 @@ public class InteractionBuildArea extends InteractionCustomValues {
         }
         if (!canBuild.isEmpty()) {
             for (RoomTile tile : oldTiles) {
-                THashSet<HabboItem> tileItems = room.getItemsAt(tile);
+                Set<HabboItem> tileItems = room.getItemsAt(tile);
                 for (HabboItem tileItem : tileItems) {
                     if (canBuild.contains(tileItem.getUserId()) && tileItem != this) {
                         room.pickUpItem(tileItem, null);

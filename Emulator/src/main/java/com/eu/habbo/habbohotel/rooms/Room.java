@@ -2073,23 +2073,23 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   }
 
   @Deprecated
-  public THashSet<HabboItem> getItemsAt(int x, int y) {
+  public Set<HabboItem> getItemsAt(int x, int y) {
     return this.itemManager.getItemsAt(x, y);
   }
 
-  public THashSet<HabboItem> getItemsAt(RoomTile tile) {
+  public Set<HabboItem> getItemsAt(RoomTile tile) {
     return this.itemManager.getItemsAt(tile);
   }
 
-  public THashSet<HabboItem> getItemsAt(RoomTile tile, boolean returnOnFirst) {
+  public Set<HabboItem> getItemsAt(RoomTile tile, boolean returnOnFirst) {
     return this.itemManager.getItemsAt(tile, returnOnFirst);
   }
 
-  public THashSet<HabboItem> getItemsAt(int x, int y, double minZ) {
+  public Set<HabboItem> getItemsAt(int x, int y, double minZ) {
     return this.itemManager.getItemsAt(x, y, minZ);
   }
 
-  public THashSet<HabboItem> getItemsAt(Class<? extends HabboItem> type, int x, int y) {
+  public Set<HabboItem> getItemsAt(Class<? extends HabboItem> type, int x, int y) {
     return this.itemManager.getItemsAt(type, x, y);
   }
 
@@ -2105,7 +2105,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     return this.itemManager.getTopItemAt(x, y, exclude);
   }
 
-  public HabboItem getTopItemAt(THashSet<RoomTile> tiles, HabboItem exclude) {
+  public HabboItem getTopItemAt(Set<RoomTile> tiles, HabboItem exclude) {
     return this.itemManager.getTopItemAt(tiles, exclude);
   }
 
@@ -2150,7 +2150,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     return this.tileManager.canWalkAt(roomTile);
   }
 
-  boolean canSitAt(THashSet<HabboItem> items) {
+  boolean canSitAt(Set<HabboItem> items) {
     return this.tileManager.canSitAt(items);
   }
 
@@ -2158,7 +2158,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     return this.tileManager.canLayAt(x, y);
   }
 
-  boolean canLayAt(THashSet<HabboItem> items) {
+  boolean canLayAt(Set<HabboItem> items) {
     return this.tileManager.canLayAt(items);
   }
 

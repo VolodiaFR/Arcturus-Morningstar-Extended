@@ -48,6 +48,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class WiredHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(WiredHandler.class);
@@ -454,7 +455,7 @@ public class WiredHandler {
     public static boolean executeEffectsAtTiles(Collection<RoomTile> tiles, final RoomUnit roomUnit, final Room room, final Object[] stuff) {
         for (RoomTile tile : tiles) {
             if (room != null) {
-                THashSet<HabboItem> items = room.getItemsAt(tile);
+                Set<HabboItem> items = room.getItemsAt(tile);
 
                 long millis = room.getCycleTimestamp();
                 for (final HabboItem item : items) {
