@@ -46,6 +46,7 @@ import gnu.trove.map.hash.THashMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.hash.THashSet;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1775,7 +1776,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     return this.unitManager.getHabboQueue();
   }
 
-  public TIntObjectMap<String> getFurniOwnerNames() {
+  public Int2ObjectMap<String> getFurniOwnerNames() {
     return this.itemManager.getFurniOwnerNames();
   }
 

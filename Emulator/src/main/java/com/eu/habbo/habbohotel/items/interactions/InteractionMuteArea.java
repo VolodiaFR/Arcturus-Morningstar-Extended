@@ -11,11 +11,11 @@ import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.messages.outgoing.rooms.items.ItemExtraDataComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.RemoveFloorItemComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.RoomFloorItemsComposer;
-import gnu.trove.TCollections;
-import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.THashMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.hash.THashSet;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -133,7 +133,7 @@ public class InteractionMuteArea extends InteractionCustomValues {
         Item effectItem = Emulator.getGameEnvironment().getItemManager().getItem("mutearea_sign2");
 
         if(effectItem != null) {
-            TIntObjectMap<String> ownerNames = TCollections.synchronizedMap(new TIntObjectHashMap<>(0));
+            Int2ObjectMap<String> ownerNames = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
             ownerNames.put(-1, "System");
             THashSet<HabboItem> items = new THashSet<>();
 

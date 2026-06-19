@@ -39,6 +39,9 @@ import gnu.trove.map.hash.THashMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.hash.THashSet;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import org.apache.commons.math3.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +69,7 @@ public class RoomItemManager {
     private final TIntObjectMap<HabboItem> roomItems;
 
     // Furniture owner tracking
-    private final TIntObjectMap<String> furniOwnerNames;
+    private final Int2ObjectMap<String> furniOwnerNames;
     private final TIntIntMap furniOwnerCount;
 
     // Tile cache for item lookups
@@ -75,7 +78,7 @@ public class RoomItemManager {
     public RoomItemManager(Room room) {
         this.room = room;
         this.roomItems = TCollections.synchronizedMap(new TIntObjectHashMap<>(0));
-        this.furniOwnerNames = TCollections.synchronizedMap(new TIntObjectHashMap<>(0));
+        this.furniOwnerNames = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
         this.furniOwnerCount = TCollections.synchronizedMap(new TIntIntHashMap(0));
         this.tileCache = new ConcurrentHashMap<>();
     }
@@ -942,7 +945,7 @@ public class RoomItemManager {
     /**
      * Gets furniture owner names map.
      */
-    public TIntObjectMap<String> getFurniOwnerNames() {
+    public Int2ObjectMap<String> getFurniOwnerNames() {
         return this.furniOwnerNames;
     }
 

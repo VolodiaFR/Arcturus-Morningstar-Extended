@@ -930,7 +930,7 @@ public class RoomManager {
             habbo.getHabboStats().mutedBubbleTracker = false;
         }
 
-        THashMap<Integer, String> guildBadges = new THashMap<>();
+        Map<Integer, String> guildBadges = new HashMap<>();
         for (Habbo roomHabbo : habbos) {
             {
                 if (roomHabbo.getRoomUnit().getDanceType().getType() > 0) {
