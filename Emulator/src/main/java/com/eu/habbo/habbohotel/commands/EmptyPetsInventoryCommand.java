@@ -36,7 +36,7 @@ public class EmptyPetsInventoryCommand extends Command {
             Habbo habbo = (params.length == 3 && gameClient.getHabbo().hasPermission(Permission.ACC_EMPTY_OTHERS)) ? Emulator.getGameEnvironment().getHabboManager().getHabbo(params[2]) : gameClient.getHabbo();
 
             if (habbo != null) {
-                List<Pet> pets = new ArrayList<>(habbo.getInventory().getPetsComponent().getPets().valueCollection());
+                List<Pet> pets = new ArrayList<>(habbo.getInventory().getPetsComponent().getPets().values());
                 habbo.getInventory().getPetsComponent().getPets().clear();
                 pets.forEach(object -> Emulator.getGameEnvironment().getPetManager().deletePet(object));
 
