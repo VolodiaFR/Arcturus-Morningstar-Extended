@@ -133,6 +133,9 @@ public class PacketManager {
         this.registerCamera();
         this.registerGameCenter();
         this.registerEarnings();
+
+        RuntimeValidationReport report = PacketRuntimeValidator.validateHandlers(this.incoming);
+        report.logErrors(LOGGER, "Incoming packet handler validation");
     }
 
     public PacketNames getNames() {
