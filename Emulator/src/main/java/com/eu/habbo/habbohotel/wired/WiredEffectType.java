@@ -62,6 +62,8 @@ public enum WiredEffectType {
     USERS_WITH_VAR_SELECTOR(76),
     NEG_CALL_STACKS(86),
     NEG_SEND_SIGNAL(87),
+    MOVE_FURNI_AS_GROUP(95),
+    REMOTE_SELECTOR(96),
     // Negative-branch effects that reuse the SHOW_MESSAGE(7) client dialog (text). Distinct enum
     // constants so WiredEngine.isNegativeConditionEffect runs them only when conditions FAIL.
     NEG_SHOW_MESSAGE(7),
