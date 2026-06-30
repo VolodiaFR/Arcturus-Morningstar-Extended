@@ -61,7 +61,14 @@ public enum WiredEffectType {
     FURNI_WITH_VAR_SELECTOR(75),
     USERS_WITH_VAR_SELECTOR(76),
     NEG_CALL_STACKS(86),
-    NEG_SEND_SIGNAL(87);
+    NEG_SEND_SIGNAL(87),
+    SET_ROLLER_SPEED(88),
+    BOT_DANCE(89),
+    GIVE_POINTS_TYPE(90),
+    GIVE_OR_TAKE_FURNI(91),
+    PLAY_YOUTUBE(92),
+    QUICK_BOPPER(93),
+    SET_ROOM_AD(94);
 
     public final int code;
 
