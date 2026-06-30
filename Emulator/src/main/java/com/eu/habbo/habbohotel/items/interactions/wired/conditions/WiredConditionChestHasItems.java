@@ -2,6 +2,7 @@ package com.eu.habbo.habbohotel.items.interactions.wired.conditions;
 
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredComparison;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
@@ -27,6 +28,7 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition {
 
     private final List<Integer> chestIds = new ArrayList<>();
     private int amount = 1;
+    private int comparison = WiredComparison.GREATER_EQUAL;
 
     public WiredConditionChestHasItems(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -48,7 +50,7 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition {
                 total += chest.getContents().total(ChestStorage.KIND_CURRENCY) + chest.getContents().total(ChestStorage.KIND_FURNI);
             }
         }
-        return total >= this.amount;
+        return WiredComparison.compare(total, this.amount, this.comparison);
     }
 
     @Deprecated
@@ -61,6 +63,7 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition {
     public boolean saveData(WiredSettings settings) {
         int[] params = settings.getIntParams();
         this.amount = (params.length > 0) ? Math.max(0, params[0]) : 1;
+        this.comparison = (params.length > 1) ? WiredComparison.normalize(params[1]) : WiredComparison.GREATER_EQUAL;
 
         this.chestIds.clear();
         if (settings.getFurniIds() != null) {
@@ -78,7 +81,7 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(this.amount, this.chestIds));
+        return WiredManager.getGson().toJson(new JsonData(this.amount, this.comparison, this.chestIds));
     }
 
     @Override
@@ -92,6 +95,7 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition {
         if (data == null) return;
 
         this.amount = Math.max(0, data.amount);
+        this.comparison = WiredComparison.normalize(data.comparison);
         if (data.chestIds != null) {
             this.chestIds.addAll(data.chestIds);
         }
@@ -108,8 +112,9 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(1);
+        message.appendInt(2);
         message.appendInt(this.amount);
+        message.appendInt(this.comparison);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(0);
@@ -120,14 +125,17 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition {
     public void onPickUp() {
         this.chestIds.clear();
         this.amount = 1;
+        this.comparison = WiredComparison.GREATER_EQUAL;
     }
 
     static class JsonData {
         int amount;
+        int comparison;
         List<Integer> chestIds;
 
-        public JsonData(int amount, List<Integer> chestIds) {
+        public JsonData(int amount, int comparison, List<Integer> chestIds) {
             this.amount = amount;
+            this.comparison = comparison;
             this.chestIds = chestIds;
         }
     }
