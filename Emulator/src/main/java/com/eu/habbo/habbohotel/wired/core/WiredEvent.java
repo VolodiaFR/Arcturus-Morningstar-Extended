@@ -121,6 +121,9 @@ public final class WiredEvent {
         /** Signal received from a Send Signal effect */
         SIGNAL_RECEIVED(WiredTriggerType.RECEIVE_SIGNAL),
 
+        /** A user pressed a configured keybind key */
+        PRESS_KEYBIND(WiredTriggerType.PRESS_KEYBIND),
+
         /** Custom trigger type for plugins */
         CUSTOM(WiredTriggerType.CUSTOM);
 
