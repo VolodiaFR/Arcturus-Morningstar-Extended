@@ -42,7 +42,10 @@ public enum WiredConditionType {
     HAS_VAR(40),
     NOT_HAS_VAR(41),
     VAR_VAL_MATCH(42),
-    VAR_AGE_MATCH(43);
+    VAR_AGE_MATCH(43),
+    // Phase-2 chest/storage conditions. Require the matching Nitro WiredConditionLayoutCode.
+    CHEST_HAS_ITEMS(47),
+    CHEST_HAS_ITEM_TYPE(48);
 
     public final int code;
 

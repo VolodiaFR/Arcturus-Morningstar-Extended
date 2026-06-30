@@ -61,7 +61,15 @@ public enum WiredEffectType {
     FURNI_WITH_VAR_SELECTOR(75),
     USERS_WITH_VAR_SELECTOR(76),
     NEG_CALL_STACKS(86),
-    NEG_SEND_SIGNAL(87);
+    NEG_SEND_SIGNAL(87),
+    // Phase-2 chest/storage + transactions + place/remove-furni (action/selector codes).
+    GIVE_CURRENCY_FROM_CHEST(99),
+    GIVE_FURNI_FROM_CHEST(102),
+    SCAN_CHEST_FURNI_BY_TYPE(103),
+    INIT_TRANSACTION(104),
+    CANCEL_TRANSACTION(105),
+    PLACE_FURNI(106),
+    REMOVE_FURNI(107);
 
     public final int code;
 

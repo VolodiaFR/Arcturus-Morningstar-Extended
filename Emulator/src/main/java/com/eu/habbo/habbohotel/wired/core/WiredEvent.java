@@ -121,6 +121,12 @@ public final class WiredEvent {
         /** Signal received from a Send Signal effect */
         SIGNAL_RECEIVED(WiredTriggerType.RECEIVE_SIGNAL),
 
+        /** A wired transaction completed (fired by Initiate Transaction) */
+        TRANSACTION_COMPLETE(WiredTriggerType.TRANSACTION_COMPLETE),
+
+        /** A wired transaction failed / was cancelled (fired by Cancel Transaction) */
+        TRANSACTION_FAIL(WiredTriggerType.TRANSACTION_FAIL),
+
         /** Custom trigger type for plugins */
         CUSTOM(WiredTriggerType.CUSTOM);
 
