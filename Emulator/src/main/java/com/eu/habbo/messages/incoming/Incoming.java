@@ -10,6 +10,7 @@ public class Incoming {
     public static final int ChestUpgradeCapacityEvent = 9317;
     public static final int ChestRequestLogEvent = 9318;
     public static final int ChestWithdrawFurniEvent = 9320;
+    public static final int ChestDepositFurniEvent = 9321; // Player-facing wired furni chest deposit (from inventory)
     public static final int ChangeNameCheckUsernameEvent = 3950;
     public static final int ConfirmChangeNameEvent = 2977;
     public static final int ActivateEffectEvent = 2959;
