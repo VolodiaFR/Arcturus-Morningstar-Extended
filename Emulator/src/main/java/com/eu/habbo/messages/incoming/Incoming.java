@@ -11,6 +11,8 @@ public class Incoming {
     public static final int ChestRequestLogEvent = 9318;
     public static final int ChestWithdrawFurniEvent = 9320;
     public static final int ChestDepositFurniEvent = 9321; // Player-facing wired furni chest deposit (from inventory)
+    public static final int ChestStartDepositEvent = 9324; // Enter furni deposit mode (official Kigike)
+    public static final int ChestDepositInventoryItemEvent = 9325; // Deposit one inventory row into active chest
     public static final int ChangeNameCheckUsernameEvent = 3950;
     public static final int ConfirmChangeNameEvent = 2977;
     public static final int ActivateEffectEvent = 2959;

@@ -463,6 +463,8 @@ public class PacketManager {
         this.registerHandler(Incoming.ChestWithdrawEvent, ChestWithdrawEvent.class);
         this.registerHandler(Incoming.ChestWithdrawFurniEvent, ChestWithdrawFurniEvent.class);
         this.registerHandler(Incoming.ChestDepositFurniEvent, ChestDepositFurniEvent.class);
+        this.registerHandler(Incoming.ChestStartDepositEvent, ChestStartDepositEvent.class);
+        this.registerHandler(Incoming.ChestDepositInventoryItemEvent, ChestDepositInventoryItemEvent.class);
         this.registerHandler(Incoming.ChestSaveSettingsEvent, ChestSaveSettingsEvent.class);
         this.registerHandler(Incoming.ChestSaveNotificationsEvent, ChestSaveNotificationsEvent.class);
         this.registerHandler(Incoming.ChestUpgradeCapacityEvent, ChestUpgradeCapacityEvent.class);

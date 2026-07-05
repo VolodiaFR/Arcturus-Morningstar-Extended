@@ -45,7 +45,10 @@ public class ChestDataComposer extends MessageComposer {
         this.response.appendString(c.getName());
         this.response.appendString(c.getDescription());
         this.response.appendInt(c.getCapacityMax());
-        this.response.appendInt(c.total(chestKind));
+        int used = (this.chest instanceof InteractionWiredChestFurni)
+                ? c.furniItemCount()
+                : c.total(chestKind);
+        this.response.appendInt(used);
         this.response.appendBoolean(c.isAccessOpen());
         this.response.appendBoolean(c.isAccessDonate());
         this.response.appendInt(c.getAppearanceState());

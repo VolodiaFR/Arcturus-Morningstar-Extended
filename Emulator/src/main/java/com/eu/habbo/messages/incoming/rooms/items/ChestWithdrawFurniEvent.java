@@ -2,6 +2,8 @@ package com.eu.habbo.messages.incoming.rooms.items;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniPackets;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniStoredItem;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -12,11 +14,12 @@ import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.ChestDataComposer;
 
+import java.util.List;
+
 /**
- * Player withdraws stored furni from a wired furni chest (Scrigno furni). Reads {@code int itemId,
- * int baseItemId, int amount} (amount {@code < 0} = withdraw all of that base type). Restricted to users
- * with room rights (anti-theft). Decrements the chest pool, creates that many items into the player's
- * inventory, logs it, and pushes back the chest state. Mirrors {@link ChestWithdrawEvent} (currency).
+ * Player withdraws stored furni from a wired furni chest (official Dul wire shape):
+ * {@code int chestItemId, bool isWall, int typeId, string legacyPosterId, int amount}.
+ * amount {@code < 0} = withdraw all matching rows.
  */
 public class ChestWithdrawFurniEvent extends MessageHandler {
     @Override
@@ -28,7 +31,9 @@ public class ChestWithdrawFurniEvent extends MessageHandler {
         if (room == null) return;
 
         int itemId = this.packet.readInt();
-        int baseItemId = this.packet.readInt();
+        boolean wallItem = this.packet.readBoolean();
+        int typeId = this.packet.readInt();
+        String legacyPosterId = this.packet.readString();
         int amount = this.packet.readInt();
 
         HabboItem item = room.getHabboItem(itemId);
@@ -36,21 +41,23 @@ public class ChestWithdrawFurniEvent extends MessageHandler {
 
         if (!room.hasRights(habbo)) return;
 
-        Item baseItem = Emulator.getGameEnvironment().getItemManager().getItem(baseItemId);
+        Item baseItem = Emulator.getGameEnvironment().getItemManager().getItem(typeId);
         if (baseItem == null) return;
 
         ChestStorage contents = chest.getContents();
-        int available = contents.count(ChestStorage.KIND_FURNI, baseItemId);
+        int available = contents.count(ChestStorage.KIND_FURNI, typeId);
         if (available <= 0) return;
 
         int requested = (amount < 0) ? available : Math.min(amount, available);
         if (requested <= 0) return;
 
-        int taken = contents.take(ChestStorage.KIND_FURNI, baseItemId, requested);
+        var removedItems = contents.removeFurniByType(wallItem, typeId, legacyPosterId, requested);
+        int taken = removedItems.size();
         if (taken <= 0) return;
 
-        for (int i = 0; i < taken; i++) {
-            HabboItem created = Emulator.getGameEnvironment().getItemManager().createItem(habbo.getHabboInfo().getId(), baseItem, 0, 0, "");
+        for (ChestFurniStoredItem stored : removedItems) {
+            HabboItem created = Emulator.getGameEnvironment().getItemManager().createItem(
+                    habbo.getHabboInfo().getId(), baseItem, stored.limitedStack, stored.limitedSells, stored.extradata);
             if (created == null) continue;
             this.client.sendResponse(new AddHabboItemComposer(created));
             habbo.getInventory().getItemsComponent().addItem(created);
@@ -61,5 +68,7 @@ public class ChestWithdrawFurniEvent extends MessageHandler {
         chest.persistContents();
 
         this.client.sendResponse(new ChestDataComposer(chest));
+        ChestFurniPackets.sendDelta(this.client, chest.getId(),
+                removedItems.stream().map(i -> i.inventoryId).toList(), List.of());
     }
 }
