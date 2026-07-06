@@ -68,6 +68,13 @@ public enum WiredEffectType {
     // constants so WiredEngine.isNegativeConditionEffect runs them only when conditions FAIL.
     NEG_SHOW_MESSAGE(7),
     NEG_LOG(7);
+    SET_ROLLER_SPEED(88),
+    BOT_DANCE(89),
+    GIVE_POINTS_TYPE(90),
+    GIVE_OR_TAKE_FURNI(91),
+    PLAY_YOUTUBE(92),
+    QUICK_BOPPER(93),
+    SET_ROOM_AD(94);
 
     public final int code;
 

@@ -79,6 +79,8 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariable
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableTextConnector;
 import com.eu.habbo.habbohotel.items.interactions.wired.selector.*;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.*;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestCurrency;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestFurni;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreManager;
@@ -205,6 +207,12 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_conf_handitem_block", InteractionHanditemBlockControl.class));
         this.interactionsList.add(new ItemInteraction("wf_conf_queue_speed", InteractionQueueSpeedControl.class));
         this.interactionsList.add(new ItemInteraction("wf_conf_wired_disable", InteractionWiredDisableControl.class));
+        this.interactionsList.add(new ItemInteraction("conf_hidewired", InteractionHideWiredControl.class));
+        this.interactionsList.add(new ItemInteraction("wf_conf_hidewired", InteractionHideWiredControl.class));
+        this.interactionsList.add(new ItemInteraction("conf_dice_disable", InteractionDiceDisableControl.class));
+        this.interactionsList.add(new ItemInteraction("wf_conf_dice_disable", InteractionDiceDisableControl.class));
+        this.interactionsList.add(new ItemInteraction("conf_doorkick_disable", InteractionDoorkickDisableControl.class));
+        this.interactionsList.add(new ItemInteraction("wf_conf_doorkick_disable", InteractionDoorkickDisableControl.class));
         this.interactionsList.add(new ItemInteraction("switch_remote_control", InteractionSwitchRemoteControl.class));
         this.interactionsList.add(new ItemInteraction("fx_box", InteractionFXBox.class));
         this.interactionsList.add(new ItemInteraction("blackhole", InteractionBlackHole.class));
@@ -430,6 +438,12 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_cnd_neg_has_var", WiredConditionNotHasVariable.class));
         this.interactionsList.add(new ItemInteraction("wf_cnd_var_val_match", WiredConditionVariableValueMatch.class));
         this.interactionsList.add(new ItemInteraction("wf_cnd_var_age_match", WiredConditionVariableAgeMatch.class));
+        // Player-facing wired chest (Scrigno) — currency + furni storage
+        this.interactionsList.add(new ItemInteraction("wf_storage_coins1", InteractionWiredChestCurrency.class));
+        this.interactionsList.add(new ItemInteraction("wf_storage_coins2", InteractionWiredChestCurrency.class));
+        this.interactionsList.add(new ItemInteraction("wf_storage_furni1", InteractionWiredChestFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_storage_furni2", InteractionWiredChestFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_storage_furni_starter", InteractionWiredChestFurni.class));
 
 
         this.interactionsList.add(new ItemInteraction("wf_xtra_random", WiredExtraRandom.class));
