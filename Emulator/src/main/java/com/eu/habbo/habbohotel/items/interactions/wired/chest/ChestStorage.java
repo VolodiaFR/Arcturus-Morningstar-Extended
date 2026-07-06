@@ -102,6 +102,17 @@ public class ChestStorage {
         return item;
     }
 
+    /** Remove every stored furni row and clear aggregate {@link #KIND_FURNI} entries. */
+    public List<ChestFurniStoredItem> removeAllFurniItems() {
+        if (this.furniItems.isEmpty()) {
+            return List.of();
+        }
+        List<ChestFurniStoredItem> removed = new ArrayList<>(this.furniItems);
+        this.furniItems.clear();
+        this.entries.removeIf(e -> e.kind == KIND_FURNI);
+        return removed;
+    }
+
     /** Remove up to {@code amount} rows matching a {@link ChestItemType} wire identity. */
     public List<ChestFurniStoredItem> removeFurniByType(boolean wallItem, int baseItemId, String legacyPosterId, int amount) {
         List<ChestFurniStoredItem> removed = new ArrayList<>();
