@@ -2,6 +2,14 @@ package com.eu.habbo.messages.incoming;
 
 public class Incoming {
     public static final int PongEvent = 2596;
+    // Player-facing wired chest (Scrigno)
+    public static final int ChestDepositEvent = 9313;
+    public static final int ChestWithdrawEvent = 9314;
+    public static final int ChestSaveSettingsEvent = 9315;
+    public static final int ChestSaveNotificationsEvent = 9316;
+    public static final int ChestUpgradeCapacityEvent = 9317;
+    public static final int ChestRequestLogEvent = 9318;
+    public static final int ChestWithdrawFurniEvent = 9320;
     public static final int ChangeNameCheckUsernameEvent = 3950;
     public static final int ConfirmChangeNameEvent = 2977;
     public static final int ActivateEffectEvent = 2959;
