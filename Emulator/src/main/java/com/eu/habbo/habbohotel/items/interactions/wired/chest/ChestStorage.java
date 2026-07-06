@@ -65,6 +65,8 @@ public class ChestStorage {
 
     private final List<Entry> entries = new ArrayList<>();
     private final List<LogEntry> log = new ArrayList<>();
+    private final List<ChestFurniStoredItem> furniItems = new ArrayList<>();
+    private int nextFurniInventoryId = 1;
 
     // --- player-facing config ---
     private String name = "";
@@ -82,6 +84,72 @@ public class ChestStorage {
 
     public List<Entry> entries() {
         return this.entries;
+    }
+
+    public List<ChestFurniStoredItem> furniItems() {
+        return this.furniItems;
+    }
+
+    public int furniItemCount() {
+        return this.furniItems.size();
+    }
+
+    /** Add one stored furni row (v2). Keeps aggregate {@link #KIND_FURNI} entries in sync for wired conditions. */
+    public ChestFurniStoredItem addFurniItem(ChestFurniStoredItem item) {
+        this.assignInventoryId(item);
+        this.furniItems.add(item);
+        this.add(KIND_FURNI, item.baseItemId, 1);
+        return item;
+    }
+
+    /** Remove up to {@code amount} rows matching a {@link ChestItemType} wire identity. */
+    public List<ChestFurniStoredItem> removeFurniByType(boolean wallItem, int baseItemId, String legacyPosterId, int amount) {
+        List<ChestFurniStoredItem> removed = new ArrayList<>();
+        if (amount <= 0) return removed;
+
+        String poster = legacyPosterId == null ? "" : legacyPosterId;
+        var it = this.furniItems.iterator();
+        while (it.hasNext() && removed.size() < amount) {
+            ChestFurniStoredItem item = it.next();
+            if (item.wallItem != wallItem || item.baseItemId != baseItemId) continue;
+            String itemPoster = item.legacyPosterId == null ? "" : item.legacyPosterId;
+            if (wallItem && !poster.equals(itemPoster)) continue;
+            removed.add(item);
+            it.remove();
+            this.take(KIND_FURNI, baseItemId, 1);
+        }
+        return removed;
+    }
+
+    /** Floor-item shortcut for legacy withdraw wire [baseItemId, amount]. */
+    public List<ChestFurniStoredItem> removeFurniByBaseItemId(int baseItemId, int amount) {
+        return removeFurniByType(false, baseItemId, "", amount);
+    }
+
+    /** Expand legacy aggregate furni rows into per-item storage (called once on load). */
+    public void migrateAggregatedFurniToItems() {
+        if (!this.furniItems.isEmpty()) return;
+
+        for (Entry e : this.entries) {
+            if (e.kind != KIND_FURNI || e.quantity <= 0) continue;
+            for (int i = 0; i < e.quantity; i++) {
+                ChestFurniStoredItem item = new ChestFurniStoredItem();
+                item.baseItemId = e.type;
+                item.stuffDataFormat = ChestFurniWireUtil.LEGACY_FORMAT;
+                item.extradata = "0";
+                item.extra = 0;
+                this.assignInventoryId(item);
+                this.furniItems.add(item);
+            }
+        }
+    }
+
+    private void assignInventoryId(ChestFurniStoredItem item) {
+        if (item.inventoryId <= 0) {
+            item.inventoryId = this.nextFurniInventoryId++;
+        } else if (item.inventoryId >= this.nextFurniInventoryId) {
+            this.nextFurniInventoryId = item.inventoryId + 1;
+        }
     }
 
     public boolean isEmpty() {
@@ -227,6 +295,8 @@ public class ChestStorage {
         data.notifyWired = this.notifyWired;
         data.notifyMode = this.notifyMode;
         data.log = this.log;
+        data.furniItems = this.furniItems;
+        data.nextFurniInventoryId = this.nextFurniInventoryId;
         return WiredManager.getGson().toJson(data);
     }
 
@@ -263,7 +333,19 @@ public class ChestStorage {
                         if (le != null) chest.log.add(le);
                     }
                 }
+                if (data.furniItems != null) {
+                    for (ChestFurniStoredItem fi : data.furniItems) {
+                        if (fi != null) {
+                            chest.assignInventoryId(fi);
+                            chest.furniItems.add(fi);
+                        }
+                    }
+                }
+                if (data.nextFurniInventoryId > 0) {
+                    chest.nextFurniInventoryId = data.nextFurniInventoryId;
+                }
             }
+            chest.migrateAggregatedFurniToItems();
         } catch (Exception ignored) {
             // malformed payload → empty chest
         }
@@ -285,6 +367,8 @@ public class ChestStorage {
         boolean notifyWired = false;
         int notifyMode = 0;
         List<LogEntry> log;
+        List<ChestFurniStoredItem> furniItems;
+        int nextFurniInventoryId = 1;
 
         JsonData() {
         }

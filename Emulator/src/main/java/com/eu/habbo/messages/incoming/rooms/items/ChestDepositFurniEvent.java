@@ -3,6 +3,8 @@ package com.eu.habbo.messages.incoming.rooms.items;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniPackets;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniStoredItem;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -52,22 +54,25 @@ public class ChestDepositFurniEvent extends MessageHandler {
         int availableInInventory = countInInventory(habbo, baseItemId);
         if (availableInInventory <= 0) return;
 
-        int capacityLeft = contents.getCapacityMax() - contents.total(ChestStorage.KIND_FURNI);
+        int capacityLeft = contents.getCapacityMax() - contents.furniItemCount();
         if (capacityLeft <= 0) return;
 
         amount = Math.min(amount, Math.min(availableInInventory, capacityLeft));
 
         var toRemove = new ArrayList<HabboItem>();
+        var added = new ArrayList<ChestFurniStoredItem>();
         for (int i = 0; i < amount; i++) {
             HabboItem removed = habbo.getInventory().getItemsComponent().getAndRemoveHabboItem(baseItem);
             if (removed == null) break;
             toRemove.add(removed);
+            added.add(ChestFurniStoredItem.fromHabboItem(removed, 0));
         }
-
         int deposited = toRemove.size();
         if (deposited <= 0) return;
 
-        contents.add(ChestStorage.KIND_FURNI, baseItemId, deposited);
+        for (ChestFurniStoredItem stored : added) {
+            contents.addFurniItem(stored);
+        }
         contents.addLog(new ChestStorage.LogEntry("deposit", System.currentTimeMillis(), habbo.getHabboInfo().getUsername(), 0, deposited));
         chest.persistContents();
 
@@ -78,6 +83,7 @@ public class ChestDepositFurniEvent extends MessageHandler {
         Emulator.getThreading().run(new QueryDeleteHabboItems(toRemove));
 
         this.client.sendResponse(new ChestDataComposer(chest));
+        ChestFurniPackets.sendDelta(this.client, chest.getId(), List.of(), added);
     }
 
     private static int countInInventory(Habbo habbo, int baseItemId) {
