@@ -1,12 +1,12 @@
 package com.eu.habbo.habbohotel.users;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.habbohotel.campaign.calendar.CalendarRewardClaimed;
-import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.achievements.Achievement;
 import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.achievements.TalentTrackType;
+import com.eu.habbo.habbohotel.campaign.calendar.CalendarRewardClaimed;
 import com.eu.habbo.habbohotel.catalog.CatalogItem;
+import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.rooms.RoomTrade;
@@ -14,12 +14,10 @@ import com.eu.habbo.habbohotel.users.cache.HabboOfferPurchase;
 import com.eu.habbo.habbohotel.users.subscriptions.Subscription;
 import com.eu.habbo.plugin.events.users.subscriptions.UserSubscriptionCreatedEvent;
 import com.eu.habbo.plugin.events.users.subscriptions.UserSubscriptionExtendedEvent;
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.THashMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.set.hash.THashSet;
-import gnu.trove.stack.array.TIntArrayStack;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,18 +30,19 @@ public class HabboStats implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HabboStats.class);
 
-    public final TIntArrayList secretRecipes;
+    public final IntArrayList secretRecipes;
     public final HabboNavigatorWindowSettings navigatorWindowSettings;
     public final THashMap<String, Object> cache;
+    // public final Map<String, Object> cache;
     public final ArrayList<CalendarRewardClaimed> calendarRewardsClaimed;
-    public final TIntObjectMap<HabboOfferPurchase> offerCache = new TIntObjectHashMap<>();
+    public final Int2ObjectMap<HabboOfferPurchase> offerCache = new Int2ObjectOpenHashMap<>();
     private final AtomicInteger lastOnlineTime = new AtomicInteger(Emulator.getIntUnixTimestamp());
-    private final THashMap<Achievement, Integer> achievementProgress;
-    private final THashMap<Achievement, Integer> achievementCache;
-    private final THashMap<Integer, CatalogItem> recentPurchases;
-    private final TIntArrayList favoriteRooms;
-    private final TIntArrayList ignoredUsers;
-    private TIntArrayList roomsVists;
+    private final Map<Achievement, Integer> achievementProgress;
+    private final Map<Achievement, Integer> achievementCache;
+    private final Map<Integer, CatalogItem> recentPurchases;
+    private final IntArrayList favoriteRooms;
+    private final IntArrayList ignoredUsers;
+    private IntArrayList roomsVists;
     public int achievementScore;
     public int respectPointsReceived;
     public int respectPointsGiven;
@@ -62,7 +61,7 @@ public class HabboStats implements Runnable {
     public int guild;
     public List<Integer> guilds;
     public String[] tags;
-    public TIntArrayStack votedRooms;
+    public IntArrayList votedRooms;
     public int loginStreak;
     public int rentedItemId;
     public int rentedTimeEnd;
@@ -85,7 +84,7 @@ public class HabboStats implements Runnable {
     public boolean allowNameChange;
     public boolean isPurchasingFurniture = false;
     public int forumPostsCount;
-    public THashMap<Integer, List<Integer>> ltdPurchaseLog = new THashMap<>(0);
+    public Map<Integer, List<Integer>> ltdPurchaseLog = new HashMap<>(0);
     public long lastTradeTimestamp = Emulator.getIntUnixTimestamp();
     public long lastGiftTimestamp = Emulator.getIntUnixTimestamp();
     public long lastPurchaseTimestamp = Emulator.getIntUnixTimestamp();
@@ -104,17 +103,17 @@ public class HabboStats implements Runnable {
     public int hcGiftsClaimed;
     public int buildersClubBonusFurni;
     public int hcMessageLastModified = Emulator.getIntUnixTimestamp();
-    public THashSet<Subscription> subscriptions;
+    public Set<Subscription> subscriptions;
 
     private HabboStats(ResultSet set, HabboInfo habboInfo) throws SQLException {
         this.cache = new THashMap<>(1000);
-        this.achievementProgress = new THashMap<>(0);
-        this.achievementCache = new THashMap<>(0);
-        this.recentPurchases = new THashMap<>(0);
-        this.favoriteRooms = new TIntArrayList(0);
-        this.ignoredUsers = new TIntArrayList(0);
-        this.roomsVists = new TIntArrayList(0);
-        this.secretRecipes = new TIntArrayList(0);
+        this.achievementProgress = new HashMap<>(0);
+        this.achievementCache = new HashMap<>(0);
+        this.recentPurchases = new HashMap<>(0);
+        this.favoriteRooms = new IntArrayList(0);
+        this.ignoredUsers = new IntArrayList(0);
+        this.roomsVists = new IntArrayList(0);
+        this.secretRecipes = new IntArrayList(0);
         this.calendarRewardsClaimed = new ArrayList<>();
 
         this.habboInfo = habboInfo;
@@ -135,7 +134,7 @@ public class HabboStats implements Runnable {
         this.allowTrade = set.getString("can_trade").equals("1");
         this.mentionsEnabled = "1".equals(safeColumnString(set, "mentions_enabled", "1"));
         this.massMentionsEnabled = "1".equals(safeColumnString(set, "mass_mentions_enabled", "1"));
-        this.votedRooms = new TIntArrayStack();
+        this.votedRooms = new IntArrayList();
         this.clubExpireTimestamp = set.getInt("club_expire_timestamp");
         this.loginStreak = set.getInt("login_streak");
         this.rentedItemId = set.getInt("rent_space_id");
@@ -302,7 +301,7 @@ public class HabboStats implements Runnable {
                     statement.setInt(1, habboInfo.getId());
                     try (ResultSet set = statement.executeQuery()) {
                         while (set.next()) {
-                            stats.votedRooms.push(set.getInt("room_id"));
+                            stats.votedRooms.add(set.getInt("room_id"));
                         }
                     }
                 }
@@ -391,7 +390,7 @@ public class HabboStats implements Runnable {
 
             if (!this.offerCache.isEmpty()) {
                 try (PreparedStatement statement = connection.prepareStatement("UPDATE users_target_offer_purchases SET state = ?, amount = ?, last_purchase = ? WHERE user_id = ? AND offer_id = ?")) {
-                    for (HabboOfferPurchase purchase : this.offerCache.valueCollection()) {
+                    for (HabboOfferPurchase purchase : this.offerCache.values()) {
                         if (!purchase.needsUpdate()) continue;
 
                         statement.setInt(1, purchase.getState());
@@ -611,11 +610,11 @@ public class HabboStats implements Runnable {
         this.buildersClubBonusFurni += amount;
     }
 
-    public THashMap<Achievement, Integer> getAchievementProgress() {
+    public Map<Achievement, Integer> getAchievementProgress() {
         return this.achievementProgress;
     }
 
-    public THashMap<Achievement, Integer> getAchievementCache() {
+    public Map<Achievement, Integer> getAchievementCache() {
         return this.achievementCache;
     }
 
@@ -625,7 +624,7 @@ public class HabboStats implements Runnable {
         }
     }
 
-    public THashMap<Integer, CatalogItem> getRecentPurchases() {
+    public Map<Integer, CatalogItem> getRecentPurchases() {
         return this.recentPurchases;
     }
 
@@ -653,7 +652,9 @@ public class HabboStats implements Runnable {
     }
 
     public void removeFavoriteRoom(int roomId) {
-        if (this.favoriteRooms.remove(roomId)) {
+        int index = this.favoriteRooms.indexOf(roomId);
+        if (index >= 0) {
+            this.favoriteRooms.removeInt(index);
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("DELETE FROM users_favorite_rooms WHERE user_id = ? AND room_id = ? LIMIT 1")) {
                 statement.setInt(1, this.habboInfo.getId());
                 statement.setInt(2, roomId);
@@ -672,7 +673,7 @@ public class HabboStats implements Runnable {
 
     public void addVisitRoom(int roomId) { this.roomsVists.add(roomId); }
 
-    public TIntArrayList getFavoriteRooms() {
+    public IntArrayList getFavoriteRooms() {
         return this.favoriteRooms;
     }
 
@@ -832,7 +833,15 @@ public class HabboStats implements Runnable {
         persistFlag("mass_mentions_enabled", enabled);
     }
 
+    private static final Set<String> PERSIST_FLAG_COLUMNS =
+            Set.of("mentions_enabled", "mass_mentions_enabled");
+
     private void persistFlag(String column, boolean enabled) {
+        if (!PERSIST_FLAG_COLUMNS.contains(column)) {
+            LOGGER.error("Refusing to persist unknown users_settings column '{}'", column);
+            return;
+        }
+
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
              PreparedStatement statement = connection.prepareStatement("UPDATE users_settings SET `" + column + "` = ? WHERE user_id = ? LIMIT 1")) {
             statement.setString(1, enabled ? "1" : "0");
@@ -862,5 +871,85 @@ public class HabboStats implements Runnable {
 
     public void addHabboOfferPurchase(HabboOfferPurchase offerPurchase) {
         this.offerCache.put(offerPurchase.getOfferId(), offerPurchase);
+    }
+
+    /** True if the user has the given profile tag (case-insensitive). */
+    public boolean hasTag(String tag) {
+        if (tag == null || tag.isEmpty() || this.tags == null) {
+            return false;
+        }
+
+        for (String existing : this.tags) {
+            if (existing != null && existing.equalsIgnoreCase(tag)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** Adds a profile tag (if absent) and persists it. Returns true if the tag set changed. */
+    public boolean addTag(String tag) {
+        if (tag == null) {
+            return false;
+        }
+
+        String trimmed = tag.trim();
+        if (trimmed.isEmpty() || this.hasTag(trimmed)) {
+            return false;
+        }
+
+        java.util.List<String> list = new java.util.ArrayList<>();
+        if (this.tags != null) {
+            for (String existing : this.tags) {
+                if (existing != null && !existing.isEmpty()) {
+                    list.add(existing);
+                }
+            }
+        }
+        list.add(trimmed);
+        this.tags = list.toArray(new String[0]);
+        this.persistTags();
+        return true;
+    }
+
+    /** Removes a profile tag (if present) and persists it. Returns true if the tag set changed. */
+    public boolean removeTag(String tag) {
+        if (tag == null || this.tags == null) {
+            return false;
+        }
+
+        String trimmed = tag.trim();
+        java.util.List<String> list = new java.util.ArrayList<>();
+        boolean removed = false;
+        for (String existing : this.tags) {
+            if (existing == null || existing.isEmpty()) {
+                continue;
+            }
+            if (existing.equalsIgnoreCase(trimmed)) {
+                removed = true;
+                continue;
+            }
+            list.add(existing);
+        }
+
+        if (!removed) {
+            return false;
+        }
+
+        this.tags = list.toArray(new String[0]);
+        this.persistTags();
+        return true;
+    }
+
+    private void persistTags() {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+             PreparedStatement statement = connection.prepareStatement("UPDATE users_settings SET `tags` = ? WHERE user_id = ? LIMIT 1")) {
+            statement.setString(1, this.tags == null ? "" : String.join(";", this.tags));
+            statement.setInt(2, this.habboInfo.getId());
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            LOGGER.error("Failed to persist users_settings.tags for user {}", this.habboInfo.getId(), e);
+        }
     }
 }

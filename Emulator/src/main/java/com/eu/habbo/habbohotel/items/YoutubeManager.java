@@ -5,7 +5,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import gnu.trove.map.hash.THashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +18,7 @@ import java.net.URL;
 import java.sql.*;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -74,8 +74,8 @@ public class YoutubeManager {
         }
     }
 
-    private final THashMap<Integer, ArrayList<YoutubePlaylist>> playlists = new THashMap<>();
-    private final THashMap<String, YoutubePlaylist> playlistCache = new THashMap<>();
+    private final ConcurrentHashMap<Integer, ArrayList<YoutubePlaylist>> playlists = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, YoutubePlaylist> playlistCache = new ConcurrentHashMap<>();
 
     private String getApiKey() {
         String key = Emulator.getConfig().getValue("youtube.apikey");
@@ -135,7 +135,8 @@ public class YoutubeManager {
             try {
                 youtubeDataLoaderPool.awaitTermination(60, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                LOGGER.error("Interrupted while waiting for YouTube playlist loading to finish.", e);
+                Thread.currentThread().interrupt();
             }
 
             LOGGER.info("YouTube Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
@@ -250,6 +251,9 @@ public class YoutubeManager {
     }
 
     public void addPlaylistToItem(int itemId, YoutubePlaylist playlist) {
-        this.playlists.computeIfAbsent(itemId, k -> new ArrayList<>()).add(playlist);
+        ArrayList<YoutubePlaylist> itemPlaylists = this.playlists.computeIfAbsent(itemId, k -> new ArrayList<>());
+        synchronized (itemPlaylists) {
+            itemPlaylists.add(playlist);
+        }
     }
 }

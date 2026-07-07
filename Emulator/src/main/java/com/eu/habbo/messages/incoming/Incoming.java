@@ -2,6 +2,19 @@ package com.eu.habbo.messages.incoming;
 
 public class Incoming {
     public static final int PongEvent = 2596;
+    // Player-facing wired chest (Scrigno)
+    public static final int ChestDepositEvent = 9313;
+    public static final int ChestWithdrawEvent = 9314;
+    public static final int ChestSaveSettingsEvent = 9315;
+    public static final int ChestSaveNotificationsEvent = 9316;
+    public static final int ChestUpgradeCapacityEvent = 9317;
+    public static final int ChestRequestLogEvent = 9318;
+    public static final int ChestWithdrawFurniEvent = 9320;
+    public static final int ChestDepositFurniEvent = 9321; // Player-facing wired furni chest deposit (from inventory)
+    public static final int ChestStartDepositEvent = 9324; // Enter furni deposit mode (official Kigike)
+    public static final int ChestDepositInventoryItemEvent = 9325; // Deposit one inventory row into active chest
+    public static final int ChestWithdrawAllFurniEvent = 9326; // Withdraw all furni (official Vefehonuj shape)
+    public static final int ChestOpenEvent = 9327; // Open wired chest (official Nod)
     public static final int ChangeNameCheckUsernameEvent = 3950;
     public static final int ConfirmChangeNameEvent = 2977;
     public static final int ActivateEffectEvent = 2959;
@@ -219,6 +232,7 @@ public class Incoming {
     public static final int UnknownEvent1 = 1371;
     public static final int RequestTalenTrackEvent = 196;
     public static final int RequestNewNavigatorDataEvent = 2110;
+    public static final int GetCategoriesWithUserCountEvent = 3782;
     public static final int RequestNewNavigatorRoomsEvent = 249;
     public static final int RedeemClothingEvent = 3374;
     public static final int NewNavigatorActionEvent = 1703;
@@ -504,6 +518,7 @@ public class Incoming {
     public static final int RequestEarningsCenterEvent = 9308;
     public static final int ClaimEarningsRewardEvent = 9309;
     public static final int ClaimAllEarningsRewardsEvent = 9310;
+    public static final int PressKeybindEvent = 9311;
     public static final int RequestMentionsEvent = 4803;
     public static final int MarkMentionsReadEvent = 4804;
     public static final int DeleteMentionEvent = 4805;

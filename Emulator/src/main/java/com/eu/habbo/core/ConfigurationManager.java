@@ -2,7 +2,6 @@ package com.eu.habbo.core;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.plugin.events.emulator.EmulatorConfigUpdatedEvent;
-import gnu.trove.map.hash.THashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,6 +10,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.*;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
@@ -57,20 +57,19 @@ public class ConfigurationManager {
 
             } catch (IOException ex) {
                 LOGGER.error("Failed to load config file.", ex);
-                ex.printStackTrace();
             } finally {
                 if (input != null) {
                     try {
                         input.close();
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        LOGGER.error("Failed to close config file input stream.", e);
                     }
                 }
             }
 
         } else {
 
-            Map<String, String> envMapping = new THashMap<>();
+            Map<String, String> envMapping = new HashMap<>();
 
             // Database section
             envMapping.put("db.hostname", "DB_HOSTNAME");

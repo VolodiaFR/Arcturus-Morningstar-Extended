@@ -29,7 +29,15 @@ public enum WiredTriggerType {
     CUSTOM(13),
     STARTS_DANCING(11),
     STOPS_DANCING(11),
-    RECEIVE_SIGNAL(15);
+    RECEIVE_SIGNAL(15),
+    // Phase-2 transaction outcome triggers. Each requires the matching Nitro WiredTriggerLayoutCode value.
+    TRANSACTION_COMPLETE(27),
+    TRANSACTION_FAIL(28),
+    // New client dialogs. Each requires the matching Nitro WiredTriggerLayoutCode value.
+    USER_GETS_HANDITEM(25),
+    DICE_ROLLED(24),
+    // Fired by the PressKeybindEvent packet handler (header 9311) via WiredManager.triggerKeybind.
+    PRESS_KEYBIND(26);
 
     public final int code;
 

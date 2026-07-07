@@ -4,6 +4,12 @@ public class Outgoing {
     public static final int PetStatusUpdateComposer = 1907;//error 404
 
     public final static int CfhTopicsMessageComposer = 325;
+    // Player-facing wired chest (Scrigno)
+    public final static int ChestDataComposer = 9312;
+    public final static int ChestLogComposer = 9319;
+    public final static int ChestFurniChunkComposer = 9322;
+    public final static int ChestFurniDeltaComposer = 9323;
+    public final static int ChestOpenComposer = 9327;
     public final static int FavoriteRoomsCountComposer = 151;
     public final static int UserCurrencyComposer = 2018;
     public final static int RedeemVoucherOKComposer = 3336;

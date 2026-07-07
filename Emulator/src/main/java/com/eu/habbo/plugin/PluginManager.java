@@ -29,6 +29,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredEngine;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreManager;
 import com.eu.habbo.messages.PacketManager;
+import com.eu.habbo.messages.RuntimeValidationReport;
 import com.eu.habbo.messages.incoming.catalog.CheckPetNameEvent;
 import com.eu.habbo.messages.incoming.floorplaneditor.FloorPlanEditorSaveEvent;
 import com.eu.habbo.messages.incoming.hotelview.HotelViewRequestLTDAvailabilityEvent;
@@ -45,8 +46,6 @@ import com.eu.habbo.threading.runnables.RoomTrashing;
 import com.eu.habbo.threading.runnables.ShutdownEmulator;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import gnu.trove.iterator.hash.TObjectHashIterator;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,8 +57,9 @@ import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Arrays;
-import java.util.NoSuchElementException;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -71,8 +71,8 @@ public class PluginManager {
     // of building a parser per plugin-config load.
     private static final Gson PLUGIN_GSON = new GsonBuilder().create();
 
-    private final THashSet<HabboPlugin> plugins = new THashSet<>();
-    private final THashSet<Method> methods = new THashSet<>();
+    private final Set<HabboPlugin> plugins = new HashSet<>();
+    private final Set<Method> methods = new HashSet<>();
 
     @EventHandler
     public static void globalOnConfigurationUpdated(EmulatorConfigUpdatedEvent event) {
@@ -236,7 +236,7 @@ public class PluginManager {
             try {
                 NewNavigatorEventCategoriesComposer.CATEGORIES.add(new EventCategory(category));
             } catch (Exception e) {
-                e.printStackTrace();
+                LOGGER.error("Caught exception", e);
             }
         }
 
@@ -264,8 +264,10 @@ public class PluginManager {
         }
 
         for (File file : Objects.requireNonNull(loc.listFiles(file -> file.getPath().toLowerCase().endsWith(".jar")))) {
-            URLClassLoader urlClassLoader;
-            InputStream stream;
+            URLClassLoader urlClassLoader = null;
+            InputStream stream = null;
+            boolean retainPluginResources = false;
+
             try {
                 urlClassLoader = URLClassLoader.newInstance(new URL[]{file.toURI().toURL()});
                 stream = urlClassLoader.getResourceAsStream("plugin.json");
@@ -280,6 +282,12 @@ public class PluginManager {
                     String body = new String(content, java.nio.charset.StandardCharsets.UTF_8);
 
                     HabboPluginConfiguration pluginConfigurtion = PLUGIN_GSON.fromJson(body, HabboPluginConfiguration.class);
+                    RuntimeValidationReport validationReport = PluginRuntimeValidator.validatePluginClass(file.getName(), pluginConfigurtion, urlClassLoader);
+
+                    if (validationReport.hasErrors()) {
+                        validationReport.logErrors(LOGGER, "Plugin validation");
+                        continue;
+                    }
 
                     try {
                         Class<?> clazz = urlClassLoader.loadClass(pluginConfigurtion.main);
@@ -290,6 +298,7 @@ public class PluginManager {
                         plugin.classLoader = urlClassLoader;
                         plugin.stream = stream;
                         this.plugins.add(plugin);
+                        retainPluginResources = true;
                         plugin.onEnable();
                     } catch (Exception e) {
                         LOGGER.error("Could not load plugin {}!", pluginConfigurtion.name);
@@ -298,6 +307,28 @@ public class PluginManager {
                 }
             } catch (Exception e) {
                 LOGGER.error("Caught exception", e);
+            } finally {
+                if (!retainPluginResources) {
+                    closeRejectedPluginResources(stream, urlClassLoader, file.getName());
+                }
+            }
+        }
+    }
+
+    private static void closeRejectedPluginResources(InputStream stream, URLClassLoader classLoader, String jarName) {
+        if (stream != null) {
+            try {
+                stream.close();
+            } catch (IOException e) {
+                LOGGER.warn("Failed to close plugin.json stream for rejected plugin {}.", jarName, e);
+            }
+        }
+
+        if (classLoader != null) {
+            try {
+                classLoader.close();
+            } catch (IOException e) {
+                LOGGER.warn("Failed to close classloader for rejected plugin {}.", jarName, e);
             }
         }
     }
@@ -313,7 +344,7 @@ public class PluginManager {
                             final Class<?> eventClass = method.getParameterTypes()[0];
 
                             if (!plugin.registeredEvents.containsKey(eventClass.asSubclass(Event.class))) {
-                                plugin.registeredEvents.put(eventClass.asSubclass(Event.class), new THashSet<>());
+                                plugin.registeredEvents.put(eventClass.asSubclass(Event.class), new HashSet<>());
                             }
 
                             plugin.registeredEvents.get(eventClass.asSubclass(Event.class)).add(method);
@@ -336,27 +367,21 @@ public class PluginManager {
             }
         }
 
-        TObjectHashIterator<HabboPlugin> iterator = this.plugins.iterator();
-        while (iterator.hasNext()) {
-            try {
-                HabboPlugin plugin = iterator.next();
+        for (HabboPlugin plugin : this.plugins) {
 
-                if (plugin != null) {
-                    THashSet<Method> methods = plugin.registeredEvents.get(event.getClass().asSubclass(Event.class));
+            if (plugin != null) {
+                Set<Method> methods = plugin.registeredEvents.get(event.getClass().asSubclass(Event.class));
 
-                    if (methods != null) {
-                        for (Method method : methods) {
-                            try {
-                                method.invoke(plugin, event);
-                            } catch (Exception e) {
-                                LOGGER.error("Could not pass event {} to {}", event.getClass().getName(), plugin.configuration.name);
-                                LOGGER.error("Caught exception", e);
-                            }
+                if (methods != null) {
+                    for (Method method : methods) {
+                        try {
+                            method.invoke(plugin, event);
+                        } catch (Exception e) {
+                            LOGGER.error("Could not pass event {} to {}", event.getClass().getName(), plugin.configuration.name);
+                            LOGGER.error("Caught exception", e);
                         }
                     }
                 }
-            } catch (NoSuchElementException e) {
-                break;
             }
         }
 
@@ -364,14 +389,9 @@ public class PluginManager {
     }
 
     public boolean isRegistered(Class<? extends Event> clazz, boolean pluginsOnly) {
-        TObjectHashIterator<HabboPlugin> iterator = this.plugins.iterator();
-        while (iterator.hasNext()) {
-            try {
-                HabboPlugin plugin = iterator.next();
-                if (plugin.isRegistered(clazz))
-                    return true;
-            } catch (NoSuchElementException e) {
-                break;
+        for (HabboPlugin plugin : this.plugins) {
+            if (plugin != null && plugin.isRegistered(clazz)) {
+                return true;
             }
         }
 
@@ -393,25 +413,18 @@ public class PluginManager {
     }
 
     private void disposePlugins() {
-        TObjectHashIterator<HabboPlugin> iterator = this.plugins.iterator();
-        while (iterator.hasNext()) {
-            try {
-                HabboPlugin p = iterator.next();
+        for (HabboPlugin p : this.plugins) {
+            if (p != null) {
 
-                if (p != null) {
-
-                    try {
-                        p.onDisable();
-                        p.stream.close();
-                        p.classLoader.close();
-                    } catch (IOException e) {
-                        LOGGER.error("Caught exception", e);
-                    } catch (Exception ex) {
-                        LOGGER.error("Failed to disable {} because of an exception.", p.configuration.name, ex);
-                    }
+                try {
+                    p.onDisable();
+                    p.stream.close();
+                    p.classLoader.close();
+                } catch (IOException e) {
+                    LOGGER.error("Caught exception", e);
+                } catch (Exception ex) {
+                    LOGGER.error("Failed to disable {} because of an exception.", p.configuration.name, ex);
                 }
-            } catch (NoSuchElementException e) {
-                break;
             }
         }
         this.plugins.clear();
@@ -449,7 +462,7 @@ public class PluginManager {
         }
     }
 
-    public THashSet<HabboPlugin> getPlugins() {
+    public Set<HabboPlugin> getPlugins() {
         return this.plugins;
     }
 }

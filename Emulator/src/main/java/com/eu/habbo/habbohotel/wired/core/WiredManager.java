@@ -32,7 +32,6 @@ import com.eu.habbo.plugin.events.emulator.EmulatorLoadedEvent;
 import com.eu.habbo.plugin.events.users.UserWiredRewardReceived;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,9 +40,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.Set;
 
 /**
@@ -707,6 +706,45 @@ public final class WiredManager {
     }
 
     /**
+     * Trigger when a user receives a hand item.
+     */
+    public static boolean triggerUserGetsHandItem(Room room, RoomUnit user) {
+        if (!isEnabled() || room == null || user == null) {
+            return false;
+        }
+
+        WiredEvent event = WiredEvents.userGetsHandItem(room, user);
+        return handleEvent(event);
+    }
+
+    /**
+     * Trigger when a dice furni is rolled.
+     */
+    public static boolean triggerDiceRolled(Room room, HabboItem dice) {
+        if (!isEnabled() || room == null || dice == null) {
+            return false;
+        }
+
+        WiredEvent event = WiredEvents.diceRolled(room, dice);
+        return handleEvent(event);
+    }
+
+    /**
+     * Trigger when a user presses a configured keybind key.
+     * @param room the room
+     * @param user the user who pressed the key
+     * @param keyCode the pressed key code
+     */
+    public static boolean triggerKeybind(Room room, RoomUnit user, int keyCode) {
+        if (!isEnabled() || room == null || user == null) {
+            return false;
+        }
+
+        WiredEvent event = WiredEvents.keybind(room, user, keyCode);
+        return handleEvent(event);
+    }
+
+    /**
      * Trigger when a team wins a game.
      */
     public static boolean triggerTeamWins(Room room, RoomUnit user) {
@@ -937,7 +975,7 @@ public final class WiredManager {
             return null;
         }
 
-        THashSet<InteractionWiredExtra> extras = room.getRoomSpecialTypes().getExtras(
+        Collection<InteractionWiredExtra> extras = room.getRoomSpecialTypes().getExtras(
                 triggerItem.getX(),
                 triggerItem.getY());
 
@@ -984,14 +1022,14 @@ public final class WiredManager {
      * @param callStackDepth current recursion depth for trigger stacks
      * @return true if any effects were executed
      */
-    public static boolean executeEffectsAtTiles(THashSet<RoomTile> tiles, final RoomUnit roomUnit, final Room room, final int callStackDepth) {
+    public static boolean executeEffectsAtTiles(Collection<RoomTile> tiles, final RoomUnit roomUnit, final Room room, final int callStackDepth) {
         if (tiles == null || tiles.isEmpty() || room == null || engine == null || stackIndex == null) {
             return false;
         }
 
         for (RoomTile tile : tiles) {
             if (room != null) {
-                THashSet<HabboItem> items = room.getItemsAt(tile);
+                Collection<HabboItem> items = room.getItemsAt(tile);
 
                 long millis = room.getCycleTimestamp();
                 for (final HabboItem item : items) {
@@ -1012,7 +1050,7 @@ public final class WiredManager {
         return true;
     }
 
-    public static boolean executeNegatedStacksAtTiles(THashSet<RoomTile> tiles, final RoomUnit roomUnit, final Room room, final int callStackDepth) {
+    public static boolean executeNegatedStacksAtTiles(Collection<RoomTile> tiles, final RoomUnit roomUnit, final Room room, final int callStackDepth) {
         if (tiles == null || tiles.isEmpty() || room == null || engine == null || stackIndex == null) {
             return false;
         }

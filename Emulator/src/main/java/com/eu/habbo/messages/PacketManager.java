@@ -83,12 +83,13 @@ import com.eu.habbo.messages.incoming.wired.WiredUserVariablesRequestEvent;
 import com.eu.habbo.messages.incoming.wired.WiredTriggerSaveDataEvent;
 import com.eu.habbo.plugin.EventHandler;
 import com.eu.habbo.plugin.events.emulator.EmulatorConfigUpdatedEvent;
-import gnu.trove.map.hash.THashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class PacketManager {
 
@@ -97,13 +98,13 @@ public class PacketManager {
     private static final List<Integer> logList = new ArrayList<>();
     public static boolean DEBUG_SHOW_PACKETS = false;
     public static boolean MULTI_THREADED_PACKET_HANDLING = false;
-    private final THashMap<Integer, Class<? extends MessageHandler>> incoming;
-    private final THashMap<Integer, List<ICallable>> callables;
+    private final Map<Integer, Class<? extends MessageHandler>> incoming;
+    private final Map<Integer, List<ICallable>> callables;
     private final PacketNames names;
 
     public PacketManager() throws Exception {
-        this.incoming = new THashMap<>();
-        this.callables = new THashMap<>();
+        this.incoming = new HashMap<>();
+        this.callables = new HashMap<>();
         this.names = new PacketNames();
         this.names.initialize();
 
@@ -132,6 +133,9 @@ public class PacketManager {
         this.registerCamera();
         this.registerGameCenter();
         this.registerEarnings();
+
+        RuntimeValidationReport report = PacketRuntimeValidator.validateHandlers(this.incoming);
+        report.logErrors(LOGGER, "Incoming packet handler validation");
     }
 
     public PacketNames getNames() {
@@ -386,6 +390,7 @@ public class PacketManager {
         this.registerHandler(Incoming.SearchRoomsMyFavoriteEvent, SearchRoomsMyFavouriteEvent.class);
         this.registerHandler(Incoming.SearchRoomsVisitedEvent, SearchRoomsVisitedEvent.class);
         this.registerHandler(Incoming.RequestNewNavigatorDataEvent, RequestNewNavigatorDataEvent.class);
+        this.registerHandler(Incoming.GetCategoriesWithUserCountEvent, GetCategoriesWithUserCountEvent.class);
         this.registerHandler(Incoming.RequestNewNavigatorRoomsEvent, RequestNewNavigatorRoomsEvent.class);
         this.registerHandler(Incoming.NewNavigatorActionEvent, NewNavigatorActionEvent.class);
         this.registerHandler(Incoming.RequestNavigatorSettingsEvent, RequestNavigatorSettingsEvent.class);
@@ -455,6 +460,18 @@ public class PacketManager {
         this.registerHandler(Incoming.ClickUserEvent, ClickUserEvent.class);
         this.registerHandler(Incoming.ToggleFloorItemEvent, ToggleFloorItemEvent.class);
         this.registerHandler(Incoming.ToggleWallItemEvent, ToggleWallItemEvent.class);
+        this.registerHandler(Incoming.ChestDepositEvent, ChestDepositEvent.class);
+        this.registerHandler(Incoming.ChestWithdrawEvent, ChestWithdrawEvent.class);
+        this.registerHandler(Incoming.ChestWithdrawFurniEvent, ChestWithdrawFurniEvent.class);
+        this.registerHandler(Incoming.ChestDepositFurniEvent, ChestDepositFurniEvent.class);
+        this.registerHandler(Incoming.ChestStartDepositEvent, ChestStartDepositEvent.class);
+        this.registerHandler(Incoming.ChestDepositInventoryItemEvent, ChestDepositInventoryItemEvent.class);
+        this.registerHandler(Incoming.ChestWithdrawAllFurniEvent, ChestWithdrawAllFurniEvent.class);
+        this.registerHandler(Incoming.ChestOpenEvent, ChestOpenEvent.class);
+        this.registerHandler(Incoming.ChestSaveSettingsEvent, ChestSaveSettingsEvent.class);
+        this.registerHandler(Incoming.ChestSaveNotificationsEvent, ChestSaveNotificationsEvent.class);
+        this.registerHandler(Incoming.ChestUpgradeCapacityEvent, ChestUpgradeCapacityEvent.class);
+        this.registerHandler(Incoming.ChestRequestLogEvent, ChestRequestLogEvent.class);
         this.registerHandler(Incoming.RoomBackgroundEvent, RoomBackgroundEvent.class);
         this.registerHandler(Incoming.MannequinSaveNameEvent, MannequinSaveNameEvent.class);
         this.registerHandler(Incoming.MannequinSaveLookEvent, MannequinSaveLookEvent.class);
@@ -484,6 +501,7 @@ public class PacketManager {
         this.registerHandler(Incoming.BotSaveSettingsEvent, BotSaveSettingsEvent.class);
         this.registerHandler(Incoming.BotSettingsEvent, BotSettingsEvent.class);
         this.registerHandler(Incoming.TriggerDiceEvent, TriggerDiceEvent.class);
+        this.registerHandler(Incoming.PressKeybindEvent, com.eu.habbo.messages.incoming.rooms.items.PressKeybindEvent.class);
         this.registerHandler(Incoming.CloseDiceEvent, CloseDiceEvent.class);
         this.registerHandler(Incoming.TriggerColorWheelEvent, TriggerColorWheelEvent.class);
         this.registerHandler(Incoming.RedeemItemEvent, RedeemItemEvent.class);
