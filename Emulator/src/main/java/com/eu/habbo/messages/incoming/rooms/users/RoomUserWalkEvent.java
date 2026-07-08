@@ -1,12 +1,16 @@
 package com.eu.habbo.messages.incoming.rooms.users;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveRotateUser;
 import com.eu.habbo.habbohotel.pets.PetTasks;
-import com.eu.habbo.habbohotel.rooms.*;
+import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomTile;
+import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.RoomUnitStatus;
+import com.eu.habbo.habbohotel.rooms.BedProfile;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveRotateUser;
 import com.eu.habbo.habbohotel.wired.core.WiredFreezeUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredUserMovementHelper;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -99,10 +103,10 @@ public class RoomUserWalkEvent extends MessageHandler {
         }
 
         if (habboInfo.getRiding() != null
-                && ((habboInfo.getRiding().getRoomUnit() != null
-                && habboInfo.getRiding().getRoomUnit().hasStatus(RoomUnitStatus.JUMP))
-                || (habboInfo.getRiding().getTask() != null
-                && habboInfo.getRiding().getTask().equals(PetTasks.JUMP)))) {
+            && ((habboInfo.getRiding().getRoomUnit() != null
+            && habboInfo.getRiding().getRoomUnit().hasStatus(RoomUnitStatus.JUMP))
+            || (habboInfo.getRiding().getTask() != null
+            && habboInfo.getRiding().getTask().equals(PetTasks.JUMP)))) {
           return;
         }
 
@@ -125,13 +129,13 @@ public class RoomUserWalkEvent extends MessageHandler {
         }
 
         if (habbo.getRoomUnit().hasStatus(RoomUnitStatus.LAY) && room.getLayout()
-                .getTilesInFront(habbo.getRoomUnit().getCurrentLocation(),
-                        habbo.getRoomUnit().getBodyRotation().getValue(), 2).contains(tile)) {
+            .getTilesInFront(habbo.getRoomUnit().getCurrentLocation(),
+                habbo.getRoomUnit().getBodyRotation().getValue(), 2).contains(tile)) {
           return;
         }
 
         if (room.canLayAt(tile.x, tile.y) && handleLay(room, tile, (short) x, (short) y,
-                roomUnit)) {
+            roomUnit)) {
           return;
         }
 
@@ -165,11 +169,11 @@ public class RoomUserWalkEvent extends MessageHandler {
           }
 
           boolean needsLocationResync =
-                  roomUnit.getCurrentLocation() != null
-                          && (roomUnit.getPreviousLocation() == null
-                          || roomUnit.getPreviousLocation().x != roomUnit.getCurrentLocation().x
-                          || roomUnit.getPreviousLocation().y != roomUnit.getCurrentLocation().y
-                          || Math.abs(roomUnit.getPreviousLocationZ() - roomUnit.getZ()) > 0.01D);
+              roomUnit.getCurrentLocation() != null
+                  && (roomUnit.getPreviousLocation() == null
+                  || roomUnit.getPreviousLocation().x != roomUnit.getCurrentLocation().x
+                  || roomUnit.getPreviousLocation().y != roomUnit.getCurrentLocation().y
+                  || Math.abs(roomUnit.getPreviousLocationZ() - roomUnit.getZ()) > 0.01D);
 
           if (WiredUserMovementHelper.shouldSuppressStatusComposer(roomUnit) || needsLocationResync) {
             WiredUserMovementHelper.clearStatusComposerSuppression(roomUnit);
@@ -220,13 +224,13 @@ public class RoomUserWalkEvent extends MessageHandler {
   }
 
   private static void handleTeleport(Room room, short x, short y, RoomUnit roomUnit,
-                                     HabboInfo habboInfo) {
+      HabboInfo habboInfo) {
     RoomTile t = room.getLayout().getTile(x, y);
     room.sendComposer(new RoomUnitOnRollerComposer(roomUnit, t, room).compose());
 
     if (habboInfo.getRiding() != null) {
       room.sendComposer(
-              new RoomUnitOnRollerComposer(habboInfo.getRiding().getRoomUnit(), t, room).compose());
+          new RoomUnitOnRollerComposer(habboInfo.getRiding().getRoomUnit(), t, room).compose());
     }
   }
 
@@ -247,7 +251,7 @@ public class RoomUserWalkEvent extends MessageHandler {
       habbo = (Habbo) roomUnit.getCacheable().get(CONTROL_KEY);
 
       if (habbo.getHabboInfo().getCurrentRoom() != this.client.getHabbo().getHabboInfo()
-              .getCurrentRoom()) {
+          .getCurrentRoom()) {
         habbo.getRoomUnit().getCacheable().remove("controller");
         this.client.getHabbo().getRoomUnit().getCacheable().remove(CONTROL_KEY);
         habbo = this.client.getHabbo();
