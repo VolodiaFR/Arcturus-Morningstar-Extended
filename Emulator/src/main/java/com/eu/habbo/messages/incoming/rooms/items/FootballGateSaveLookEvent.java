@@ -7,6 +7,11 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 
 public class FootballGateSaveLookEvent extends MessageHandler {
     @Override
+    public int getRatelimit() {
+        return 500;
+    }
+
+    @Override
     public void handle() throws Exception {
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
 
@@ -22,9 +27,9 @@ public class FootballGateSaveLookEvent extends MessageHandler {
             return;
 
         String gender = this.packet.readString();
-        String look = RoomItemInputGuard.trimToMax(this.packet.readString(), RoomItemInputGuard.MAX_LOOK_LENGTH);
+        String look = this.packet.readString();
 
-        if (!RoomItemInputGuard.isValidGender(gender) || look.isEmpty())
+        if (!RoomItemInputGuard.isValidGender(gender) || !RoomItemInputGuard.isValidFigure(look))
             return;
 
         switch (gender.toLowerCase()) {
