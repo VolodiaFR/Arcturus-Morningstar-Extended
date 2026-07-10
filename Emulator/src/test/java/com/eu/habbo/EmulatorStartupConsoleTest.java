@@ -14,8 +14,8 @@ class EmulatorStartupConsoleTest {
     void startupHeroUsesUniversalAsciiLayout() {
         String hero = Emulator.startupHero();
 
-        assertTrue(hero.contains("__  __  ___  ____"));
-        assertTrue(hero.contains("MORNINGSTAR EXTENDED"));
+        assertTrue(hero.contains("____   ___  _"));
+        assertTrue(hero.contains("POLARIS"));
         assertTrue(hero.contains("Version"));
         assertTrue(hero.contains("Build"));
         assertFalse(hero.contains("\u001B["), "startup hero must not require ANSI support");
@@ -26,7 +26,7 @@ class EmulatorStartupConsoleTest {
         String hero = Emulator.startupHero(true);
 
         assertTrue(hero.contains("\u001B["), "styled hero should include ANSI colors");
-        assertTrue(hero.contains("[OK] MORNINGSTAR EXTENDED"));
+        assertTrue(hero.contains("[OK] POLARIS"));
         assertTrue(hero.contains("[JVM]"));
         assertTrue(hero.endsWith("\u001B[0m\n"), "styled hero should reset terminal attributes");
     }

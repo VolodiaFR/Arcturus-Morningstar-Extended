@@ -5,10 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class RoomItemInputGuardContractTest {
     private static String source(String name) throws Exception {
@@ -107,8 +104,8 @@ class RoomItemInputGuardContractTest {
 
         assertTrue(football.contains("RoomItemInputGuard.isValidGender(gender)"),
                 "football gates should reject unknown gender keys instead of defaulting to male");
-        assertTrue(football.contains("RoomItemInputGuard.trimToMax(this.packet.readString(), RoomItemInputGuard.MAX_LOOK_LENGTH)"),
-                "football gate looks should be capped before persistence");
+        assertTrue(football.contains("RoomItemInputGuard.isValidFigure(look)"),
+                "football gate looks should be validated as bounded figure strings before persistence");
         assertTrue(mannequinName.contains("RoomItemInputGuard.trimToMax(this.packet.readString(), 32)"),
                 "mannequin names should be capped before extradata persistence");
         assertTrue(moodlight.contains("if (room == null)"),
@@ -152,6 +149,23 @@ class RoomItemInputGuardContractTest {
                 "post-it placement should validate the wall position format");
         assertTrue(source("MoveWallItemEvent").contains("RoomItemInputGuard.isValidWallPosition(wallPosition)"),
                 "wall item moves should validate the wall position format");
+    }
+
+    @Test
+    void footballGateLooksAreValidatedAsFigures() throws Exception {
+        assertTrue(RoomItemInputGuard.isValidFigure("ch-3109-92-1408.lg-3116-82-1408.sh-3115-1408-1408"));
+        assertTrue(RoomItemInputGuard.isValidFigure("ch-3112-1408-1408"));
+        assertFalse(RoomItemInputGuard.isValidFigure(null));
+        assertFalse(RoomItemInputGuard.isValidFigure(""));
+        assertFalse(RoomItemInputGuard.isValidFigure("ch-3109;lg-3116"));        // extradata separator
+        assertFalse(RoomItemInputGuard.isValidFigure("ch-3109,lg-3116"));        // serialized separator
+        assertFalse(RoomItemInputGuard.isValidFigure("ch-3109 lg-3116"));        // whitespace
+        assertFalse(RoomItemInputGuard.isValidFigure("<script>"));
+        assertFalse(RoomItemInputGuard.isValidFigure("ch-"));                    // empty id
+        assertFalse(RoomItemInputGuard.isValidFigure("ch-99999999"));            // absurd id length
+        assertFalse(RoomItemInputGuard.isValidFigure("ch-3109." + "lg-3116.".repeat(200))); // over length cap
+        assertTrue(source("FootballGateSaveLookEvent").contains("RoomItemInputGuard.isValidFigure(look)"),
+                "football gate saves should validate the look as a figure string");
     }
 
     @Test

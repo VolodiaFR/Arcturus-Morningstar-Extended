@@ -1,6 +1,8 @@
 package com.eu.habbo.database;
 
 import com.eu.habbo.core.ConfigurationManager;
+import com.eu.habbo.database.compat.LegacyBridgeDataSource;
+import com.eu.habbo.database.compat.LegacySqlBridge;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
@@ -33,7 +35,7 @@ class DatabasePool {
     DatabasePool() {
     }
 
-    public boolean getStoragePooling(ConfigurationManager config) {
+    public boolean getStoragePooling(ConfigurationManager config, LegacySqlBridge legacySqlBridge) {
         try {
             HikariConfig databaseConfiguration = new HikariConfig();
 
@@ -89,14 +91,14 @@ class DatabasePool {
             databaseConfiguration.addDataSourceProperty("tcpKeepAlive",   "true");
             databaseConfiguration.addDataSourceProperty("maintainTimeStats",        "false");
 
-            databaseConfiguration.setPoolName("HabboHikariPool");
+            databaseConfiguration.setPoolName("PolarisHikariPool");
 
             log.info("INITIALIZING DATABASE SERVER: " + config.getValue(DB_HOSTNAME_KEY));
             log.info("ON PORT: " + config.getValue(DB_PORT_KEY));
             log.info("HABBO DATABASE: " + config.getValue(DB_NAME_KEY));
             log.info("USING DRIVER: MariaDB Connector/J");
 
-            this.database = new HikariDataSource(databaseConfiguration);
+            this.database = new LegacyBridgeDataSource(databaseConfiguration, legacySqlBridge);
         } catch (Exception e) {
             log.error("Error initializing database connection pool: {}", e.getMessage());
             return false;

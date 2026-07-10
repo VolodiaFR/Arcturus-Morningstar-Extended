@@ -39,6 +39,10 @@ public class PermissionsManager {
     }
 
     public void reload() {
+        if (Emulator.getDatabase() != null && Emulator.getDatabase().getLegacySqlBridge() != null) {
+            Emulator.getDatabase().getLegacySqlBridge().invalidateCaches();
+        }
+
         this.loadPermissions();
         this.loadEnables();
     }

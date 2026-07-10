@@ -12,12 +12,20 @@ public final class RoomItemInputGuard {
     public static final int MAX_STICKY_POLE_COMMAND_LENGTH = 255;
     public static final int MAX_WALL_POSITION_LENGTH = 20;
     private static final Pattern WALL_POSITION_PATTERN = Pattern.compile("^:w=\\d{1,3},\\d{1,3} l=-?\\d{1,4},-?\\d{1,4} [lr]$");
+    private static final Pattern FIGURE_PATTERN = Pattern.compile("^[a-z]{2,3}-\\d{1,6}(-\\d{1,6})*(\\.[a-z]{2,3}-\\d{1,6}(-\\d{1,6})*)*$");
 
     private RoomItemInputGuard() {
     }
 
     public static boolean isPositiveId(int id) {
         return id > 0;
+    }
+
+    public static boolean isValidFigure(String figure) {
+        return figure != null
+                && !figure.isEmpty()
+                && figure.length() <= MAX_LOOK_LENGTH
+                && FIGURE_PATTERN.matcher(figure).matches();
     }
 
     public static boolean isValidWallPosition(String position) {

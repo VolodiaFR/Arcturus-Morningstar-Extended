@@ -67,7 +67,7 @@ public class HousekeepingGetDashboardEvent extends MessageHandler {
         }
 
         int uptime = (int) ((System.currentTimeMillis() - HOUSEKEEPING_BOOT_MILLIS) / 1000);
-        String version = "Arcturus-Morningstar-Extended";
+        String version = "Polaris";
 
         this.client.sendResponse(new HousekeepingDashboardComposer(
                 onlineUsers,
