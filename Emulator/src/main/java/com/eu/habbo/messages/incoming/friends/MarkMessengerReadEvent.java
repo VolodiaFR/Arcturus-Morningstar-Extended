@@ -4,7 +4,7 @@ import com.eu.habbo.habbohotel.messenger.history.MessengerHistoryServices;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.friends.MessengerReadCursorComposer;
 
-public final class MarkMessengerReadV2Event extends MessageHandler {
+public final class MarkMessengerReadEvent extends MessageHandler {
     @Override
     public void handle() {
         int conversationId = packet.readInt();

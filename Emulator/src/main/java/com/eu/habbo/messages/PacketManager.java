@@ -342,8 +342,8 @@ public class PacketManager {
         this.registerHandler(Incoming.InviteFriendsEvent, InviteFriendsEvent.class);
         this.registerHandler(Incoming.RequestMessengerConversationsEvent, RequestMessengerConversationsEvent.class);
         this.registerHandler(Incoming.RequestMessengerHistoryEvent, RequestMessengerHistoryEvent.class);
-        this.registerHandler(Incoming.SendMessengerMessageV2Event, SendMessengerMessageV2Event.class);
-        this.registerHandler(Incoming.MarkMessengerReadV2Event, MarkMessengerReadV2Event.class);
+        this.registerHandler(Incoming.SendMessengerMessageEvent, SendMessengerMessageEvent.class);
+        this.registerHandler(Incoming.MarkMessengerReadEvent, MarkMessengerReadEvent.class);
     }
 
     private void registerUsers() throws Exception {

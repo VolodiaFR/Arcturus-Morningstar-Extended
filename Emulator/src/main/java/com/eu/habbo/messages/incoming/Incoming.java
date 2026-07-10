@@ -524,6 +524,6 @@ public class Incoming {
     public static final int DeleteMentionEvent = 4805;
     public static final int RequestMessengerConversationsEvent = 4900;
     public static final int RequestMessengerHistoryEvent = 4901;
-    public static final int SendMessengerMessageV2Event = 4902;
-    public static final int MarkMessengerReadV2Event = 4903;
+    public static final int SendMessengerMessageEvent = 4902;
+    public static final int MarkMessengerReadEvent = 4903;
 }

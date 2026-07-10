@@ -9,9 +9,9 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.friends.MessengerMessageAckComposer;
 import com.eu.habbo.messages.outgoing.friends.MessengerMessageFailedComposer;
-import com.eu.habbo.messages.outgoing.friends.MessengerMessageV2Composer;
+import com.eu.habbo.messages.outgoing.friends.MessengerMessageComposer;
 
-public final class SendMessengerMessageV2Event extends MessageHandler {
+public final class SendMessengerMessageEvent extends MessageHandler {
     @Override
     public void handle() {
         int conversationId = packet.readInt();
@@ -34,7 +34,7 @@ public final class SendMessengerMessageV2Event extends MessageHandler {
             if (conversationId <= 0) {
                 new Message(senderId, recipientId, message).run();
                 Habbo recipient = Emulator.getGameEnvironment().getHabboManager().getHabbo(recipientId);
-                if (recipient != null && recipient.getClient() != null) recipient.getClient().sendResponse(new MessengerMessageV2Composer(stored));
+                if (recipient != null && recipient.getClient() != null) recipient.getClient().sendResponse(new MessengerMessageComposer(stored));
             }
         } catch (SecurityException exception) {
             client.sendResponse(new MessengerMessageFailedComposer(confirmationId, 6));
