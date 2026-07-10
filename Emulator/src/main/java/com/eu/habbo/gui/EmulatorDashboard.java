@@ -85,7 +85,7 @@ public class EmulatorDashboard extends JFrame {
     });
 
     private EmulatorDashboard() {
-        setTitle("Arcturus Morningstar - System Dashboard");
+        setTitle("Polaris - System Dashboard");
         setSize(1100, 700);
         setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -108,7 +108,7 @@ public class EmulatorDashboard extends JFrame {
         brandPanel.setBackground(COLOR_SURFACE);
         brandPanel.setBorder(new EmptyBorder(20, 20, 30, 20));
         
-        JLabel brandTitle = new JLabel("Arcturus");
+        JLabel brandTitle = new JLabel("Polaris");
         brandTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
         brandTitle.setForeground(COLOR_TEXT);
         

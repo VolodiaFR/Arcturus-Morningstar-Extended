@@ -2,6 +2,7 @@ package com.eu.habbo.database;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.core.ConfigurationManager;
+import com.eu.habbo.database.compat.LegacySqlBridge;
 import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +20,7 @@ public class Database {
 
     private HikariDataSource dataSource;
     private DatabasePool databasePool;
+    private final LegacySqlBridge legacySqlBridge = new LegacySqlBridge();
 
     public Database(ConfigurationManager config) {
         long millis = System.currentTimeMillis();
@@ -27,7 +29,7 @@ public class Database {
 
         try {
             this.databasePool = new DatabasePool();
-            if (!this.databasePool.getStoragePooling(config)) {
+            if (!this.databasePool.getStoragePooling(config, this.legacySqlBridge)) {
                 LOGGER.info("Failed to connect to the database. Please check config.ini and make sure the MySQL process is running. Shutting down...");
                 SQLException = true;
                 return;
@@ -53,6 +55,10 @@ public class Database {
 
     public HikariDataSource getDataSource() {
         return this.dataSource;
+    }
+
+    public LegacySqlBridge getLegacySqlBridge() {
+        return this.legacySqlBridge;
     }
 
     public DatabasePool getDatabasePool() {

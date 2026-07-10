@@ -8,14 +8,6 @@ db.params=
 db.pool.minsize=25
 db.pool.maxsize=100
 
-# Encrypt your traffic
-crypto.ws.enabled=0
-# Optional packet signing for encrypted WebSocket traffic.
-crypto.ws.signing.enabled=false
-# Optional persistent signing keys. Leave empty to auto-generate/persist them in emulator_settings.
-crypto.ws.signing.public_key=
-crypto.ws.signing.private_key=
-
 #Game Configuration.
 #Host IP. Most likely just 0.0.0.0 Use 127.0.0.1 if you want to play on LAN.
 game.host=0.0.0.0
@@ -41,13 +33,16 @@ enc.n=86851dd364d5c5cece3c883171cc6ddc5760779b992482bd1e20dd296888df91b33b936a7b
 enc.d=59ae13e243392e89ded305764bdd9e92e4eafa67bb6dac7e1415e8c645b0950bccd26246fd0d4af37145af5fa026c0ec3a94853013eaae5ff1888360f4f9449ee023762ec195dff3f30ca0b08b8c947e3859877b5d7dced5c8715c58b53740b84e11fbc71349a27c31745fcefeeea57cff291099205e230e0c7c27e8e1c0512b
 
 # Nitro secure runtime assets. JSON files are read live from disk.
-nitro.secure.assets.enabled=true
-nitro.secure.api.enabled=true
+nitro.secure.assets.enabled=false
+nitro.secure.api.enabled=false
+
 # Secure runtime ECDH session TTL in seconds.
 nitro.secure.session_ttl_sec=900
+
 # Point this to your deployed Nitro `/configuration` folder when secure config assets are enabled.
 nitro.secure.config.root=
 nitro.secure.gamedata.root=
+
 # Set a persistent secret when using Cloudflare / multiple backend requests.
 nitro.secure.master_key=change-me-to-a-long-random-secret
 
@@ -55,22 +50,12 @@ nitro.secure.master_key=change-me-to-a-long-random-secret
 login.remember.enabled=true
 login.remember.duration.days=30
 # Optional: set a persistent remember-me JWT secret here, otherwise one is generated and stored in emulator_settings.
-login.remember.jwt.secret=
+login.remember.jwt.secret=hange-me-to-a-long-random-secret
 
 # Login news API.
 login.news.limit=5
 
-
-#WebSocket Configuration (for Nitro)
-#Please adjust this setting in the Database !!!!
-### ws.enabled=false
-### ws.host=0.0.0.0
-### ws.port=2096
-### ws.whitelist=localhost #Comma-separated whitelist of allowed origins. Supports wildcards: *.example.com, * (allow all)
-### ws.ip.header=X-Forwarded-For #Header name for real client IP when behind a proxy (e.g., X-Forwarded-For, CF-Connecting-IP). Leave empty if not using a proxy.
-### ws.ip.header.trusted= #Comma-separated trusted reverse-proxy IPs/prefixes (entries ending in '.' or ':' are prefix ranges, e.g. 10.0.0.) allowed to set ws.ip.header. Loopback (127.0.0.1/::1) is ALWAYS trusted; default-deny otherwise so the forwarded header can't be spoofed from the open net.
-
 #Performance / concurrency (optional — sensible defaults apply if unset; adjust in the Database).
-### io.packet.handler.threads=24 #Game packet-handler pool size; runs game handlers OFF the Netty I/O loop. Default max(16, 2 x CPU cores).
-### auth.http.pool.size=16 #Dedicated worker pool for the /api/auth/* HTTP endpoints (BCrypt/JDBC/Turnstile/SMTP run off the event loop). Default 16.
-### io.netty.allocator.pooled=false #Set true to opt into Netty's pooled ByteBuf allocator. Default false (unpooled-heap).
+## io.packet.handler.threads=24 #Game packet-handler pool size; runs game handlers OFF the Netty I/O loop. Default max(16, 2 x CPU cores).
+## auth.http.pool.size=16 #Dedicated worker pool for the /api/auth/* HTTP endpoints (BCrypt/JDBC/Turnstile/SMTP run off the event loop). Default 16.
+## io.netty.allocator.pooled=false #Set true to opt into Netty's pooled ByteBuf allocator. Default false (unpooled-heap).

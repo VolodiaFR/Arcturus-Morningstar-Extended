@@ -63,15 +63,15 @@ public final class Emulator {
         return PREVIEW.isEmpty() ? fallback : fallback + " " + PREVIEW;
     }
 
-    public static final String version = "Arcturus Morningstar Extended " + resolveVersionNumber();
+    public static final String version = "Polaris " + resolveVersionNumber();
     private static final String logo =
             "\n" +
-                    "███╗   ███╗ ██████╗ ██████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗ ███████╗████████╗ █████╗ ██████╗ \n" +
-                    "████╗ ████║██╔═══██╗██╔══██╗████╗  ██║██║████╗  ██║██╔════╝ ██╔════╝╚══██╔══╝██╔══██╗██╔══██╗\n" +
-                    "██╔████╔██║██║   ██║██████╔╝██╔██╗ ██║██║██╔██╗ ██║██║  ███╗███████╗   ██║   ███████║██████╔╝\n" +
-                    "██║╚██╔╝██║██║   ██║██╔══██╗██║╚██╗██║██║██║╚██╗██║██║   ██║╚════██║   ██║   ██╔══██║██╔══██╗\n" +
-                    "██║ ╚═╝ ██║╚██████╔╝██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝███████║   ██║   ██║  ██║██║  ██║\n" +
-                    "╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝ ╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝\n" +
+                    "██████╗  ██████╗ ██╗      █████╗ ██████╗ ██╗███████╗\n" +
+                    "██╔══██╗██╔═══██╗██║     ██╔══██╗██╔══██╗██║██╔════╝\n" +
+                    "██████╔╝██║   ██║██║     ███████║██████╔╝██║███████╗\n" +
+                    "██╔═══╝ ██║   ██║██║     ██╔══██║██╔══██╗██║╚════██║\n" +
+                    "██║     ╚██████╔╝███████╗██║  ██║██║  ██║██║███████║\n" +
+                    "╚═╝      ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚══════╝\n" +
                     "Still Rocking in 2026.\n";
     public static String build = "";
     public static long buildTimestamp = -1L;
@@ -171,7 +171,7 @@ public final class Emulator {
             Emulator.rconServer.connect();
             Emulator.badgeImager = new BadgeImager();
 
-            LOGGER.info("Arcturus Morningstar has successfully loaded.");
+            LOGGER.info("Polaris has successfully loaded.");
             LOGGER.info("System launched in: {}ms. Using {} threads!", (System.nanoTime() - startTime) / 1e6, Runtime.getRuntime().availableProcessors() * 2);
             LOGGER.info("Memory: {}/{}MB", (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024), (runtime.freeMemory()) / (1024 * 1024));
 
@@ -302,9 +302,9 @@ public final class Emulator {
     static String startupCard(String hotelTimezoneId) {
         return "\n" +
                 "+----------------------------------------------------------------+\n" +
-                "| Arcturus Morningstar Extended                                  |\n" +
-                "| Source : github.com/duckietm/Arcturus-Morningstar-Extended     |\n" +
-                "| Scope  : Educational open-source fork by TheGeneral            |\n" +
+                "| Polaris (formerly Arcturus Morningstar Extended)               |\n" +
+                "| Source : github.com/duckietm/Nitro-Cool-UI-Renderer            |\n" +
+                "| Scope  : Educational open-source fork of Arcturus/Morningstar  |\n" +
                 "| Version: " + version + "\n" +
                 "| Build  : " + build + "\n" +
                 "| Time   : " + formatBuildTimestamp(buildTimestamp, hotelTimezoneId) + " [" + hotelTimezoneId + "]\n" +
@@ -319,16 +319,16 @@ public final class Emulator {
         if (styled) {
             return "\n" +
                     ANSI_CYAN +
-                    "   __  __  ___  ____  _   _ ___ _   _  ____ ____ _____  _    ____  \n" +
-                    "  |  \\/  |/ _ \\|  _ \\| \\ | |_ _| \\ | |/ ___/ ___|_   _|/ \\  |  _ \\ \n" +
-                    "  | |\\/| | | | | |_) |  \\| || ||  \\| | |  _\\___ \\ | | / _ \\ | |_) |\n" +
-                    "  | |  | | |_| |  _ <| |\\  || || |\\  | |_| |___) || |/ ___ \\|  _ < \n" +
-                    "  |_|  |_|\\___/|_| \\_\\_| \\_|___|_| \\_|\\____|____/ |_/_/   \\_\\_| \\_\\\n" +
+                    "   ____   ___  _        _    ____  ___ ____  \n" +
+                    "  |  _ \\ / _ \\| |      / \\  |  _ \\|_ _/ ___| \n" +
+                    "  | |_) | | | | |     / _ \\ | |_) || | \\___ \\ \n" +
+                    "  |  __/| |_| | |___ / ___ \\|  _ <  | |  ___) |\n" +
+                    "  |_|    \\___/|_____/_/   \\_\\_| \\_\\|___||____/ \n" +
                     ANSI_RESET +
                     "\n" +
                     ANSI_DIM + "+------------------------------------------------------------------------------+" + ANSI_RESET + "\n" +
-                    "| " + ANSI_BOLD + ANSI_GREEN + "[OK] MORNINGSTAR EXTENDED" + ANSI_RESET + fit("", 50) + " |\n" +
-                    "| " + ANSI_DIM + "Arcturus game server runtime" + ANSI_RESET + fit("", 48) + " |\n" +
+                    "| " + ANSI_BOLD + ANSI_GREEN + "[OK] POLARIS" + ANSI_RESET + fit("", 63) + " |\n" +
+                    "| " + ANSI_DIM + "Polaris game server runtime" + ANSI_RESET + fit("", 49) + " |\n" +
                     ANSI_DIM + "+------------------------------------------------------------------------------+" + ANSI_RESET + "\n" +
                     "| " + ANSI_YELLOW + "[VER]" + ANSI_RESET + " Version : " + fit(version, 57) + " |\n" +
                     "| " + ANSI_YELLOW + "[BLD]" + ANSI_RESET + " Build   : " + fit(build.isBlank() ? "UNKNOWN" : build, 57) + " |\n" +
@@ -337,15 +337,15 @@ public final class Emulator {
         }
 
         return "\n" +
-                "   __  __  ___  ____  _   _ ___ _   _  ____ ____ _____  _    ____  \n" +
-                "  |  \\/  |/ _ \\|  _ \\| \\ | |_ _| \\ | |/ ___/ ___|_   _|/ \\  |  _ \\ \n" +
-                "  | |\\/| | | | | |_) |  \\| || ||  \\| | |  _\\___ \\ | | / _ \\ | |_) |\n" +
-                "  | |  | | |_| |  _ <| |\\  || || |\\  | |_| |___) || |/ ___ \\|  _ < \n" +
-                "  |_|  |_|\\___/|_| \\_\\_| \\_|___|_| \\_|\\____|____/ |_/_/   \\_\\_| \\_\\\n" +
+                "   ____   ___  _        _    ____  ___ ____  \n" +
+                "  |  _ \\ / _ \\| |      / \\  |  _ \\|_ _/ ___| \n" +
+                "  | |_) | | | | |     / _ \\ | |_) || | \\___ \\ \n" +
+                "  |  __/| |_| | |___ / ___ \\|  _ <  | |  ___) |\n" +
+                "  |_|    \\___/|_____/_/   \\_\\_| \\_\\|___||____/ \n" +
                 "\n" +
                 "+------------------------------------------------------------------------------+\n" +
-                "| MORNINGSTAR EXTENDED                                                         |\n" +
-                "| Arcturus game server runtime                                                  |\n" +
+                "| POLARIS                                                                      |\n" +
+                "| Polaris game server runtime                                                  |\n" +
                 "+------------------------------------------------------------------------------+\n" +
                 "| Version : " + fit(version, 63) + " |\n" +
                 "| Build   : " + fit(build.isBlank() ? "UNKNOWN" : build, 63) + " |\n" +
@@ -393,6 +393,9 @@ public final class Emulator {
         Emulator.config.register("camera.price.points.type", "5");
         Emulator.config.register("camera.render.delay", "5");
         Emulator.config.register("hotel.timezone", java.time.ZoneId.systemDefault().getId());
+        Emulator.config.register("polaris.legacy.bridge.enabled", "1", "Rewrite legacy plugin SQL (pre-Polaris table names) to the new schema on the fly.");
+        Emulator.config.register("polaris.legacy.bridge.log", "1", "Log every distinct legacy SQL statement the bridge translates.");
+        Emulator.config.register("polaris.legacy.bridge.table_renames", "", "Extra legacy table renames, format old:new;old2:new2");
         Emulator.config.register("gui.enabled", "0");
         Emulator.config.register("gui.autostart.enabled", "0");
         Emulator.config.register("rcon.rate_limit.enabled", "1");
@@ -440,7 +443,7 @@ public final class Emulator {
         Emulator.isShuttingDown = true;
         Emulator.isReady = false;
 
-        LOGGER.info("Stopping Arcturus Morningstar {}", version);
+        LOGGER.info("Stopping Polaris {}", version);
 
         if (Emulator.pluginManager != null)
             tryShutdown(() -> Emulator.pluginManager.fireEvent(new EmulatorStartShutdownEvent()));
@@ -453,7 +456,7 @@ public final class Emulator {
         if (Emulator.config != null) tryShutdown(() -> Emulator.config.saveToDatabase());
         if (Emulator.gameServer != null) tryShutdown(() -> Emulator.gameServer.stop());
 
-        LOGGER.info("Stopped Arcturus Morningstar {}", version);
+        LOGGER.info("Stopped Polaris {}", version);
 
         if (Emulator.database != null) tryShutdown(() -> Emulator.database.dispose());
         if (Emulator.threading != null) tryShutdown(() -> Emulator.threading.shutDown());

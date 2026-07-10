@@ -10,8 +10,8 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class CommandDescriptionTextsContractTest {
-    private static final Path FULL_DATABASE = Path.of("../Default Database/FullDatabase.sql");
-    private static final Path LIVE_SCHEMA_UPDATE = Path.of("../Database Updates/003_live_required_schema.sql");
+    private static final Path FULL_DATABASE = Path.of("../Database/Default Database/FullDatabase.sql");
+    private static final Path LIVE_SCHEMA_UPDATE = Path.of("../Database/Database Updates/003_live_required_schema.sql");
 
     private static final List<String> REQUIRED_DESCRIPTION_KEYS = List.of(
             "commands.description.acc_modtool_room_info",

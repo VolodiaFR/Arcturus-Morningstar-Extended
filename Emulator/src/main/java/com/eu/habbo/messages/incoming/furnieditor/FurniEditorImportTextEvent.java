@@ -118,7 +118,7 @@ public class FurniEditorImportTextEvent extends MessageHandler {
                     .build();
             HttpRequest request = HttpRequest.newBuilder(URI.create(url))
                     .timeout(Duration.ofSeconds(20))
-                    .header("User-Agent", "Arcturus-FurniEditor")
+                    .header("User-Agent", "Polaris-FurniEditor")
                     .GET()
                     .build();
             HttpResponse<String> resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString());

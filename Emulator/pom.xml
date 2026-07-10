@@ -5,8 +5,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.eu.habbo</groupId>
-    <artifactId>Habbo</artifactId>
+    <artifactId>Polaris</artifactId>
     <version>4.2.50</version>
+    <name>Polaris</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
