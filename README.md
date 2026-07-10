@@ -76,6 +76,6 @@ How it works, what it covers and how to configure it is documented in
 
 ## Community
 
-💬 Need help, want to contribute, or just want to chat?
+[![Discord](https://img.shields.io/badge/Discord-Join%20our%20community-5865F2?logo=discord&logoColor=white)](https://discord.gg/a2nUFkwqx)
 
-**Join our Discord:** https://discord.gg/a2nUFkwqx
+Need help, want to contribute, or just want to chat?
