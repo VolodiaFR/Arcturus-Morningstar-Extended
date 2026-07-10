@@ -22,11 +22,16 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
     @Override
     public List<MessengerConversationSummary> listConversations(int userId) {
         String sql = """
-                SELECT c.id, c.type, c.name, COALESCE(MAX(m.id), 0) AS last_message_id,
-                       SUM(CASE WHEN m.id > COALESCE(member.last_read_message_id, 0) AND m.sender_id <> ? THEN 1 ELSE 0 END) AS unread_count,
+                SELECT c.id, c.type,
+                       CASE WHEN c.type = 'direct' THEN COALESCE(MAX(CASE WHEN peer.user_id <> ? THEN peer.user_id END), 0) ELSE 0 END AS participant_id,
+                       COALESCE(c.name, MAX(CASE WHEN peer.user_id <> ? THEN users.username END), '') AS display_name,
+                       COALESCE(MAX(m.id), 0) AS last_message_id,
+                       COUNT(DISTINCT CASE WHEN m.id > COALESCE(member.last_read_message_id, 0) AND m.sender_id <> ? THEN m.id END) AS unread_count,
                        UNIX_TIMESTAMP(c.updated_at) AS updated_at
                 FROM messenger_members member
                 JOIN messenger_conversations c ON c.id = member.conversation_id
+                JOIN messenger_members peer ON peer.conversation_id = c.id AND peer.left_at IS NULL
+                LEFT JOIN users ON users.id = peer.user_id
                 LEFT JOIN messenger_messages m ON m.conversation_id = c.id
                 WHERE member.user_id = ? AND member.left_at IS NULL
                 GROUP BY c.id, c.type, c.name, member.last_read_message_id, c.updated_at
@@ -36,12 +41,15 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
         try (Connection connection = dataSource.getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, userId);
             statement.setInt(2, userId);
+            statement.setInt(3, userId);
+            statement.setInt(4, userId);
             try (ResultSet result = statement.executeQuery()) {
                 while (result.next()) {
                     summaries.add(new MessengerConversationSummary(
                             result.getLong("id"),
                             ConversationType.valueOf(result.getString("type").toUpperCase()),
-                            result.getString("name"),
+                            result.getInt("participant_id"),
+                            result.getString("display_name"),
                             result.getLong("last_message_id"),
                             result.getInt("unread_count"),
                             result.getLong("updated_at")
@@ -66,6 +74,22 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
             }
         } catch (SQLException exception) {
             throw new IllegalStateException("failed to validate messenger membership", exception);
+        }
+    }
+
+    @Override
+    public List<Integer> listActiveMemberIds(long conversationId) {
+        String sql = "SELECT user_id FROM messenger_members WHERE conversation_id = ? AND left_at IS NULL";
+        List<Integer> userIds = new ArrayList<>();
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, conversationId);
+            try (ResultSet result = statement.executeQuery()) {
+                while (result.next()) userIds.add(result.getInt("user_id"));
+            }
+            return userIds;
+        } catch (SQLException exception) {
+            throw new IllegalStateException("failed to list messenger members", exception);
         }
     }
 

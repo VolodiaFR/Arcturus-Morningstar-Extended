@@ -1,6 +1,9 @@
 package com.eu.habbo.messages.incoming.friends;
 
+import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.messenger.history.MessengerHistoryService;
 import com.eu.habbo.habbohotel.messenger.history.MessengerHistoryServices;
+import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.friends.MessengerReadCursorComposer;
 
@@ -11,8 +14,12 @@ public final class MarkMessengerReadEvent extends MessageHandler {
         int messageId = packet.readInt();
         int userId = client.getHabbo().getHabboInfo().getId();
         if (conversationId <= 0 || messageId <= 0) return;
-        if (MessengerHistoryServices.create().markRead(conversationId, userId, messageId)) {
-            client.sendResponse(new MessengerReadCursorComposer(conversationId, userId, messageId));
+        MessengerHistoryService history = MessengerHistoryServices.create();
+        if (history.markRead(conversationId, userId, messageId)) {
+            for (int memberId : history.listActiveMemberIds(conversationId, userId)) {
+                Habbo member = Emulator.getGameEnvironment().getHabboManager().getHabbo(memberId);
+                if (member != null && member.getClient() != null) member.getClient().sendResponse(new MessengerReadCursorComposer(conversationId, userId, messageId));
+            }
         }
     }
 }

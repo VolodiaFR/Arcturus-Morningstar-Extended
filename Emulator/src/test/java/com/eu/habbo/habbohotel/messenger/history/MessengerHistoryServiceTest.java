@@ -49,12 +49,22 @@ class MessengerHistoryServiceTest {
         assertEquals(500, repository.cleanupCap);
     }
 
+    @Test
+    void exposesOnlyMembersForAnAuthorizedConversation() {
+        FakeRepository repository = new FakeRepository();
+        repository.memberIds = List.of(7, 8, 9);
+        MessengerHistoryService service = new MessengerHistoryService(repository, 30, 500);
+
+        assertEquals(List.of(7, 8, 9), service.listActiveMemberIds(12, 7));
+    }
+
     private static final class FakeRepository implements MessengerHistoryRepository {
         private boolean member = true;
         private int requestedLimit;
         private int cleanupDays;
         private int cleanupCap;
         private final List<MessengerStoredMessage> rows = new ArrayList<>();
+        private List<Integer> memberIds = List.of();
 
         @Override
         public List<MessengerConversationSummary> listConversations(int userId) {
@@ -64,6 +74,11 @@ class MessengerHistoryServiceTest {
         @Override
         public boolean isActiveMember(long conversationId, int userId) {
             return member;
+        }
+
+        @Override
+        public List<Integer> listActiveMemberIds(long conversationId) {
+            return memberIds;
         }
 
         @Override

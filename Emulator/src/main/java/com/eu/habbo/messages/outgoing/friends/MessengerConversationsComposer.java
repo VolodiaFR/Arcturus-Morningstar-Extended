@@ -21,6 +21,7 @@ public final class MessengerConversationsComposer extends MessageComposer {
         for (MessengerConversationSummary conversation : conversations) {
             response.appendInt(Math.toIntExact(conversation.id()));
             response.appendInt(conversation.type().ordinal());
+            response.appendInt(conversation.participantId());
             response.appendString(conversation.name());
             response.appendInt(Math.toIntExact(conversation.lastMessageId()));
             response.appendInt(conversation.unreadCount());

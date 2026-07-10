@@ -7,6 +7,8 @@ public interface MessengerHistoryRepository {
 
     boolean isActiveMember(long conversationId, int userId);
 
+    List<Integer> listActiveMemberIds(long conversationId);
+
     List<MessengerStoredMessage> loadHistory(long conversationId, int userId, long beforeMessageId, int limit);
 
     MessengerStoredMessage storeDirectMessage(int senderId, int recipientId, int type, String message, String metadata);

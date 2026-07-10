@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.messenger.Message;
 import com.eu.habbo.habbohotel.messenger.MessengerBuddy;
 import com.eu.habbo.habbohotel.messenger.history.MessengerHistoryServices;
+import com.eu.habbo.habbohotel.messenger.history.MessengerHistoryService;
 import com.eu.habbo.habbohotel.messenger.history.MessengerStoredMessage;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -28,13 +29,20 @@ public final class SendMessengerMessageEvent extends MessageHandler {
                 MessengerBuddy buddy = client.getHabbo().getMessenger().getFriend(recipientId);
                 if (buddy == null) throw new SecurityException("not friends");
             }
-            MessengerStoredMessage stored = MessengerHistoryServices.create().sendMessage(conversationId, senderId, recipientId, type, message, metadata);
+            MessengerHistoryService history = MessengerHistoryServices.create();
+            MessengerStoredMessage stored = history.sendMessage(conversationId, senderId, recipientId, type, message, metadata);
             client.sendResponse(new MessengerMessageAckComposer(confirmationId, stored));
 
             if (conversationId <= 0) {
                 new Message(senderId, recipientId, message).run();
                 Habbo recipient = Emulator.getGameEnvironment().getHabboManager().getHabbo(recipientId);
                 if (recipient != null && recipient.getClient() != null) recipient.getClient().sendResponse(new MessengerMessageComposer(stored));
+            } else {
+                for (int memberId : history.listActiveMemberIds(conversationId, senderId)) {
+                    if (memberId == senderId) continue;
+                    Habbo member = Emulator.getGameEnvironment().getHabboManager().getHabbo(memberId);
+                    if (member != null && member.getClient() != null) member.getClient().sendResponse(new MessengerMessageComposer(stored));
+                }
             }
         } catch (SecurityException exception) {
             client.sendResponse(new MessengerMessageFailedComposer(confirmationId, 6));

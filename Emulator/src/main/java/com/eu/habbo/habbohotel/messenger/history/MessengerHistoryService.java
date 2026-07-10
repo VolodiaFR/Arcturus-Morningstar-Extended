@@ -64,6 +64,12 @@ public final class MessengerHistoryService {
         return repository.markRead(conversationId, userId, messageId);
     }
 
+    public List<Integer> listActiveMemberIds(long conversationId, int requestingUserId) {
+        if (conversationId <= 0 || requestingUserId <= 0) throw new IllegalArgumentException("invalid conversation");
+        if (!repository.isActiveMember(conversationId, requestingUserId)) throw new SecurityException("conversation access denied");
+        return List.copyOf(repository.listActiveMemberIds(conversationId));
+    }
+
     public void cleanupRetention() {
         repository.cleanupRetention(retentionDays, maxMessagesPerConversation);
     }
