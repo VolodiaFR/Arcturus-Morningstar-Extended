@@ -73,3 +73,9 @@ How it works, what it covers and how to configure it is documented in
 - **The Arcturus Morningstar team** ([krews.org](https://krews.org)) — the community fork Polaris grew from
 - **DuckieTM**, **simoleo89**, **Medievalshell**, **Lorenzo (the wired master)**, **Remco**
 - **Puffin** — the MyBoBBa catalogue assets, **xlRaiko** — the clothing pack
+
+## Community
+
+💬 Need help, want to contribute, or just want to chat?
+
+**Join our Discord:** https://discord.gg/a2nUFkwqx
