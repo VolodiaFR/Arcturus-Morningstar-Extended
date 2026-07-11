@@ -18,6 +18,8 @@ class CatalogSpecialAssetTransactionContractTest {
                 "createBot(Connection connection, Map<String, String> data, String type, int ownerId)"));
         assertTrue(source("users/HabboBadge.java").contains("insert(Connection connection)"));
         assertTrue(source("pets/Pet.java").contains("save(Connection connection)"));
+        assertTrue(source("pets/PetManager.java").contains(
+                "createPet(Connection connection, Item item, String name, String race, String color, GameClient client)"));
         assertTrue(source("users/inventory/EffectsComponent.java").contains(
                 "persistEffect(Connection connection, int userId, int effectId, int duration)"));
         assertTrue(source("guilds/GuildManager.java").contains(

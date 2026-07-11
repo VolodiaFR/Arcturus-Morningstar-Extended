@@ -74,4 +74,41 @@ class AtomicCatalogPurchaseContractTest {
         assertTrue(badgePublish > effectInsert);
         assertTrue(effectPublish > effectInsert);
     }
+
+    @Test
+    void botsAndPetsPublishOnlyAfterTheirTransactionCommits() throws Exception {
+        String source = Files.readString(Path.of(
+                "src/main/java/com/eu/habbo/habbohotel/catalog/CatalogManager.java"));
+
+        int method = source.indexOf("purchaseBotsAndPetsAtomically(");
+        int transaction = source.indexOf("CatalogPurchaseTransaction.execute(", method);
+        int botPersist = source.indexOf("createBot(connection", transaction);
+        int petPersist = source.indexOf("createPet(connection", transaction);
+        int botPublish = source.indexOf("getBotsComponent().addBot(", petPersist);
+        int petPublish = source.indexOf("getPetsComponent().addPet(", petPersist);
+
+        assertTrue(method > -1);
+        assertTrue(transaction > method);
+        assertTrue(botPersist > transaction);
+        assertTrue(petPersist > transaction);
+        assertTrue(botPublish > petPersist);
+        assertTrue(petPublish > petPersist);
+    }
+
+    @Test
+    void guildAndMusicFurnitureUseTheFurnitureTransaction() throws Exception {
+        String source = Files.readString(Path.of(
+                "src/main/java/com/eu/habbo/habbohotel/catalog/CatalogManager.java"));
+        int transaction = source.indexOf("CatalogPurchaseTransaction.execute(",
+                source.indexOf("purchaseFurnitureAtomically("));
+        int guildPersist = source.indexOf("persistGuild(connection", transaction);
+        int musicCreate = source.indexOf("createMusicDiscExtraData(", transaction);
+        int inventory = source.indexOf("getItemsComponent().addItems(", transaction);
+        int musicAchievement = source.indexOf("MusicCollector", inventory);
+
+        assertTrue(guildPersist > transaction);
+        assertTrue(musicCreate > transaction);
+        assertTrue(inventory > guildPersist);
+        assertTrue(musicAchievement > inventory);
+    }
 }

@@ -1113,6 +1113,11 @@ public class CatalogManager {
                     return;
                 }
 
+                if (this.isAtomicBotOrPetPurchase(item)) {
+                    this.purchaseBotsAndPetsAtomically(item, habbo, amount, extradata, free, totalCredits, totalPoints);
+                    return;
+                }
+
                 if (this.isAtomicFurniturePurchase(item)) {
                     this.purchaseFurnitureAtomically(item, habbo, amount, extradata, free, limitedConfiguration,
                             limitedStack, limitedNumber, totalCredits, totalPoints);
@@ -1391,10 +1396,7 @@ public class CatalogManager {
         if (item == null || item.getBaseItems().isEmpty()) return false;
         for (Item baseItem : item.getBaseItems()) {
             if (baseItem == null || Item.isBot(baseItem) || Item.isPet(baseItem)
-                    || baseItem.getType() == FurnitureType.BADGE || baseItem.getType() == FurnitureType.EFFECT
-                    || baseItem.getInteractionType().getType() == InteractionGuildFurni.class
-                    || baseItem.getInteractionType().getType() == InteractionGuildGate.class
-                    || baseItem.getInteractionType().getType() == InteractionMusicDisc.class) {
+                    || baseItem.getType() == FurnitureType.BADGE || baseItem.getType() == FurnitureType.EFFECT) {
                 return false;
             }
         }
@@ -1408,6 +1410,97 @@ public class CatalogManager {
                     && baseItem.getType() != FurnitureType.EFFECT)) return false;
         }
         return true;
+    }
+
+    private boolean isAtomicBotOrPetPurchase(CatalogItem item) {
+        if (item == null || item.getBaseItems().isEmpty()) return false;
+        for (Item baseItem : item.getBaseItems()) {
+            if (baseItem == null || (!Item.isBot(baseItem) && !Item.isPet(baseItem))) return false;
+            if (Item.isPet(baseItem)) {
+                try {
+                    int type = Integer.parseInt(baseItem.getName().toLowerCase().replace("a0 pet", ""));
+                    if (type == 16) return false;
+                } catch (NumberFormatException exception) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private void purchaseBotsAndPetsAtomically(CatalogItem item, Habbo habbo, int amount, String extraData,
+                                               boolean free, int totalCredits, int totalPoints) throws SQLException {
+        String[] petData = extraData.split("\n");
+        SpecialCompanionPurchase purchase = CatalogPurchaseTransaction.execute(
+                habbo.getHabboInfo().getId(), connection -> {
+                    List<Bot> bots = new ArrayList<>();
+                    List<Pet> pets = new ArrayList<>();
+                    for (int index = 0; index < amount; index++) {
+                        for (Item baseItem : item.getBaseItems()) {
+                            for (int count = 0; count < item.getItemAmount(baseItem.getId()); count++) {
+                                if (Item.isBot(baseItem)) {
+                                    String baseName = baseItem.getName();
+                                    String type = item.getName().replace("rentable_bot_", "").replace("bot_", "")
+                                            .replace("visitor_logger", "visitor_log");
+                                    if (("bot_" + com.eu.habbo.habbohotel.bots.FrankBot.BOT_TYPE).equals(baseName)
+                                            || ("rentable_bot_" + com.eu.habbo.habbohotel.bots.FrankBot.BOT_TYPE)
+                                            .equals(baseName)) {
+                                        if (!habbo.hasPermission(com.eu.habbo.habbohotel.bots.FrankBot.PERMISSION_USE)) {
+                                            throw new SQLException("Missing permission for Frank bot");
+                                        }
+                                    }
+                                    Map<String, String> data = new HashMap<>();
+                                    for (String value : item.getExtradata().split(";")) {
+                                        String[] pair = value.split(":", 2);
+                                        if (pair.length == 2) data.put(pair[0], pair[1]);
+                                    }
+                                    Bot bot = Emulator.getGameEnvironment().getBotManager().createBot(connection,
+                                            data, type, habbo.getHabboInfo().getId());
+                                    if (bot == null) throw new SQLException("Unable to create catalog bot");
+                                    bots.add(bot);
+                                } else {
+                                    if (petData.length < 3) throw new SQLException("Invalid catalog pet data");
+                                    Pet pet = Emulator.getGameEnvironment().getPetManager().createPet(connection,
+                                            baseItem, petData[0], petData[1], petData[2], habbo.getClient());
+                                    if (pet == null) throw new SQLException("Unable to create catalog pet");
+                                    pets.add(pet);
+                                }
+                            }
+                        }
+                    }
+
+                    UserCatalogItemPurchasedEvent event = new UserCatalogItemPurchasedEvent(
+                            habbo, item, new HashSet<>(), totalCredits, totalPoints, new ArrayList<>());
+                    Emulator.getPluginManager().fireEvent(event);
+                    ResolvedCatalogCharges charges = this.resolveCatalogCharges(habbo, item, free, event);
+                    if (!free) this.writePurchaseLog(connection, event, charges, amount);
+                    SpecialCompanionPurchase result = new SpecialCompanionPurchase(
+                            event, bots, pets, charges.credits(), charges.points(), charges.pointsType());
+                    return new CatalogPurchaseTransaction.PreparedPurchase<>(
+                            result, charges.credits(), charges.points(), charges.pointsType());
+                });
+
+        this.publishCommittedCharges(habbo, purchase.credits(), purchase.points(), purchase.pointsType());
+        Map<AddHabboItemComposer.AddHabboItemCategory, List<Integer>> unseenItems = new HashMap<>();
+        for (Bot bot : purchase.bots()) {
+            habbo.getInventory().getBotsComponent().addBot(bot);
+            habbo.getClient().sendResponse(new AddBotComposer(bot));
+            unseenItems.computeIfAbsent(AddHabboItemComposer.AddHabboItemCategory.BOT, ignored -> new ArrayList<>())
+                    .add(bot.getId());
+        }
+        for (Pet pet : purchase.pets()) {
+            habbo.getInventory().getPetsComponent().addPet(pet);
+            habbo.getClient().sendResponse(new AddPetComposer(pet));
+            habbo.getClient().sendResponse(new PetBoughtNotificationComposer(pet, false));
+            AchievementManager.progressAchievement(habbo,
+                    Emulator.getGameEnvironment().getAchievementManager().getAchievement("PetLover"));
+            unseenItems.computeIfAbsent(AddHabboItemComposer.AddHabboItemCategory.PET, ignored -> new ArrayList<>())
+                    .add(pet.getId());
+        }
+        habbo.getHabboStats().addPurchase(purchase.event().catalogItem);
+        habbo.getClient().sendResponse(new AddHabboItemComposer(unseenItems));
+        habbo.getClient().sendResponse(new PurchaseOKComposer(purchase.event().catalogItem));
+        habbo.getClient().sendResponse(new InventoryRefreshComposer());
     }
 
     private void purchaseEntitlementsAtomically(CatalogItem item, Habbo habbo, int amount, boolean free,
@@ -1497,11 +1590,49 @@ public class CatalogManager {
         try {
             AtomicFurniturePurchase purchase = CatalogPurchaseTransaction.execute(userId, connection -> {
                 Set<HabboItem> createdItems = new HashSet<>();
+                Map<InteractionGuildFurni, Guild> guildFurniture = new HashMap<>();
+                boolean includesMusicDisc = false;
                 for (int index = 0; index < amount; index++) {
                     for (Item baseItem : item.getBaseItems()) {
                         String itemExtraData = this.prepareFurnitureExtraData(habbo, baseItem, extraData);
                         for (int count = 0; count < item.getItemAmount(baseItem.getId()); count++) {
-                            if (InteractionTeleport.class.isAssignableFrom(baseItem.getInteractionType().getType())) {
+                            if (baseItem.getInteractionType().getType() == InteractionGuildFurni.class
+                                    || baseItem.getInteractionType().getType() == InteractionGuildGate.class) {
+                                int guildId;
+                                try {
+                                    guildId = Integer.parseInt(extraData);
+                                } catch (NumberFormatException exception) {
+                                    throw new SQLException("Invalid guild furniture id", exception);
+                                }
+                                Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);
+                                if (guild == null || Emulator.getGameEnvironment().getGuildManager()
+                                        .getGuildMember(guild, habbo) == null) {
+                                    throw new SQLException("User cannot purchase furniture for guild " + guildId);
+                                }
+                                if (baseItem.getName().equals("guild_forum")
+                                        && guild.getOwnerId() != habbo.getHabboInfo().getId()) {
+                                    throw new SQLException("Only the guild owner can purchase its forum");
+                                }
+                                InteractionGuildFurni created = (InteractionGuildFurni) Emulator.getGameEnvironment()
+                                        .getItemManager().createItem(connection, userId, baseItem,
+                                                limitedStack, limitedNumber, "");
+                                if (created == null) throw new SQLException("Unable to create guild furniture");
+                                Emulator.getGameEnvironment().getGuildManager().persistGuild(connection,
+                                        created.getId(), guildId);
+                                created.setGuildId(guildId);
+                                guildFurniture.put(created, guild);
+                                createdItems.add(created);
+                            } else if (baseItem.getInteractionType().getType() == InteractionMusicDisc.class) {
+                                SoundTrack track = Emulator.getGameEnvironment().getItemManager()
+                                        .getSoundTrack(item.getExtradata());
+                                if (track == null) throw new SQLException("Unknown catalog music track");
+                                itemExtraData = this.createMusicDiscExtraData(habbo, track);
+                                HabboItem created = Emulator.getGameEnvironment().getItemManager().createItem(
+                                        connection, userId, baseItem, limitedStack, limitedNumber, itemExtraData);
+                                if (created == null) throw new SQLException("Unable to create music disc");
+                                createdItems.add(created);
+                                includesMusicDisc = true;
+                            } else if (InteractionTeleport.class.isAssignableFrom(baseItem.getInteractionType().getType())) {
                                 HabboItem first = Emulator.getGameEnvironment().getItemManager().createItem(
                                         connection, userId, baseItem, limitedStack, limitedNumber, itemExtraData);
                                 HabboItem second = Emulator.getGameEnvironment().getItemManager().createItem(
@@ -1543,7 +1674,8 @@ public class CatalogManager {
                     this.writePurchaseLog(connection, purchasedEvent, charges, amount);
                 }
                 AtomicFurniturePurchase result = new AtomicFurniturePurchase(
-                        purchasedEvent, charges.credits(), charges.points(), charges.pointsType());
+                        purchasedEvent, guildFurniture, includesMusicDisc,
+                        charges.credits(), charges.points(), charges.pointsType());
                 return new CatalogPurchaseTransaction.PreparedPurchase<>(
                         result, charges.credits(), charges.points(), charges.pointsType());
             });
@@ -1579,6 +1711,15 @@ public class CatalogManager {
                 + (Calendar.getInstance().get(Calendar.MONTH) + 1) + "-"
                 + Calendar.getInstance().get(Calendar.YEAR) + (char) 9
                 + Emulator.getGameEnvironment().getWordFilter().filter(value.replace(((char) 9) + "", ""), habbo);
+    }
+
+    private String createMusicDiscExtraData(Habbo habbo, SoundTrack track) {
+        Calendar calendar = Calendar.getInstance();
+        return habbo.getHabboInfo().getUsername() + "\n"
+                + calendar.get(Calendar.DAY_OF_MONTH) + "\n"
+                + (calendar.get(Calendar.MONTH) + 1) + "\n"
+                + calendar.get(Calendar.YEAR) + "\n"
+                + track.getLength() + "\n" + track.getName() + "\n" + track.getId();
     }
 
     private ResolvedCatalogCharges resolveCatalogCharges(Habbo habbo, CatalogItem item, boolean free,
@@ -1623,6 +1764,17 @@ public class CatalogManager {
                 items.stream().map(HabboItem::getId).collect(Collectors.toList()));
         Emulator.getPluginManager().fireEvent(new UserCatalogFurnitureBoughtEvent(
                 habbo, purchase.event().catalogItem, items));
+        for (Map.Entry<InteractionGuildFurni, Guild> guildEntry : purchase.guildFurniture().entrySet()) {
+            if (guildEntry.getKey().getBaseItem().getName().equals("guild_forum")) {
+                guildEntry.getValue().setForum(true);
+                guildEntry.getValue().needsUpdate = true;
+                Emulator.getThreading().run(guildEntry.getValue());
+            }
+        }
+        if (purchase.includesMusicDisc()) {
+            AchievementManager.progressAchievement(habbo,
+                    Emulator.getGameEnvironment().getAchievementManager().getAchievement("MusicCollector"));
+        }
         habbo.getHabboStats().addPurchase(purchase.event().catalogItem);
         habbo.getClient().sendResponse(new AddHabboItemComposer(unseenItems));
         habbo.getClient().sendResponse(new PurchaseOKComposer(purchase.event().catalogItem));
@@ -1644,13 +1796,18 @@ public class CatalogManager {
     private record ResolvedCatalogCharges(int credits, int points, int pointsType) {
     }
 
-    private record AtomicFurniturePurchase(UserCatalogItemPurchasedEvent event, int credits, int points,
-                                           int pointsType) {
+    private record AtomicFurniturePurchase(UserCatalogItemPurchasedEvent event,
+                                           Map<InteractionGuildFurni, Guild> guildFurniture,
+                                           boolean includesMusicDisc, int credits, int points, int pointsType) {
     }
 
     private record EntitlementPurchase(UserCatalogItemPurchasedEvent event, List<HabboBadge> badges,
                                        Map<Integer, EffectsComponent.HabboEffect> effects, int credits, int points,
                                        int pointsType) {
+    }
+
+    private record SpecialCompanionPurchase(UserCatalogItemPurchasedEvent event, List<Bot> bots, List<Pet> pets,
+                                            int credits, int points, int pointsType) {
     }
 
     public List<ClubOffer> getClubOffers() {
