@@ -1,6 +1,6 @@
-# Polaris — the gameserver rename & legacy plugin compatibility
+# Polaris — the emulator rename & legacy plugin compatibility
 
-The gameserver formerly known as *Arcturus Morningstar Extended* is now called
+The Emulator formerly known as *Arcturus Morningstar Extended* is now called
 **Polaris**. This fork has grown far beyond its origins — a new name makes
 that clear without abandoning the plugins, tools and knowledge the community
 has built up over the years.
