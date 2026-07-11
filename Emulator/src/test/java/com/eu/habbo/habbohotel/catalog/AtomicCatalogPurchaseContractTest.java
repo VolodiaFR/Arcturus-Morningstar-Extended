@@ -54,4 +54,24 @@ class AtomicCatalogPurchaseContractTest {
         assertTrue(source.contains("AND number = ? AND user_id = 0 LIMIT 1"));
         assertTrue(source.contains("executeUpdate() != 1"));
     }
+
+    @Test
+    void badgesAndEffectsPublishOnlyAfterTheirTransactionCommits() throws Exception {
+        String source = Files.readString(Path.of(
+                "src/main/java/com/eu/habbo/habbohotel/catalog/CatalogManager.java"));
+
+        int method = source.indexOf("purchaseEntitlementsAtomically(");
+        int transaction = source.indexOf("CatalogPurchaseTransaction.execute(", method);
+        int badgeInsert = source.indexOf("badge.insert(connection)", transaction);
+        int effectInsert = source.indexOf("EffectsComponent.persistEffect(connection", transaction);
+        int badgePublish = source.indexOf("getBadgesComponent().addBadge(", effectInsert);
+        int effectPublish = source.indexOf("getEffectsComponent().publishEffect(", effectInsert);
+
+        assertTrue(method > -1);
+        assertTrue(transaction > method);
+        assertTrue(badgeInsert > transaction);
+        assertTrue(effectInsert > transaction);
+        assertTrue(badgePublish > effectInsert);
+        assertTrue(effectPublish > effectInsert);
+    }
 }
