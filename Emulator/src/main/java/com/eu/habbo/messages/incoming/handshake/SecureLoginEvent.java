@@ -3,6 +3,7 @@ package com.eu.habbo.messages.incoming.handshake;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.messenger.Messenger;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.habbohotel.gameclients.GameClientManager;
 import com.eu.habbo.habbohotel.gameclients.SessionResumeManager;
 import com.eu.habbo.habbohotel.modtool.ModToolSanctionItem;
 import com.eu.habbo.habbohotel.modtool.ModToolSanctions;
@@ -144,6 +145,14 @@ public class SecureLoginEvent extends MessageHandler {
             }
 
             if (habbo != null) {
+                GameClientManager clientManager = Emulator.getGameServer().getGameClientManager();
+                GameClient previousClient = clientManager.claimAuthenticatedSession(
+                        habbo.getHabboInfo().getId(), this.client);
+                if (previousClient != null && previousClient != this.client) {
+                    LOGGER.info("Replacing duplicate active session for user {}", habbo.getHabboInfo().getId());
+                    clientManager.forceDisposeClient(previousClient);
+                }
+
                 if (!isSessionResume) {
                     try {
                         habbo.setClient(this.client);
