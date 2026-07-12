@@ -340,6 +340,14 @@ public class PacketManager {
         this.registerHandler(Incoming.RequestInitFriendsEvent, RequestInitFriendsEvent.class);
         this.registerHandler(Incoming.FindNewFriendsEvent, FindNewFriendsEvent.class);
         this.registerHandler(Incoming.InviteFriendsEvent, InviteFriendsEvent.class);
+        this.registerHandler(Incoming.RequestMessengerConversationsEvent, RequestMessengerConversationsEvent.class);
+        this.registerHandler(Incoming.RequestMessengerHistoryEvent, RequestMessengerHistoryEvent.class);
+        this.registerHandler(Incoming.SendMessengerMessageEvent, SendMessengerMessageEvent.class);
+        this.registerHandler(Incoming.MarkMessengerReadEvent, MarkMessengerReadEvent.class);
+        this.registerHandler(Incoming.AddFriendCategoryEvent, AddFriendCategoryEvent.class);
+        this.registerHandler(Incoming.RenameFriendCategoryEvent, RenameFriendCategoryEvent.class);
+        this.registerHandler(Incoming.RemoveFriendCategoryEvent, RemoveFriendCategoryEvent.class);
+        this.registerHandler(Incoming.MoveFriendToCategoryEvent, MoveFriendToCategoryEvent.class);
     }
 
     private void registerUsers() throws Exception {
