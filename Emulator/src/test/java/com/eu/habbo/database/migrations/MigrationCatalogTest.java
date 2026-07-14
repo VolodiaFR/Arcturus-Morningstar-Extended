@@ -57,6 +57,15 @@ class MigrationCatalogTest {
     }
 
     @Test
+    void rejectsZeroVersionWithTheOffendingFilename() {
+        MigrationValidationException error = assertThrows(
+                MigrationValidationException.class,
+                () -> MigrationCatalog.fromResources(resources("000_invalid.sql", "SELECT 0;")));
+
+        assertTrue(error.getMessage().contains("000_invalid.sql"));
+    }
+
+    @Test
     void acceptsHistoricalVersionGapsButRequiresFutureToStartAtTwentyEight() {
         assertEquals(List.of(1, 12, 15, 27), MigrationCatalog.fromResources(resources(
                 "001_first.sql", "SELECT 1;",

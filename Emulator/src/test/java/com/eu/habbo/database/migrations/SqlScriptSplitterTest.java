@@ -58,7 +58,9 @@ class SqlScriptSplitterTest {
         for (String sql : List.of(
                 "DELIMITER $$\nCREATE PROCEDURE p() SELECT 1$$",
                 "  delimiter //\nSELECT 1//",
-                "SELECT 1;\n\tDeLiMiTeR |")) {
+                "SELECT 1;\n\tDeLiMiTeR |",
+                "SELECT 1;\n/* note */ DELIMITER $$",
+                "SELECT 1;\n/* multi-line\n * note */ DELIMITER //")) {
             MigrationValidationException error = assertThrows(
                     MigrationValidationException.class,
                     () -> SqlScriptSplitter.split(sql));

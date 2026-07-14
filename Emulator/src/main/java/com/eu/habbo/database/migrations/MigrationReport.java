@@ -5,6 +5,8 @@ import java.util.Objects;
 
 public record MigrationReport(
         MigrationMode mode,
+        int installedVersion,
+        int packagedVersion,
         List<Integer> pendingVersions,
         List<Integer> appliedVersions) {
     public MigrationReport {
@@ -14,6 +16,6 @@ public record MigrationReport(
     }
 
     public static MigrationReport off() {
-        return new MigrationReport(MigrationMode.OFF, List.of(), List.of());
+        return new MigrationReport(MigrationMode.OFF, 0, 0, List.of(), List.of());
     }
 }

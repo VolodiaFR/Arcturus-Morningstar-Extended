@@ -33,6 +33,8 @@ class DatabaseMigrationRunnerTest {
 
         assertEquals(List.of(28, 29), report.pendingVersions());
         assertEquals(List.of(), report.appliedVersions());
+        assertEquals(27, report.installedVersion());
+        assertEquals(29, report.packagedVersion());
         assertEquals(List.of(27), jdbc.historyVersions());
         assertEquals(List.of(), jdbc.executedMigrationStatements);
         assertTrue(jdbc.lockReleased());
@@ -48,6 +50,8 @@ class DatabaseMigrationRunnerTest {
 
         assertEquals(List.of(28, 29), first.appliedVersions());
         assertEquals(List.of(), second.appliedVersions());
+        assertEquals(29, first.installedVersion());
+        assertEquals(29, first.packagedVersion());
         assertEquals(List.of(27, 28, 29), jdbc.historyVersions());
         assertEquals(List.of("SELECT 28", "SELECT 29"), jdbc.executedMigrationStatements);
         assertEquals(2, jdbc.lockAcquireCount);

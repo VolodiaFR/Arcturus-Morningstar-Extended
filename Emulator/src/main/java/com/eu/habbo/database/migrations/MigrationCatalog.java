@@ -72,6 +72,10 @@ public final class MigrationCatalog {
 
             int version = Integer.parseInt(matcher.group(1));
             String description = matcher.group(2);
+            if (version == 0) {
+                throw new MigrationValidationException(
+                        "Migration version must be positive: " + scriptName);
+            }
             if (version > BASELINE_VERSION && !LOWERCASE_DESCRIPTION.matcher(description).matches()) {
                 throw new MigrationValidationException(
                         "Managed migration descriptions must be lowercase: " + scriptName);

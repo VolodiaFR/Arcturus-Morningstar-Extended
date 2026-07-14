@@ -65,8 +65,11 @@ public class Database {
                     migrationOptions.lockTimeoutSeconds())
                     .run(migrationOptions.mode());
             LOGGER.info(
-                    "Database migrations -> mode={}, pending={}, applied={}",
+                    "Database migrations -> database={}, mode={}, installed={}, packaged={}, pending={}, applied={}",
+                    connection.getCatalog(),
                     report.mode().name().toLowerCase(),
+                    report.installedVersion(),
+                    report.packagedVersion(),
                     report.pendingVersions(),
                     report.appliedVersions());
         }

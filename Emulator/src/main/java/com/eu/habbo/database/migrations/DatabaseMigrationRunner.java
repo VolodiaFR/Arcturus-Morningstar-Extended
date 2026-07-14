@@ -1,5 +1,8 @@
 package com.eu.habbo.database.migrations;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -12,6 +15,7 @@ import java.util.Map;
 import java.util.Objects;
 
 public final class DatabaseMigrationRunner {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseMigrationRunner.class);
     private static final int MAX_LOCK_TIMEOUT_SECONDS = 60;
     private static final String LOCK_PREFIX = "polaris-migrations-";
 
@@ -86,10 +90,17 @@ public final class DatabaseMigrationRunner {
                 .filter(migration -> migration.version() > MigrationCatalog.BASELINE_VERSION)
                 .filter(migration -> !appliedByVersion.containsKey(migration.version()))
                 .toList();
+        int installedVersion = applied.getLast().version();
+        int packagedVersion = catalog.migrations().stream()
+                .mapToInt(MigrationDescriptor::version)
+                .max()
+                .orElse(MigrationCatalog.BASELINE_VERSION);
 
         if (mode == MigrationMode.VALIDATE) {
             return new MigrationReport(
                     mode,
+                    installedVersion,
+                    packagedVersion,
                     pending.stream().map(MigrationDescriptor::version).toList(),
                     List.of());
         }
@@ -99,7 +110,8 @@ public final class DatabaseMigrationRunner {
             apply(repository, migration);
             newlyApplied.add(migration.version());
         }
-        return new MigrationReport(mode, List.of(), newlyApplied);
+        int resultingVersion = newlyApplied.isEmpty() ? installedVersion : newlyApplied.getLast();
+        return new MigrationReport(mode, resultingVersion, packagedVersion, List.of(), newlyApplied);
     }
 
     private void validateHistory(List<AppliedMigration> applied) {
@@ -175,6 +187,11 @@ public final class DatabaseMigrationRunner {
         long elapsedMs = Math.max(0L, (System.nanoTime() - startedAt) / 1_000_000L);
         try {
             repository.recordApplied(migration, elapsedMs);
+            LOGGER.info(
+                    "Database migration {} ({}) applied in {} ms",
+                    migration.version(),
+                    migration.scriptName(),
+                    elapsedMs);
         } catch (SQLException error) {
             throw new MigrationExecutionException(
                     migration.version(), migration.scriptName(), statements.size() + 1, error);

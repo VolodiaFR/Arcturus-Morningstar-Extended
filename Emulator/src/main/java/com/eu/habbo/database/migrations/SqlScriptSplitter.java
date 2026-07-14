@@ -31,16 +31,13 @@ public final class SqlScriptSplitter {
                         current.append(character).append(next);
                         index++;
                         state = State.LINE_COMMENT;
-                        lineStart = false;
                     } else if (character == '#') {
                         current.append(character);
                         state = State.LINE_COMMENT;
-                        lineStart = false;
                     } else if (character == '/' && next == '*') {
                         current.append(character).append(next);
                         index++;
                         state = State.BLOCK_COMMENT;
-                        lineStart = false;
                     } else if (character == '\'') {
                         current.append(character);
                         state = State.SINGLE_QUOTE;
@@ -92,9 +89,8 @@ public final class SqlScriptSplitter {
                         current.append(next);
                         index++;
                         state = State.NORMAL;
-                        lineStart = false;
-                    } else {
-                        lineStart = updateLineStart(lineStart, character);
+                    } else if (character == '\n' || character == '\r') {
+                        lineStart = true;
                     }
                 }
             }
