@@ -1,3 +1,4 @@
+DELETE FROM items WHERE id = 900004;
 DELETE FROM rooms WHERE id = 900002;
 DELETE FROM messenger_conversations WHERE direct_key = '900001:900003';
 DELETE FROM messenger_friendships
@@ -25,4 +26,12 @@ INSERT INTO rooms (
 ) VALUES (
     900002, 900001, 'e2e_reconnect', 'Reconnect E2E room',
     'Synthetic room used only by the isolated reconnect test', 'model_a', 'open', 5, 1
+);
+
+INSERT INTO items (
+    id, user_id, room_id, item_id, wall_pos, x, y, z, rot,
+    extra_data, wired_data, limited_data, guild_id
+) VALUES (
+    900004, 900001, 0, 18, '', 0, 0, 0.000000, 0,
+    '', '', '0:0', 0
 );
