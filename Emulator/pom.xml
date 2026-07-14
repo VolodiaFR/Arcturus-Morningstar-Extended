@@ -37,6 +37,19 @@
     </properties>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>../Database/Database Updates</directory>
+                <targetPath>db/migrations</targetPath>
+                <includes>
+                    <include>*.sql</include>
+                </includes>
+                <filtering>false</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
