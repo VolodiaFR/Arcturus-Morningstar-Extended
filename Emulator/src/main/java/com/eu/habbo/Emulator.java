@@ -6,6 +6,7 @@ import ch.qos.logback.core.ConsoleAppender;
 import com.eu.habbo.core.*;
 import com.eu.habbo.core.consolecommands.ConsoleCommand;
 import com.eu.habbo.database.Database;
+import com.eu.habbo.database.migrations.MigrationOptions;
 import com.eu.habbo.gui.EmulatorDashboard;
 import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.gameclients.SessionResumeManager;
@@ -130,12 +131,22 @@ public final class Emulator {
 
             Emulator.runtime = Runtime.getRuntime();
             Emulator.config = new ConfigurationManager("config.ini");
+            MigrationOptions migrationOptions = MigrationOptions.resolve(
+                    Emulator.config,
+                    args,
+                    System.getenv());
             Emulator.crypto = new CryptoConfig(
                     Emulator.getConfig().getBoolean("enc.enabled", false),
                     Emulator.getConfig().getValue("enc.e"),
                     Emulator.getConfig().getValue("enc.n"),
                     Emulator.getConfig().getValue("enc.d"));
-            Emulator.database = new Database(Emulator.getConfig());
+            Emulator.database = new Database(Emulator.getConfig(), migrationOptions);
+            if (migrationOptions.migrationsOnly()) {
+                Emulator.database.dispose();
+                Emulator.database = null;
+                Emulator.config = null;
+                return;
+            }
             Emulator.databaseLogger = new DatabaseLogger();
             Emulator.config.loaded = true;
             Emulator.config.loadFromDatabase();
@@ -223,6 +234,7 @@ public final class Emulator {
 
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);
+            throw e;
         }
     }
 

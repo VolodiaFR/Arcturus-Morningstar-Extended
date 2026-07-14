@@ -30,7 +30,7 @@ jobs:
       - name: Build and test
         run: mvn -B verify
 
-  e2e-runtime:
+  migration-integration:
     runs-on: ubuntu-latest
     services:
       mariadb:
@@ -45,16 +45,10 @@ jobs:
           --health-timeout=5s
           --health-retries=20
     env:
-      E2E_DB_HOST: 127.0.0.1
-      E2E_DB_PORT: "3306"
-      E2E_DB_NAME: polaris_e2e
-      E2E_DB_USER: root
-      E2E_DB_PASSWORD: root
-      E2E_SSO_TICKET: e2e-reconnect-ticket
-      E2E_SECOND_SSO_TICKET: e2e-messenger-peer-ticket
-      E2E_GAME_PORT: "31999"
-      E2E_RAW_PORT: "31998"
-      E2E_RCON_PORT: "32000"
+      MIGRATION_TEST_DB_HOST: 127.0.0.1
+      MIGRATION_TEST_DB_PORT: "3306"
+      MIGRATION_TEST_DB_USER: root
+      MIGRATION_TEST_DB_PASSWORD: root
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -66,26 +60,6 @@ jobs:
           java-version: "25"
           cache: maven
 
-      - name: Install MariaDB client
-        run: sudo apt-get update && sudo apt-get install -y mariadb-client
-
-      - name: Build emulator
+      - name: Verify versioned migrations on MariaDB
         working-directory: Emulator
-        run: mvn -B package -DskipTests
-
-      - name: Prepare isolated database
-        run: bash e2e/prepare-database.sh
-
-      - name: Start emulator and verify probe
-        run: |
-          bash e2e/start-emulator.sh
-          curl --fail --silent "http://127.0.0.1:${E2E_GAME_PORT}/__e2e/session-count?userId=900001" | grep '"activeSessions":0'
-
-      - name: Stop emulator
-        if: always()
-        run: |
-          if [ -f "${E2E_RUNTIME_DIR:-}/polaris.pid" ]; then
-            kill "$(cat "${E2E_RUNTIME_DIR}/polaris.pid")" || true
-          else
-            pkill -f 'Polaris-.*-jar-with-dependencies.jar' || true
-          fi
+        run: mvn -B -Dtest=MariaDbMigrationIntegrationTest test
