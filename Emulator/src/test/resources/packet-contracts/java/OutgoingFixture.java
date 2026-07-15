@@ -1,12 +1,12 @@
 final class OutgoingFixture {
     void composeInternal() {
-        response.appendInt(7);
+        this.response.appendInt(7);
         appendDetails();
-        response.appendBoolean(true);
+        this.response.appendBoolean(true);
     }
 
     private void appendDetails() {
-        response.appendString("name");
-        response.appendShort(2);
+        this.response.appendString("name");
+        this.response.appendShort(2);
     }
 }

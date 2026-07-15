@@ -2,6 +2,7 @@ package com.eu.habbo.messages.contracts;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -12,6 +13,22 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JavaPacketSignatureExtractorTest {
     private final JavaPacketSignatureExtractor extractor = new JavaPacketSignatureExtractor();
+
+    @Test
+    void rejectsIncomingFieldsDelegatedToAnExternalConstructor() throws IOException {
+        ExtractionResult result = extractor.extract(
+                fixture("DelegatedIncomingFixture.java"), JavaPacketSide.INCOMING, "handle");
+
+        assertTrue(result.unsupportedReason().orElseThrow().contains("external constructor"));
+    }
+
+    @Test
+    void rejectsOutgoingFieldsDelegatedToAnExternalSerializer() throws IOException {
+        ExtractionResult result = extractor.extract(
+                fixture("DelegatedOutgoingFixture.java"), JavaPacketSide.OUTGOING, "composeInternal");
+
+        assertTrue(result.unsupportedReason().orElseThrow().contains("external serializer"));
+    }
 
     @Test
     void extractsIncomingReadsAndExpandsLocalHelpersInCallOrder() throws Exception {

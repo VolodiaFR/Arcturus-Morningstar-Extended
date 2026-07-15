@@ -1,12 +1,12 @@
 final class IncomingFixture {
     void handle() {
-        int id = packet.readInt();
+        int id = this.packet.readInt();
         readDetails();
-        boolean enabled = packet.readBoolean();
+        boolean enabled = this.packet.readBoolean();
     }
 
     private void readDetails() {
-        String name = packet.readString();
-        short count = packet.readShort();
+        String name = this.packet.readString();
+        short count = this.packet.readShort();
     }
 }

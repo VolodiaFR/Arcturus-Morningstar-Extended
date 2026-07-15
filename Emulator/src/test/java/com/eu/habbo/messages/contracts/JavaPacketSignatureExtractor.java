@@ -6,6 +6,7 @@ import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.MethodCallExpr;
+import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.stmt.DoStmt;
 import com.github.javaparser.ast.stmt.ForEachStmt;
 import com.github.javaparser.ast.stmt.ForStmt;
@@ -111,10 +112,39 @@ final class JavaPacketSignatureExtractor {
                     fields.addAll(helper.fields());
                 }
             }
+            Optional<String> delegation = externalDelegation(method, side);
+            if (delegation.isPresent()) return ExtractionResult.unsupported(delegation.get());
             return ExtractionResult.supported(fields);
         } finally {
             stack.removeLast();
         }
+    }
+
+    private static Optional<String> externalDelegation(MethodDeclaration method, JavaPacketSide side) {
+        if (side == JavaPacketSide.INCOMING) {
+            for (ObjectCreationExpr creation : method.findAll(ObjectCreationExpr.class)) {
+                boolean receivesHandler = creation.getArguments().stream()
+                        .map(Object::toString)
+                        .anyMatch(argument -> argument.equals("this")
+                                || argument.equals("packet")
+                                || argument.equals("this.packet"));
+                if (receivesHandler) {
+                    return Optional.of("Packet fields delegated to external constructor "
+                            + creation.getTypeAsString() + " inside " + method.getNameAsString());
+                }
+            }
+        } else {
+            for (MethodCallExpr call : method.findAll(MethodCallExpr.class)) {
+                boolean receivesResponse = call.getArguments().stream()
+                        .map(Object::toString)
+                        .anyMatch(argument -> argument.equals("response") || argument.equals("this.response"));
+                if (receivesResponse && wireType(call, side) == null && !isLocalCall(call)) {
+                    return Optional.of("Packet fields delegated to external serializer "
+                            + call.getNameAsString() + " inside " + method.getNameAsString());
+                }
+            }
+        }
+        return Optional.empty();
     }
 
     private static Optional<String> dynamicControlFlow(MethodDeclaration method, JavaPacketSide side) {
@@ -137,7 +167,9 @@ final class JavaPacketSignatureExtractor {
 
     private static String wireType(MethodCallExpr call, JavaPacketSide side) {
         String expectedScope = side == JavaPacketSide.INCOMING ? "packet" : "response";
-        if (call.getScope().isEmpty() || !call.getScope().get().toString().equals(expectedScope)) return null;
+        if (call.getScope().isEmpty()) return null;
+        String scope = call.getScope().orElseThrow().toString();
+        if (!scope.equals(expectedScope) && !scope.equals("this." + expectedScope)) return null;
         return (side == JavaPacketSide.INCOMING ? INCOMING_TYPES : OUTGOING_TYPES)
                 .get(call.getNameAsString());
     }
