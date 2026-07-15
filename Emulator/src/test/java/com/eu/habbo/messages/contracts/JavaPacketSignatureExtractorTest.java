@@ -23,6 +23,14 @@ class JavaPacketSignatureExtractorTest {
     }
 
     @Test
+    void rejectsIncomingFieldsDelegatedToAnExternalReaderMethod() throws IOException {
+        ExtractionResult result = extractor.extract(
+                fixture("DelegatedIncomingMethodFixture.java"), JavaPacketSide.INCOMING, "handle");
+
+        assertTrue(result.unsupportedReason().orElseThrow().contains("external reader read"));
+    }
+
+    @Test
     void rejectsOutgoingFieldsDelegatedToAnExternalSerializer() throws IOException {
         ExtractionResult result = extractor.extract(
                 fixture("DelegatedOutgoingFixture.java"), JavaPacketSide.OUTGOING, "composeInternal");
@@ -64,6 +72,40 @@ class JavaPacketSignatureExtractorTest {
     }
 
     @Test
+    void extractsAllRendererDeclaredFieldsFromCompatibleRequests() throws Exception {
+        assertEquals(
+                List.of("int", "int", "int"),
+                scalarTypes(extractor.extract(
+                        realSource("incoming/guilds/forums/GuildForumThreadsEvent.java"),
+                        JavaPacketSide.INCOMING,
+                        "handle").fields()));
+        assertEquals(
+                List.of("int", "boolean"),
+                scalarTypes(extractor.extract(
+                        realSource("incoming/rooms/pets/PetRideEvent.java"),
+                        JavaPacketSide.INCOMING,
+                        "handle").fields()));
+        assertEquals(
+                List.of("string", "int"),
+                scalarTypes(extractor.extract(
+                        realSource("incoming/catalog/CheckPetNameEvent.java"),
+                        JavaPacketSide.INCOMING,
+                        "handle").fields()));
+        assertEquals(
+                List.of("int", "string", "int"),
+                scalarTypes(extractor.extract(
+                        realSource("incoming/modtool/ModToolKickEvent.java"),
+                        JavaPacketSide.INCOMING,
+                        "handle").fields()));
+        assertEquals(
+                List.of("int", "boolean"),
+                scalarTypes(extractor.extract(
+                        realSource("incoming/users/RequestUserProfileEvent.java"),
+                        JavaPacketSide.INCOMING,
+                        "handle").fields()));
+    }
+
+    @Test
     void verifierReportsFirstOrderMismatchWithContext() {
         List<WireSchema> expected = List.of(
                 new ScalarSchema("int", "id"),
@@ -100,6 +142,10 @@ class JavaPacketSignatureExtractorTest {
 
     private static Path fixture(String name) {
         return Path.of("src", "test", "resources", "packet-contracts", "java", name);
+    }
+
+    private static Path realSource(String relative) {
+        return Path.of("src", "main", "java", "com", "eu", "habbo", "messages").resolve(relative);
     }
 
     private static List<String> scalarTypes(List<WireSchema> fields) {

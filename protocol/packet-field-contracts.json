@@ -251,38 +251,6 @@
       "fields": []
     },
     {
-      "name": "MODTOOL_SANCTION_ALERT",
-      "direction": "client_to_server",
-      "header": 229,
-      "java": {
-        "symbol": "ModToolSanctionAlertEvent",
-        "className": "ModToolSanctionAlertEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/modtool/ModToolSanctionAlertEvent.java"
-      },
-      "typescript": {
-        "symbol": "MODTOOL_SANCTION_ALERT",
-        "className": "ModAlertMessageComposer",
-        "path": "packages/communication/src/messages/outgoing/moderation/ModAlertMessageComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "userId"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "message"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "cfhTopic"
-        }
-      ]
-    },
-    {
       "name": "GET_FORUM_MESSAGES",
       "direction": "client_to_server",
       "header": 232,
@@ -751,6 +719,38 @@
           "kind": "scalar",
           "type": "int",
           "name": "offerId"
+        }
+      ]
+    },
+    {
+      "name": "GET_FORUM_THREADS",
+      "direction": "client_to_server",
+      "header": 436,
+      "java": {
+        "symbol": "GuildForumThreadsEvent",
+        "className": "GuildForumThreadsEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/guilds/forums/GuildForumThreadsEvent.java"
+      },
+      "typescript": {
+        "symbol": "GET_FORUM_THREADS",
+        "className": "GetThreadsMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/groupforums/GetThreadsMessageComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "guildId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "index"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
         }
       ]
     },
@@ -1519,6 +1519,33 @@
           "kind": "scalar",
           "type": "int",
           "name": "requestedBorder"
+        }
+      ]
+    },
+    {
+      "name": "PET_MOUNT",
+      "direction": "client_to_server",
+      "header": 1036,
+      "java": {
+        "symbol": "HorseRideEvent",
+        "className": "PetRideEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/pets/PetRideEvent.java"
+      },
+      "typescript": {
+        "symbol": "PET_MOUNT",
+        "className": "PetMountComposer",
+        "path": "packages/communication/src/messages/outgoing/pet/PetMountComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "petId"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": ""
         }
       ]
     },
@@ -2626,38 +2653,6 @@
       ]
     },
     {
-      "name": "MODTOOL_SANCTION_MUTE",
-      "direction": "client_to_server",
-      "header": 1945,
-      "java": {
-        "symbol": "ModToolSanctionMuteEvent",
-        "className": "ModToolSanctionMuteEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/modtool/ModToolSanctionMuteEvent.java"
-      },
-      "typescript": {
-        "symbol": "MODTOOL_SANCTION_MUTE",
-        "className": "ModMuteMessageComposer",
-        "path": "packages/communication/src/messages/outgoing/moderation/ModMuteMessageComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "userId"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "message"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "cfhTopic"
-        }
-      ]
-    },
-    {
       "name": "NAVIGATOR_DELETE_SAVED_SEARCH",
       "direction": "client_to_server",
       "header": 1954,
@@ -2852,6 +2847,33 @@
         "path": "packages/communication/src/messages/outgoing/marketplace/GetMarketplaceOwnOffersMessageComposer.ts"
       },
       "fields": []
+    },
+    {
+      "name": "APPROVE_NAME",
+      "direction": "client_to_server",
+      "header": 2109,
+      "java": {
+        "symbol": "CheckPetNameEvent",
+        "className": "CheckPetNameEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/CheckPetNameEvent.java"
+      },
+      "typescript": {
+        "symbol": "APPROVE_NAME",
+        "className": "ApproveNameMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/user/ApproveNameMessageComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "petName"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
     },
     {
       "name": "NAVIGATOR_INIT",
@@ -3769,48 +3791,6 @@
       ]
     },
     {
-      "name": "MODTOOL_SANCTION_BAN",
-      "direction": "client_to_server",
-      "header": 2766,
-      "java": {
-        "symbol": "ModToolSanctionBanEvent",
-        "className": "ModToolSanctionBanEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/modtool/ModToolSanctionBanEvent.java"
-      },
-      "typescript": {
-        "symbol": "MODTOOL_SANCTION_BAN",
-        "className": "ModBanMessageComposer",
-        "path": "packages/communication/src/messages/outgoing/moderation/ModBanMessageComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "userId"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "message"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "cfhTopic"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "banType"
-        },
-        {
-          "kind": "scalar",
-          "type": "boolean",
-          "name": ""
-        }
-      ]
-    },
-    {
       "name": "USER_BADGES",
       "direction": "client_to_server",
       "header": 2769,
@@ -4580,6 +4560,33 @@
       ]
     },
     {
+      "name": "USER_PROFILE",
+      "direction": "client_to_server",
+      "header": 3265,
+      "java": {
+        "symbol": "RequestUserProfileEvent",
+        "className": "RequestUserProfileEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/users/RequestUserProfileEvent.java"
+      },
+      "typescript": {
+        "symbol": "USER_PROFILE",
+        "className": "UserProfileComposer",
+        "path": "packages/communication/src/messages/outgoing/user/data/UserProfileComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "habboId"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": ""
+        }
+      ]
+    },
+    {
       "name": "GET_PENDING_CALLS_FOR_HELP",
       "direction": "client_to_server",
       "header": 3267,
@@ -5267,43 +5274,6 @@
           "kind": "scalar",
           "type": "string",
           "name": "name"
-        }
-      ]
-    },
-    {
-      "name": "MODTOOL_SANCTION_TRADELOCK",
-      "direction": "client_to_server",
-      "header": 3742,
-      "java": {
-        "symbol": "ModToolSanctionTradeLockEvent",
-        "className": "ModToolSanctionTradeLockEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/modtool/ModToolSanctionTradeLockEvent.java"
-      },
-      "typescript": {
-        "symbol": "MODTOOL_SANCTION_TRADELOCK",
-        "className": "ModTradingLockMessageComposer",
-        "path": "packages/communication/src/messages/outgoing/moderation/ModTradingLockMessageComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "userId"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "message"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "duration"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "cfhTopic"
         }
       ]
     },
@@ -16331,6 +16301,22 @@
       "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle"
     },
     {
+      "name": "MODTOOL_SANCTION_ALERT",
+      "direction": "client_to_server",
+      "header": 229,
+      "java": {
+        "symbol": "ModToolSanctionAlertEvent",
+        "className": "ModToolSanctionAlertEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/modtool/ModToolSanctionAlertEvent.java"
+      },
+      "typescript": {
+        "symbol": "MODTOOL_SANCTION_ALERT",
+        "className": "ModAlertMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/moderation/ModAlertMessageComposer.ts"
+      },
+      "reason": "TypeScript analyzer: Outgoing message array _data is mutated with push"
+    },
+    {
       "name": "GROUP_BUY",
       "direction": "client_to_server",
       "header": 230,
@@ -16344,23 +16330,7 @@
         "className": "GroupBuyComposer",
         "path": "packages/communication/src/messages/outgoing/group/GroupBuyComposer.ts"
       },
-      "reason": "TypeScript analyzer: Outgoing value badge.length has no statically resolvable wire type"
-    },
-    {
-      "name": "GET_FORUM_THREADS",
-      "direction": "client_to_server",
-      "header": 436,
-      "java": {
-        "symbol": "GuildForumThreadsEvent",
-        "className": "GuildForumThreadsEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/guilds/forums/GuildForumThreadsEvent.java"
-      },
-      "typescript": {
-        "symbol": "GET_FORUM_THREADS",
-        "className": "GetThreadsMessageComposer",
-        "path": "packages/communication/src/messages/outgoing/groupforums/GetThreadsMessageComposer.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [int, int] versus TypeScript [int, int, int]"
+      "reason": "Java analyzer: Packet fields delegated to external reader readBadge inside handle; TypeScript analyzer: Outgoing value badge.length has no statically resolvable wire type"
     },
     {
       "name": "USER_BADGES_CURRENT_UPDATE",
@@ -16425,22 +16395,6 @@
         "path": "packages/communication/src/messages/outgoing/room/layout/UpdateFloorPropertiesMessageComposer.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle"
-    },
-    {
-      "name": "PET_MOUNT",
-      "direction": "client_to_server",
-      "header": 1036,
-      "java": {
-        "symbol": "HorseRideEvent",
-        "className": "PetRideEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/pets/PetRideEvent.java"
-      },
-      "typescript": {
-        "symbol": "PET_MOUNT",
-        "className": "PetMountComposer",
-        "path": "packages/communication/src/messages/outgoing/pet/PetMountComposer.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [int] versus TypeScript [int, boolean]"
     },
     {
       "name": "USER_IGNORE",
@@ -16632,7 +16586,7 @@
         "className": "UpdateTriggerMessageComposer",
         "path": "packages/communication/src/messages/outgoing/roomevents/UpdateTriggerMessageComposer.ts"
       },
-      "reason": "TypeScript analyzer: Outgoing value ints.length has no statically resolvable wire type"
+      "reason": "Java analyzer: Packet fields delegated to external reader readSettings inside handle; TypeScript analyzer: Outgoing value ints.length has no statically resolvable wire type"
     },
     {
       "name": "UNIT_CHAT_WHISPER",
@@ -16760,7 +16714,7 @@
         "className": "NewUserExperienceGetGiftsComposer",
         "path": "packages/communication/src/messages/outgoing/nux/NewUserExperienceGetGiftsComposer.ts"
       },
-      "reason": "TypeScript analyzer: Outgoing value data.length * 3 has no statically resolvable wire type"
+      "reason": "TypeScript analyzer: Outgoing message array _data is mutated with push"
     },
     {
       "name": "MODTOOL_ALERTEVENT",
@@ -16792,7 +16746,7 @@
         "className": "UpdateForumReadMarkerMessageComposer",
         "path": "packages/communication/src/messages/outgoing/groupforums/UpdateForumReadMarkerMessageComposer.ts"
       },
-      "reason": "Java analyzer: Data-dependent packet operations in ForStmt inside handle; TypeScript analyzer: Outgoing value data.length has no statically resolvable wire type"
+      "reason": "Java analyzer: Data-dependent packet operations in ForStmt inside handle; TypeScript analyzer: Outgoing message array _data is mutated with push"
     },
     {
       "name": "ROOM_STAFF_PICK",
@@ -16827,6 +16781,22 @@
       "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle"
     },
     {
+      "name": "MODTOOL_SANCTION_MUTE",
+      "direction": "client_to_server",
+      "header": 1945,
+      "java": {
+        "symbol": "ModToolSanctionMuteEvent",
+        "className": "ModToolSanctionMuteEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/modtool/ModToolSanctionMuteEvent.java"
+      },
+      "typescript": {
+        "symbol": "MODTOOL_SANCTION_MUTE",
+        "className": "ModMuteMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/moderation/ModMuteMessageComposer.ts"
+      },
+      "reason": "TypeScript analyzer: Outgoing message array _data is mutated with push"
+    },
+    {
       "name": "ROOM_SETTINGS_SAVE",
       "direction": "client_to_server",
       "header": 1969,
@@ -16840,7 +16810,7 @@
         "className": "SaveRoomSettingsComposer",
         "path": "packages/communication/src/messages/outgoing/room/data/SaveRoomSettingsComposer.ts"
       },
-      "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle"
+      "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle; TypeScript analyzer: Outgoing message array _data is mutated with push"
     },
     {
       "name": "RENDER_ROOM_THUMBNAIL",
@@ -16955,22 +16925,6 @@
       "reason": "Java analyzer: Packet fields delegated to external constructor RoomChatMessage inside handle"
     },
     {
-      "name": "APPROVE_NAME",
-      "direction": "client_to_server",
-      "header": 2109,
-      "java": {
-        "symbol": "CheckPetNameEvent",
-        "className": "CheckPetNameEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/CheckPetNameEvent.java"
-      },
-      "typescript": {
-        "symbol": "APPROVE_NAME",
-        "className": "ApproveNameMessageComposer",
-        "path": "packages/communication/src/messages/outgoing/user/ApproveNameMessageComposer.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [string] versus TypeScript [string, int]"
-    },
-    {
       "name": "GET_GUEST_ROOM",
       "direction": "client_to_server",
       "header": 2230,
@@ -17000,7 +16954,7 @@
         "className": "UpdateActionMessageComposer",
         "path": "packages/communication/src/messages/outgoing/roomevents/UpdateActionMessageComposer.ts"
       },
-      "reason": "TypeScript analyzer: Outgoing value ints.length has no statically resolvable wire type"
+      "reason": "Java analyzer: Packet fields delegated to external reader readSettings inside handle; TypeScript analyzer: Outgoing value ints.length has no statically resolvable wire type"
     },
     {
       "name": "ROOM_ENTER",
@@ -17096,7 +17050,7 @@
         "className": "ModKickMessageComposer",
         "path": "packages/communication/src/messages/outgoing/moderation/ModKickMessageComposer.ts"
       },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [int, string] versus TypeScript [int, string, int]"
+      "reason": "TypeScript analyzer: Outgoing message array _data is mutated with push"
     },
     {
       "name": "MODTOOL_REQUEST_ROOM_CHATLOG",
@@ -17211,6 +17165,22 @@
       "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [string, int]"
     },
     {
+      "name": "MODTOOL_SANCTION_BAN",
+      "direction": "client_to_server",
+      "header": 2766,
+      "java": {
+        "symbol": "ModToolSanctionBanEvent",
+        "className": "ModToolSanctionBanEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/modtool/ModToolSanctionBanEvent.java"
+      },
+      "typescript": {
+        "symbol": "MODTOOL_SANCTION_BAN",
+        "className": "ModBanMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/moderation/ModBanMessageComposer.ts"
+      },
+      "reason": "TypeScript analyzer: Outgoing message array _data is mutated with push"
+    },
+    {
       "name": "RECYCLER_ITEMS",
       "direction": "client_to_server",
       "header": 2771,
@@ -17224,7 +17194,7 @@
         "className": "RecycleItemsMessageComposer",
         "path": "packages/communication/src/messages/outgoing/recycler/RecycleItemsMessageComposer.ts"
       },
-      "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle; TypeScript analyzer: Outgoing value data.length has no statically resolvable wire type"
+      "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle; TypeScript analyzer: Outgoing message array _data is mutated with push"
     },
     {
       "name": "ROOM_TONER_APPLY",
@@ -17400,7 +17370,7 @@
         "className": "UpdateConditionMessageComposer",
         "path": "packages/communication/src/messages/outgoing/roomevents/UpdateConditionMessageComposer.ts"
       },
-      "reason": "TypeScript analyzer: Outgoing value ints.length has no statically resolvable wire type"
+      "reason": "Java analyzer: Packet fields delegated to external reader readSettings inside handle; TypeScript analyzer: Outgoing value ints.length has no statically resolvable wire type"
     },
     {
       "name": "GAMEUNLOADEDMESSAGE",
@@ -17432,7 +17402,7 @@
         "className": "RenderRoomMessageComposer",
         "path": "packages/communication/src/messages/outgoing/camera/RenderRoomMessageComposer.ts"
       },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [int] versus TypeScript []"
+      "reason": "TypeScript analyzer: Outgoing message array _data is mutated with push"
     },
     {
       "name": "MODTOOL_CHANGE_ROOM_SETTINGS",
@@ -17449,22 +17419,6 @@
         "path": "packages/communication/src/messages/outgoing/moderation/ModerateRoomMessageComposer.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle"
-    },
-    {
-      "name": "USER_PROFILE",
-      "direction": "client_to_server",
-      "header": 3265,
-      "java": {
-        "symbol": "RequestUserProfileEvent",
-        "className": "RequestUserProfileEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/users/RequestUserProfileEvent.java"
-      },
-      "typescript": {
-        "symbol": "USER_PROFILE",
-        "className": "UserProfileComposer",
-        "path": "packages/communication/src/messages/outgoing/user/data/UserProfileComposer.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [int] versus TypeScript [int, boolean]"
     },
     {
       "name": "FURNITURE_POSTIT_SAVE_STICKY_POLE",
@@ -17496,7 +17450,7 @@
         "className": "GetModeratorUserInfoMessageComposer",
         "path": "packages/communication/src/messages/outgoing/moderation/GetModeratorUserInfoMessageComposer.ts"
       },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [int]"
+      "reason": "Java analyzer: Packet fields delegated to external reader requestUserInfo inside handle"
     },
     {
       "name": "ROOM_RIGHTS_LIST",
@@ -17672,7 +17626,23 @@
         "className": "SetObjectDataMessageComposer",
         "path": "packages/communication/src/messages/outgoing/room/engine/SetObjectDataMessageComposer.ts"
       },
-      "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle; TypeScript analyzer: Outgoing value data.size * 2 has no statically resolvable wire type"
+      "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle; TypeScript analyzer: Outgoing message array _data is mutated with push"
+    },
+    {
+      "name": "MODTOOL_SANCTION_TRADELOCK",
+      "direction": "client_to_server",
+      "header": 3742,
+      "java": {
+        "symbol": "ModToolSanctionTradeLockEvent",
+        "className": "ModToolSanctionTradeLockEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/modtool/ModToolSanctionTradeLockEvent.java"
+      },
+      "typescript": {
+        "symbol": "MODTOOL_SANCTION_TRADELOCK",
+        "className": "ModTradingLockMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/moderation/ModTradingLockMessageComposer.ts"
+      },
+      "reason": "TypeScript analyzer: Outgoing message array _data is mutated with push"
     },
     {
       "name": "FRIEND_FURNI_CONFIRM_LOCK",

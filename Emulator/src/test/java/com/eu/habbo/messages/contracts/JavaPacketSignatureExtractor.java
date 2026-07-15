@@ -173,6 +173,15 @@ final class JavaPacketSignatureExtractor {
                             + creation.getTypeAsString() + " inside " + method.getNameAsString());
                 }
             }
+            for (MethodCallExpr call : method.findAll(MethodCallExpr.class)) {
+                boolean receivesPacket = call.getArguments().stream()
+                        .map(Object::toString)
+                        .anyMatch(argument -> argument.equals("packet") || argument.equals("this.packet"));
+                if (receivesPacket && !isLocalCall(call)) {
+                    return Optional.of("Packet fields delegated to external reader "
+                            + call.getNameAsString() + " inside " + method.getNameAsString());
+                }
+            }
         } else {
             for (MethodCallExpr call : method.findAll(MethodCallExpr.class)) {
                 boolean receivesResponse = call.getArguments().stream()
