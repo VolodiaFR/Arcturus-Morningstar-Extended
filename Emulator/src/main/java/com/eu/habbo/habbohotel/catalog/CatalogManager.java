@@ -1368,7 +1368,7 @@ public class CatalogManager {
                         ? purchasedEvent.totalPoints : 0;
                 paidPointsType = item.getPointsType();
 
-                if (!habbo.tryTakeCatalogPayment(paidCredits, paidPointsType, paidPoints)) {
+                if (!CatalogPaymentService.tryTake(habbo, paidCredits, paidPointsType, paidPoints)) {
                     habbo.getClient().sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
                     return;
                 }
@@ -1474,7 +1474,7 @@ public class CatalogManager {
                         Emulator.getGameEnvironment().getPetManager().deletePet(pet);
                     }
                     if (paymentTaken) {
-                        habbo.refundCatalogPayment(paidCredits, paidPointsType, paidPoints);
+                        CatalogPaymentService.refund(habbo, paidCredits, paidPointsType, paidPoints);
                     }
                 }
             } finally {

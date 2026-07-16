@@ -33,13 +33,13 @@ class CatalogPurchaseAtomicityContractTest {
     void giftsDebitBeforeCreationAndCompensateOnFailure() throws Exception {
         String gift = source("com/eu/habbo/messages/incoming/catalog/CatalogBuyItemAsGiftEvent.java");
 
-        int debit = gift.indexOf("tryTakeCatalogPayment(chargeCredits, item.getPointsType(), chargePoints)");
+        int debit = gift.indexOf("CatalogPaymentService.tryTake(this.client.getHabbo(), chargeCredits, item.getPointsType(), chargePoints)");
         int create = gift.indexOf("getItemManager().createItem(userId", debit);
         assertTrue(debit > -1 && create > debit,
                 "gift payment must be reserved before recipient-owned rows are created");
         assertTrue(gift.contains("if (!giftDelivered)"),
                 "failed gift delivery must enter compensating cleanup");
-        assertTrue(gift.contains("refundCatalogPayment(paidCredits, paidPointsType, paidPoints)"),
+        assertTrue(gift.contains("CatalogPaymentService.refund(this.client.getHabbo(), paidCredits, paidPointsType, paidPoints)"),
                 "failed gift delivery must restore the exact reserved payment");
     }
 
@@ -48,8 +48,8 @@ class CatalogPurchaseAtomicityContractTest {
         String buy = source("com/eu/habbo/messages/incoming/catalog/CatalogBuyItemEvent.java");
 
         assertTrue(buy.contains("isPurchasingFurniture = true"));
-        assertTrue(buy.contains("tryTakeCatalogPayment(paidCredits, item.getPointsType(), paidPoints)"));
-        assertTrue(buy.contains("refundCatalogPayment(paidCredits, item.getPointsType(), paidPoints)"),
+        assertTrue(buy.contains("CatalogPaymentService.tryTake(this.client.getHabbo(), paidCredits, item.getPointsType(), paidPoints)"));
+        assertTrue(buy.contains("CatalogPaymentService.refund(this.client.getHabbo(), paidCredits, item.getPointsType(), paidPoints)"),
                 "a rejected subscription grant must restore its payment");
     }
 }

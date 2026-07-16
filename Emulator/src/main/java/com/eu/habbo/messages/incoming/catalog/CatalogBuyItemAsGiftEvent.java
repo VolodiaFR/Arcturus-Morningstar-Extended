@@ -350,7 +350,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                             ? this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_PIXELS)
                             : this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_POINTS);
                     int chargePoints = hasInfinitePoints ? 0 : totalPoints;
-                    if (!this.client.getHabbo().tryTakeCatalogPayment(chargeCredits, item.getPointsType(), chargePoints)) {
+                    if (!CatalogPaymentService.tryTake(this.client.getHabbo(), chargeCredits, item.getPointsType(), chargePoints)) {
                         this.client.sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
                         return;
                     }
@@ -600,7 +600,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                             if (createdItem != null) Emulator.getGameEnvironment().getItemManager().deleteItem(createdItem);
                         }
                         if (paidCredits > 0 || paidPoints > 0) {
-                            this.client.getHabbo().refundCatalogPayment(paidCredits, paidPointsType, paidPoints);
+                            CatalogPaymentService.refund(this.client.getHabbo(), paidCredits, paidPointsType, paidPoints);
                         }
                     }
                 } finally {
@@ -712,7 +712,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                 ? this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_PIXELS)
                 : this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_POINTS);
         int paidPoints = hasInfinitePoints ? 0 : totalPoints;
-        if (!this.client.getHabbo().tryTakeCatalogPayment(paidCredits, offer.getPointsType(), paidPoints)) {
+        if (!CatalogPaymentService.tryTake(this.client.getHabbo(), paidCredits, offer.getPointsType(), paidPoints)) {
             this.client.sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
             return;
         }
@@ -725,12 +725,12 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                 extended = this.extendOfflineSubscription(recipientId, subscriptionType, duration);
             }
         } catch (RuntimeException e) {
-            this.client.getHabbo().refundCatalogPayment(paidCredits, offer.getPointsType(), paidPoints);
+            CatalogPaymentService.refund(this.client.getHabbo(), paidCredits, offer.getPointsType(), paidPoints);
             throw e;
         }
 
         if (!extended) {
-            this.client.getHabbo().refundCatalogPayment(paidCredits, offer.getPointsType(), paidPoints);
+            CatalogPaymentService.refund(this.client.getHabbo(), paidCredits, offer.getPointsType(), paidPoints);
             this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
             return;
         }

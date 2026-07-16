@@ -205,7 +205,7 @@ public class CatalogBuyItemEvent extends MessageHandler {
 
                     int paidCredits = this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_CREDITS) ? 0 : totalCredits;
                     int paidPoints = this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_POINTS) ? 0 : totalDuckets;
-                    if (!this.client.getHabbo().tryTakeCatalogPayment(paidCredits, item.getPointsType(), paidPoints)) {
+                    if (!CatalogPaymentService.tryTake(this.client.getHabbo(), paidCredits, item.getPointsType(), paidPoints)) {
                         this.client.sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
                         return;
                     }
@@ -218,7 +218,7 @@ public class CatalogBuyItemEvent extends MessageHandler {
                         String subscriptionType = item.isBuildersClubSubscription() ? Subscription.BUILDERS_CLUB : Subscription.HABBO_CLUB;
 
                         if (this.client.getHabbo().getHabboStats().createSubscription(subscriptionType, subscriptionSeconds) == null) {
-                            this.client.getHabbo().refundCatalogPayment(paidCredits, item.getPointsType(), paidPoints);
+                            CatalogPaymentService.refund(this.client.getHabbo(), paidCredits, item.getPointsType(), paidPoints);
                             this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
                             return;
                         }

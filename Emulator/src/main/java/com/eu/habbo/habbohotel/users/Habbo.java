@@ -285,34 +285,6 @@ public class Habbo implements Runnable {
             this.client.sendResponse(new UserPointsComposer(this.getHabboInfo().getCurrencyAmount(type), event.points, event.type));
     }
 
-    /**
-     * Debits a catalog order as one wallet operation. Catalog pricing plugins
-     * have already run before this method is called; bypassing the generic
-     * per-currency events here prevents a plugin cancellation from turning a
-     * successful delivery into a free purchase.
-     */
-    public boolean tryTakeCatalogPayment(int credits, int pointsType, int points) {
-        if (!this.habboInfo.tryDebitCatalogPayment(credits, pointsType, points)) {
-            return false;
-        }
-
-        if (this.client != null) {
-            if (credits > 0) this.client.sendResponse(new UserCreditsComposer(this));
-            if (points > 0) this.client.sendResponse(new UserPointsComposer(this.habboInfo.getCurrencyAmount(pointsType), -points, pointsType));
-        }
-        return true;
-    }
-
-    public void refundCatalogPayment(int credits, int pointsType, int points) {
-        this.habboInfo.refundCatalogPayment(credits, pointsType, points);
-
-        if (this.client != null) {
-            if (credits > 0) this.client.sendResponse(new UserCreditsComposer(this));
-            if (points > 0) this.client.sendResponse(new UserPointsComposer(this.habboInfo.getCurrencyAmount(pointsType), points, pointsType));
-        }
-    }
-
-
     public void whisper(String message) {
         this.whisper(message, this.habboStats.chatColor);
     }
