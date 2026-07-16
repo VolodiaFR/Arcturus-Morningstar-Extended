@@ -107,16 +107,19 @@ final class SessionEndpoints {
             }
 
             String ssoTicket = mintSsoTicket();
+            Timestamp ssoExpiry = newSsoTicketExpiry();
             try (PreparedStatement upd = conn.prepareStatement(
-                    "UPDATE users SET auth_ticket = ?, ip_current = ? WHERE id = ? LIMIT 1")) {
+                    "UPDATE users SET auth_ticket = ?, auth_ticket_expires_at = ?, ip_current = ? WHERE id = ? LIMIT 1")) {
                 upd.setString(1, ssoTicket);
-                upd.setString(2, ip == null ? "" : ip);
-                upd.setInt(3, rot.userId);
+                upd.setTimestamp(2, ssoExpiry);
+                upd.setString(3, ip == null ? "" : ip);
+                upd.setInt(4, rot.userId);
                 upd.executeUpdate();
             }
 
             JsonObject ok = new JsonObject();
             ok.addProperty("ssoTicket", ssoTicket);
+            ok.addProperty("ssoTicketExpiresAt", ssoExpiry.toInstant().getEpochSecond());
             ok.addProperty("username", rot.username);
             ok.addProperty("rememberToken", rot.jwt);
             ok.addProperty("expiresAt", rot.expiresAt);
@@ -252,12 +255,14 @@ final class SessionEndpoints {
                     }
 
                     String ssoTicket = mintSsoTicket();
+                    Timestamp ssoExpiry = newSsoTicketExpiry();
 
                     try (PreparedStatement upd = conn.prepareStatement(
-                            "UPDATE users SET auth_ticket = ?, ip_current = ? WHERE id = ? LIMIT 1")) {
+                            "UPDATE users SET auth_ticket = ?, auth_ticket_expires_at = ?, ip_current = ? WHERE id = ? LIMIT 1")) {
                         upd.setString(1, ssoTicket);
-                        upd.setString(2, ip == null ? "" : ip);
-                        upd.setInt(3, userId);
+                        upd.setTimestamp(2, ssoExpiry);
+                        upd.setString(3, ip == null ? "" : ip);
+                        upd.setInt(4, userId);
                         upd.executeUpdate();
                     }
 
@@ -276,6 +281,7 @@ final class SessionEndpoints {
 
                     JsonObject ok = new JsonObject();
                     ok.addProperty("ssoTicket", ssoTicket);
+                    ok.addProperty("ssoTicketExpiresAt", ssoExpiry.toInstant().getEpochSecond());
                     ok.addProperty("username", rs.getString("username"));
                     if (rememberToken != null) ok.addProperty("rememberToken", rememberToken);
                     AccessTokenService.Issued access = AccessTokenService.issue(conn, userId);
@@ -478,5 +484,11 @@ final class SessionEndpoints {
         }
 
         return authorization.substring(7).trim();
+    }
+
+    private static Timestamp newSsoTicketExpiry() {
+        int ttlSeconds = Math.max(1,
+                Emulator.getConfig().getInt("login.sso.ticket.ttl.seconds", 60));
+        return Timestamp.from(Instant.now().plusSeconds(ttlSeconds));
     }
 }
