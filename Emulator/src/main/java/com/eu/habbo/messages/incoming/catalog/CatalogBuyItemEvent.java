@@ -164,7 +164,16 @@ public class CatalogBuyItemEvent extends MessageHandler {
             }
 
             if (this.isClubOfferPage(page)) {
-                ClubOffer item = Emulator.getGameEnvironment().getCatalogManager().clubOffers.get(itemId);
+                synchronized (this.client.getHabbo().getHabboStats()) {
+                    if (this.client.getHabbo().getHabboStats().isPurchasingFurniture) {
+                        this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+                        return;
+                    }
+                    this.client.getHabbo().getHabboStats().isPurchasingFurniture = true;
+                }
+
+                try {
+                    ClubOffer item = Emulator.getGameEnvironment().getCatalogManager().clubOffers.get(itemId);
 
                 if (item == null || !item.belongsToWindow(this.getClubOfferWindowId(page))) {
                     this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
@@ -194,11 +203,12 @@ public class CatalogBuyItemEvent extends MessageHandler {
                     if (this.client.getHabbo().getHabboInfo().getCredits() < totalCredits)
                         return;
 
-                    if (!this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_CREDITS))
-                        this.client.getHabbo().giveCredits(-totalCredits);
-
-                    if (!this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_POINTS))
-                        this.client.getHabbo().givePoints(item.getPointsType(), -totalDuckets);
+                    int paidCredits = this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_CREDITS) ? 0 : totalCredits;
+                    int paidPoints = this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_POINTS) ? 0 : totalDuckets;
+                    if (!this.client.getHabbo().tryTakeCatalogPayment(paidCredits, item.getPointsType(), paidPoints)) {
+                        this.client.sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+                        return;
+                    }
 
                     if (item.isBuildersClubAddon()) {
                         this.client.getHabbo().getHabboStats().addBuildersClubBonusFurni(totalDays);
@@ -208,8 +218,9 @@ public class CatalogBuyItemEvent extends MessageHandler {
                         String subscriptionType = item.isBuildersClubSubscription() ? Subscription.BUILDERS_CLUB : Subscription.HABBO_CLUB;
 
                         if (this.client.getHabbo().getHabboStats().createSubscription(subscriptionType, subscriptionSeconds) == null) {
+                            this.client.getHabbo().refundCatalogPayment(paidCredits, item.getPointsType(), paidPoints);
                             this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
-                            throw new Exception("Unable to create or extend subscription");
+                            return;
                         }
                     }
 
@@ -218,7 +229,12 @@ public class CatalogBuyItemEvent extends MessageHandler {
 
                     this.client.getHabbo().getHabboStats().run();
                 }
-                return;
+                    return;
+                } finally {
+                    synchronized (this.client.getHabbo().getHabboStats()) {
+                        this.client.getHabbo().getHabboStats().isPurchasingFurniture = false;
+                    }
+                }
             }
 
             CatalogItem item;
