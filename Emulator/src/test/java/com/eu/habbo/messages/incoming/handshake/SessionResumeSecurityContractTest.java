@@ -15,7 +15,7 @@ class SessionResumeSecurityContractTest {
 
         int resume = login.indexOf("resumeSession(lookupUserId)");
         int securityCheck = login.indexOf("habbo.passesConnectionSecurityChecks()", resume);
-        int loginResponse = login.indexOf("new SecureLoginOKComposer()", securityCheck);
+        int loginResponse = login.indexOf("new SecureLoginOKComposer(", securityCheck);
 
         assertTrue(resume > -1);
         assertTrue(securityCheck > resume, "resumed Habbo must recheck account, IP, and machine bans");
