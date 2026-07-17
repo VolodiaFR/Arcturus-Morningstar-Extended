@@ -20,20 +20,20 @@ CREATE TABLE IF NOT EXISTS `habbo_mentions` (
 
 INSERT INTO `permission_definitions`
     (`permission_key`, `max_value`, `comment`,
-     `rank_1`, `rank_2`, `rank_3`, `rank_4`, `rank_5`, `rank_6`, `rank_7`, `rank_8`)
+     `rank_1`, `rank_2`, `rank_3`, `rank_4`, `rank_5`, `rank_6`, `rank_7`)
 VALUES
     ('acc_mention_everyone', 1,
      'Allow sending @all / @everyone / @tutti broadcast mentions (hotel-wide).',
-     0, 0, 0, 0, 1, 1, 1, 1),
+     0, 0, 0, 0, 1, 1, 1),
     ('acc_mention_friends', 1,
      'Allow sending @friends / @amici broadcast mentions (sender''s online buddies).',
-     0, 0, 0, 0, 1, 1, 1, 1),
+     0, 0, 0, 0, 1, 1, 1),
     ('cmd_disablementions', 1,
      'Allow toggling :disablementions to stop receiving any @mention notifications.',
-     1, 1, 1, 1, 1, 1, 1, 1),
+     1, 1, 1, 1, 1, 1, 1),
     ('cmd_disablemassmentions', 1,
      'Allow toggling :disablemassmentions to stop receiving broadcast mentions (direct @nick still works).',
-     1, 1, 1, 1, 1, 1, 1, 1)
+     1, 1, 1, 1, 1, 1, 1)
 ON DUPLICATE KEY UPDATE
     `comment` = VALUES(`comment`);
 
@@ -76,7 +76,7 @@ INSERT IGNORE INTO `emulator_settings` (`key`, `value`, `comment`) VALUES
 
 
 ALTER TABLE `wordfilter`
-ADD COLUMN `prefix_only` ENUM('0','1') NOT NULL DEFAULT '0'
+ADD COLUMN IF NOT EXISTS `prefix_only` ENUM('0','1') NOT NULL DEFAULT '0'
 COMMENT 'When 1, this word only applies to custom prefixes, not to chat/motto/guild.' AFTER `mute`;
 
 -- ----------------------------------------------------------------------------
@@ -91,3 +91,4 @@ ALTER TABLE `users_settings`
         COMMENT 'Receive @nick mention notifications.',
     ADD COLUMN IF NOT EXISTS `mass_mentions_enabled` ENUM('0','1') NOT NULL DEFAULT '1'
         COMMENT 'Receive broadcast (@all / @friends / @room) mentions.';
+-- Flyway migration; formerly Database Updates/009_mentions_wordfilter.sql.

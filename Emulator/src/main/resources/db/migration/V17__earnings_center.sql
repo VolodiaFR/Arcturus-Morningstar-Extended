@@ -130,3 +130,4 @@ INSERT IGNORE INTO `emulator_settings` (`key`, `value`, `comment`) VALUES
 ('earnings.achievements.min_score', '1', 'Minimum achievement score required before achievements earnings can be claimed.'),
 ('earnings.achievements.score.step', '100', 'Achievement score bucket size used to prevent repeated claims for the same progress band.'),
 ('earnings.level_progress.min_level', '1', 'Minimum citizenship/helper talent level required before level progress earnings can be claimed.');
+-- Flyway migration; formerly Database Updates/012_earnings_center.sql.

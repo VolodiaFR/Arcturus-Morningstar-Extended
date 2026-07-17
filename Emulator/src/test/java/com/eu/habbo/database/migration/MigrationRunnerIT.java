@@ -30,7 +30,8 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 /**
  * Runs the real {@link MigrationRunner} (Flyway + the packaged V1..Vn migrations)
  * against a throwaway MariaDB. It verifies the currently packaged migration
- * chain and proves that fresh and Arcturus-converter paths converge through V4.
+ * chain and proves that fresh and Arcturus-converter paths converge through the
+ * current packaged version.
  * If a migration is broken (as the V4 ROW_FORMAT bug was), this fails instead
  * of shipping.
  */
@@ -61,17 +62,44 @@ class MigrationRunnerIT {
             assertTrue(tableExists(ds, "users"), "Arc baseline table users must exist");
             assertTrue(tableExists(ds, "permission_ranks"), "Polaris table permission_ranks must exist");
             assertTrue(tableExists(ds, "wired_emulator_settings"), "Polaris table wired_emulator_settings must exist");
+            assertTrue(tableExists(ds, "habbo_mentions"), "current mentions schema must exist");
+            assertTrue(tableExists(ds, "wheel_prizes"), "current wheel schema must exist");
+            assertTrue(tableExists(ds, "users_earnings_claims"), "current earnings schema must exist");
+            assertTrue(tableExists(ds, "furnidata_edit_log"), "current furnidata audit schema must exist");
+            assertTrue(tableExists(ds, "messenger_messages"), "dev messenger history schema must exist");
+            assertTrue(tableExists(ds, "logs_economy"), "dev economy audit schema must exist");
 
             // Polaris-added column on a shared table.
             assertTrue(columnExists(ds, "users", "auth_ticket_expires_at"),
                     "Polaris column users.auth_ticket_expires_at must exist");
+            assertTrue(columnExists(ds, "users", "background_border_id"),
+                    "current profile background schema must exist");
+            assertTrue(columnExists(ds, "users", "access_token_version"),
+                    "credential revocation state must exist");
 
             // V4 engine conversion took effect.
             assertEquals("InnoDB", tableEngine(ds, "marketplace_items"),
                     "marketplace_items must be InnoDB after V4");
 
+            // The dynamic Arc permissions conversion must produce usable Polaris
+            // rows, not merely empty marker tables.
+            assertEquals(7, intValue(ds, "SELECT COUNT(*) FROM permission_ranks"));
+            assertTrue(intValue(ds, "SELECT COUNT(*) FROM permission_definitions") >= 200);
+            assertEquals(1, intValue(ds,
+                    "SELECT rank_7 FROM permission_definitions WHERE permission_key = 'acc_supporttool'"));
+            assertEquals(5, intValue(ds, "SELECT COUNT(*) FROM pet_breeding"));
+            assertEquals(100, intValue(ds, """
+                    SELECT COUNT(*) FROM pet_breeding_races
+                    WHERE pet_type IN (24, 25, 28, 29, 30)
+                    """));
+            assertEquals("breeding_nest", stringValue(ds, """
+                    SELECT interaction_type FROM items_base
+                    WHERE item_name = 'pet_breeding_bear'
+                    """));
+
             // Now MANAGED, and a second migrate is a no-op (Flyway history).
             assertEquals(SchemaPreflight.State.MANAGED, SchemaPreflight.detect(ds));
+            assertTrue(MigrationRunner.status(ds).contains("Pending migrations: 0"));
             MigrationRunner.migrate(ds);
         }
     }
@@ -90,6 +118,11 @@ class MigrationRunnerIT {
             installArcturusFixture(ds);
 
             assertEquals(SchemaPreflight.State.RECOGNISED_EXISTING, SchemaPreflight.detect(ds));
+            String status = MigrationRunner.status(ds);
+            assertTrue(status.contains("Adoption: record Arcturus baseline V1"));
+            assertTrue(status.contains("Pending migrations: 29"));
+            assertTrue(!tableExists(ds, "flyway_schema_history"),
+                    "read-only status must not adopt or mutate the hotel");
             MigrationRunner.migrate(ds);
 
             assertEquals(SchemaPreflight.State.MANAGED, SchemaPreflight.detect(ds));
@@ -115,6 +148,100 @@ class MigrationRunnerIT {
                     intValue(ds, "SELECT amount FROM users_currency WHERE user_id = 4242 AND type = 5"));
             assertEquals("keep-me",
                     stringValue(ds, "SELECT value FROM emulator_settings WHERE `key` = 'fixture.operator.setting'"));
+        }
+    }
+
+    @Test
+    void customDevMigrationHistoryIsAdoptedWithoutOverwritingCanonicalPermissions() throws Exception {
+        requireDocker();
+        try (HikariDataSource ds = TestDatabase.freshDatabase("mig_existing_permissions")) {
+            Flyway.configure()
+                    .dataSource(ds)
+                    .locations(MigrationRunner.MIGRATION_LOCATION)
+                    .target("12")
+                    .placeholderReplacement(false)
+                    .load()
+                    .migrate();
+
+            int existingFrankResponses;
+            try (Connection c = ds.getConnection(); Statement s = c.createStatement()) {
+                s.execute("UPDATE permission_ranks SET rank_name = 'Custom Member' WHERE id = 1");
+                s.execute("""
+                        INSERT INTO permission_definitions
+                            (permission_key, max_value, comment, rank_1)
+                        VALUES ('custom_operator_permission', 1, 'keep this canonical definition', 1)
+                        """);
+                s.execute("""
+                        UPDATE wired_emulator_settings
+                        SET value = '321'
+                        WHERE `key` = 'wired.engine.maxStepsPerStack'
+                        """);
+                s.execute("""
+                        INSERT INTO emulator_settings (`key`, `value`)
+                        VALUES ('websockets.whitelist', 'legacy-host.example')
+                        ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)
+                        """);
+                s.execute("""
+                        INSERT INTO emulator_settings (`key`, `value`)
+                        VALUES ('ws.whitelist', 'operator-host.example')
+                        ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)
+                        """);
+                s.execute("""
+                        INSERT INTO pet_actions (pet_type, pet_name, offspring_type)
+                        VALUES (99, 'Plugin Pet', 123)
+                        """);
+                s.execute("""
+                        INSERT INTO pet_breeding_races (pet_type, rarity_level, breed)
+                        VALUES (99, 9, 999)
+                        """);
+                existingFrankResponses = intValue(ds,
+                        "SELECT COUNT(*) FROM bot_chat_responses WHERE bot_type = 'frank'");
+                s.execute("DROP TABLE flyway_schema_history");
+                s.execute("""
+                        CREATE TABLE schema_migrations (
+                            version INT NOT NULL PRIMARY KEY,
+                            description VARCHAR(255) NOT NULL,
+                            applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                        )
+                        """);
+                s.execute("""
+                        INSERT INTO schema_migrations (version, description)
+                        VALUES (27, 'custom dev runner baseline')
+                        """);
+            }
+
+            assertEquals(SchemaPreflight.State.RECOGNISED_EXISTING, SchemaPreflight.detect(ds));
+            MigrationRunner.migrate(ds);
+
+            assertEquals("Custom Member",
+                    stringValue(ds, "SELECT rank_name FROM permission_ranks WHERE id = 1"));
+            assertEquals("keep this canonical definition",
+                    stringValue(ds, """
+                            SELECT comment FROM permission_definitions
+                            WHERE permission_key = 'custom_operator_permission'
+                            """));
+            assertEquals(1, intValue(ds, """
+                    SELECT rank_1 FROM permission_definitions
+                    WHERE permission_key = 'custom_operator_permission'
+                    """));
+            assertEquals("321", stringValue(ds, """
+                    SELECT value FROM wired_emulator_settings
+                    WHERE `key` = 'wired.engine.maxStepsPerStack'
+                    """));
+            assertEquals("operator-host.example", stringValue(ds, """
+                    SELECT value FROM emulator_settings
+                    WHERE `key` = 'ws.whitelist'
+                    """));
+            assertEquals(existingFrankResponses, intValue(ds,
+                    "SELECT COUNT(*) FROM bot_chat_responses WHERE bot_type = 'frank'"));
+            assertEquals(123, intValue(ds,
+                    "SELECT offspring_type FROM pet_actions WHERE pet_type = 99"));
+            assertEquals(1, intValue(ds, """
+                    SELECT COUNT(*) FROM pet_breeding_races
+                    WHERE pet_type = 99 AND rarity_level = 9 AND breed = 999
+                    """));
+            assertTrue(tableExists(ds, "schema_migrations"),
+                    "the prior custom runner history must remain harmless and untouched");
         }
     }
 

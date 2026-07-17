@@ -99,7 +99,6 @@ INSERT INTO `wired_emulator_settings` (`key`, `value`, `comment`) VALUES
     ('wired.monitor.heavy.consecutive.windows', '5', 'Consecutive windows above heavy usage threshold.'),
     ('wired.monitor.heavy.delayed.percent', '60', 'Delayed queue percentage threshold for heavy-room tracking.')
 ON DUPLICATE KEY UPDATE
-    `value` = VALUES(`value`),
     `comment` = VALUES(`comment`);
 
 -- ------------------------------------------------------------
@@ -255,7 +254,8 @@ ALTER TABLE `users`
     ADD COLUMN IF NOT EXISTS `background_id` INT(11) NOT NULL DEFAULT 0 AFTER `machine_id`,
     ADD COLUMN IF NOT EXISTS `background_stand_id` INT(11) NOT NULL DEFAULT 0 AFTER `background_id`,
     ADD COLUMN IF NOT EXISTS `background_overlay_id` INT(11) NOT NULL DEFAULT 0 AFTER `background_stand_id`,
-    ADD COLUMN IF NOT EXISTS `background_card_id` INT(11) NOT NULL DEFAULT 0 AFTER `background_overlay_id`;
+    ADD COLUMN IF NOT EXISTS `background_card_id` INT(11) NOT NULL DEFAULT 0 AFTER `background_overlay_id`,
+    ADD COLUMN IF NOT EXISTS `access_token_version` BIGINT NOT NULL DEFAULT 0 AFTER `remember_token_expires_at`;
 
 CREATE TABLE IF NOT EXISTS `infostand_backgrounds` (
     `id` INT(11) NOT NULL,
@@ -476,9 +476,6 @@ ON DUPLICATE KEY UPDATE
     `max_value` = VALUES(`max_value`),
     `comment` = VALUES(`comment`);
 
--- ------------------------------------------------------------
--- Explicitly obsolete table from older remember-me attempts.
--- The current Java uses users_remember_families only.
--- ------------------------------------------------------------
-
-DROP TABLE IF EXISTS `users_remember_tokens`;
+-- Older users_remember_tokens tables are intentionally preserved. Removing
+-- operator data is a separate, explicit cleanup—not a startup migration.
+-- Flyway migration; formerly Database Updates/003_live_required_schema.sql.

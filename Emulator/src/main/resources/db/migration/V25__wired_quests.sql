@@ -14,3 +14,4 @@ UPDATE items_base SET interaction_type = 'wf_var_quest'
 
 UPDATE items_base SET interaction_type = 'wf_var_quest_chain'
     WHERE item_name = 'wf_var_quest_chain' AND interaction_type <> 'wf_var_quest_chain';
+-- Flyway migration; formerly Database Updates/022_wired_quests.sql.

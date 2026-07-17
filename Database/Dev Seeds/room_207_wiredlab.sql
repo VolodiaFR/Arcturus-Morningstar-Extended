@@ -1,3 +1,4 @@
+-- DEVELOPMENT SEED ONLY. Never run automatically on a live hotel.
 -- =====================================================================
 -- fill_room_207_wiredlab.sql
 -- Riempi la room 207 ("wired room", owner tester = user_id 5) con UN furni

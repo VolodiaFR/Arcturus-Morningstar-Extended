@@ -43,6 +43,20 @@ Automatic migrations are enabled by default. Advanced deployments can set
 `db.migrate.on_startup=false` (or `DB_MIGRATE_ON_STARTUP=false`) after applying
 migrations separately.
 
+Deployment and troubleshooting commands:
+
+```bash
+# Apply migrations and exit without starting the hotel
+java -jar Polaris-<version>-jar-with-dependencies.jar --migrations-only
+
+# Read-only compatibility, checksum and pending-migration report
+java -jar Polaris-<version>-jar-with-dependencies.jar --migrations=validate
+```
+
+`--migrations=apply` explicitly applies migrations before normal startup. There
+is no interactive startup prompt, because that would hang Docker, systemd and
+hosting-panel restarts.
+
 ### 2. Game server
 
 ```

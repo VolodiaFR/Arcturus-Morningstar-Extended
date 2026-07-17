@@ -8,6 +8,7 @@ import com.eu.habbo.core.consolecommands.ConsoleCommand;
 import com.eu.habbo.database.Database;
 import com.eu.habbo.database.migration.MigrationRunner;
 import com.eu.habbo.database.migration.MigrationException;
+import com.eu.habbo.database.migration.MigrationOptions;
 import com.eu.habbo.gui.EmulatorDashboard;
 import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.gameclients.SessionResumeManager;
@@ -113,6 +114,7 @@ public final class Emulator {
 
     public static void main(String[] args) throws Exception {
         try {
+            MigrationOptions migrationOptions = MigrationOptions.parse(args);
             boolean styledConsole = shouldStyleConsole(
                     System.getenv(),
                     System.console() != null,
@@ -143,7 +145,24 @@ public final class Emulator {
             // or change settings/tables are in place before anything reads them.
             // Fail-closed: MigrationException aborts startup.
             if (Emulator.getDatabase() != null && Emulator.getDatabase().getDataSource() != null) {
-                MigrationRunner.runAtStartup(Emulator.getDatabase().getDataSource(), Emulator.getConfig());
+                if (migrationOptions.mode() == MigrationOptions.Mode.VALIDATE) {
+                    System.out.print(MigrationRunner.statusAtStartup(Emulator.getDatabase().getDataSource()));
+                    Emulator.database.dispose();
+                    return;
+                }
+
+                if (migrationOptions.mode() == MigrationOptions.Mode.APPLY
+                        || migrationOptions.migrationsOnly()) {
+                    MigrationRunner.migrateAtStartup(Emulator.getDatabase().getDataSource());
+                } else {
+                    MigrationRunner.runAtStartup(Emulator.getDatabase().getDataSource(), Emulator.getConfig());
+                }
+
+                if (migrationOptions.migrationsOnly()) {
+                    LOGGER.info("[migrate] Database migration completed; --migrations-only requested, so the emulator will not start.");
+                    Emulator.database.dispose();
+                    return;
+                }
             }
             Emulator.databaseLogger = new DatabaseLogger();
             Emulator.config.loaded = true;
@@ -230,6 +249,9 @@ public final class Emulator {
                 }
             }
 
+        } catch (IllegalArgumentException e) {
+            LOGGER.error("Invalid startup option: {}", e.getMessage());
+            throw e;
         } catch (MigrationException e) {
             LOGGER.error("Polaris could not safely prepare the database, so startup was aborted.", e);
             if (Emulator.database != null) {

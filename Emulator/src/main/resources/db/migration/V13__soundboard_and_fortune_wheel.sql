@@ -87,3 +87,4 @@ SET @sql := CONCAT(
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
+-- Flyway migration; formerly Database Updates/008_soundboard_fortune_wheel.sql.

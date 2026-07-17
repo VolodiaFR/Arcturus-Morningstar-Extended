@@ -26,3 +26,4 @@ UPDATE items_base SET interaction_type = 'wf_trg_transaction_complete'
 
 UPDATE items_base SET interaction_type = 'wf_trg_transaction_fail'
     WHERE item_name = 'wf_trg_transaction_fail'   AND interaction_type <> 'wf_trg_transaction_fail';
+-- Flyway migration; formerly Database Updates/019_wired_transactions_scanner.sql.

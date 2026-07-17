@@ -14,3 +14,4 @@ UPDATE items_base SET interaction_type = 'wf_act_place_furni'
 
 UPDATE items_base SET interaction_type = 'wf_act_remove_furni'
     WHERE item_name = 'wf_act_remove_furni' AND interaction_type <> 'wf_act_remove_furni';
+-- Flyway migration; formerly Database Updates/020_wired_place_remove_furni.sql.

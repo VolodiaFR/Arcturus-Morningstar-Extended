@@ -21,6 +21,9 @@ design.
 5. **Destructive / table-rebuilding steps** (`DROP`, engine change, `MODIFY` on a
    large table) document lock/runtime/space/recovery and are separately reviewed.
    MariaDB DDL is not rollback-safe — recovery is forward-fix or restore.
+6. **Java migrations are exceptional.** Use one only where the source schema is
+   genuinely dynamic. `V5` uses Flyway's supported Java-migration API to retain
+   custom legacy permission columns; ordinary schema and data changes remain SQL.
 
 ## Patterns
 

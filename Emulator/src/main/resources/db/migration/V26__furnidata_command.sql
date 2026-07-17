@@ -25,4 +25,7 @@ ON DUPLICATE KEY UPDATE `comment` = VALUES(`comment`);
 --   ALTER TABLE `permissions` DROP COLUMN `cmd_furnidata`;
 
 
-INSERT INTO `emulator_texts` (`key`, `value`) VALUES ('stickypole.click.info', 'Place a sticky note from your inventory on a wall to leave a message!');
+INSERT INTO `emulator_texts` (`key`, `value`)
+VALUES ('stickypole.click.info', 'Place a sticky note from your inventory on a wall to leave a message!')
+ON DUPLICATE KEY UPDATE `value` = VALUES(`value`);
+-- Flyway migration; formerly Database Updates/024_furnidata_command.sql.

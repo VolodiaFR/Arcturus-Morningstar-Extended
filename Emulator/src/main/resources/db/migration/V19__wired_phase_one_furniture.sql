@@ -32,3 +32,4 @@ UPDATE items_base SET interaction_type = 'wf_act_teleport_to_room'
 
 UPDATE items_base SET interaction_type = 'wf_act_tele_room'
     WHERE item_name = 'wf_act_tele_room'           AND interaction_type <> 'wf_act_tele_room';
+-- Flyway migration; formerly Database Updates/016_wired_phase1_furni.sql.

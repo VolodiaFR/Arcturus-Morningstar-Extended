@@ -29,3 +29,4 @@ UPDATE `permission_definitions`
        `rank_6` = 1,
        `rank_7` = 1
  WHERE `permission_key` = 'acc_supporttool';
+-- Flyway migration; formerly Database Updates/004_fix_acc_supporttool_rank.sql.

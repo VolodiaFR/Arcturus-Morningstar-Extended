@@ -26,3 +26,4 @@ UPDATE items_base SET interaction_type = 'wf_act_give_currency'
 
 UPDATE items_base SET interaction_type = 'wf_cnd_chest_has_items'
     WHERE item_name = 'wf_cnd_chest_has_items' AND interaction_type <> 'wf_cnd_chest_has_items';
+-- Flyway migration; formerly Database Updates/017_wired_chest_currency.sql.

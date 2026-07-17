@@ -28,3 +28,4 @@ UPDATE items_base SET interaction_type = 'wf_act_give_furni'
 
 UPDATE items_base SET interaction_type = 'wf_cnd_chest_has_item_type'
     WHERE item_name = 'wf_cnd_chest_has_item_type' AND interaction_type <> 'wf_cnd_chest_has_item_type';
+-- Flyway migration; formerly Database Updates/018_wired_chest_furni.sql.

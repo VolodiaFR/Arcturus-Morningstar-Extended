@@ -38,3 +38,4 @@ UPDATE items_base SET interaction_type = 'antenna'
 
 UPDATE items_base SET interaction_type = 'wf_act_unfreeze'
     WHERE item_name = 'wf_act_unfreeze'             AND interaction_type <> 'wf_act_unfreeze';
+-- Flyway migration; formerly Database Updates/015_wired_furni_enable_registered.sql.

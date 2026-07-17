@@ -53,6 +53,11 @@ public final class MigrationRunner {
             return;
         }
 
+        migrateAtStartup(runtimeDataSource);
+    }
+
+    /** Applies migrations immediately, regardless of the startup config switch. */
+    public static MigrateResult migrateAtStartup(HikariDataSource runtimeDataSource) {
         // Production's runtime datasource is a LegacyBridgeDataSource. Its
         // getConnection() method wraps every JDBC statement so old plugin SQL can
         // be translated. Flyway must not pass through that compatibility layer:
@@ -60,7 +65,14 @@ public final class MigrationRunner {
         // silently rewritten. Reuse the normal DB credentials in a tiny,
         // short-lived raw pool instead.
         try (HikariDataSource rawMigrationDataSource = rawMigrationDataSource(runtimeDataSource)) {
-            migrate(rawMigrationDataSource);
+            return migrate(rawMigrationDataSource);
+        }
+    }
+
+    /** Read-only status/validation using the same raw connection invariant. */
+    public static String statusAtStartup(HikariDataSource runtimeDataSource) {
+        try (HikariDataSource rawMigrationDataSource = rawMigrationDataSource(runtimeDataSource)) {
+            return status(rawMigrationDataSource);
         }
     }
 
@@ -99,23 +111,52 @@ public final class MigrationRunner {
         }
     }
 
-    /** Read-only summary for a {@code db status} / {@code db check} operator command. */
+    /** Read-only summary for an operator command. Never baselines or migrates. */
     public static String status(DataSource dataSource) {
         SchemaPreflight.State state = SchemaPreflight.detect(dataSource);
         StringBuilder out = new StringBuilder();
         out.append("Schema state: ").append(state).append('\n');
 
+        if (state == SchemaPreflight.State.UNKNOWN) {
+            out.append("Compatible: no; Polaris will not modify this database.\n");
+            return out.toString();
+        }
+
+        Flyway flyway = flyway(dataSource);
         if (state == SchemaPreflight.State.MANAGED) {
-            MigrationInfoService info = flyway(dataSource).info();
-            MigrationInfo current = info.current();
-            out.append("Current version: ").append(current == null ? "(none)" : current.getVersion()).append('\n');
-            MigrationInfo[] pending = info.pending();
-            out.append("Pending migrations: ").append(pending.length).append('\n');
-            for (MigrationInfo p : pending) {
-                out.append("  - V").append(p.getVersion()).append(" ").append(p.getDescription()).append('\n');
+            flyway.validate();
+        }
+
+        MigrationInfoService info = flyway.info();
+        MigrationInfo current = info.current();
+        out.append("Current version: ").append(current == null ? "(none)" : current.getVersion()).append('\n');
+        if (state == SchemaPreflight.State.RECOGNISED_EXISTING) {
+            out.append("Adoption: record Arcturus baseline V").append(BASELINE_VERSION).append('\n');
+        }
+
+        MigrationInfo[] pending = info.pending();
+        int pendingCount = 0;
+        for (MigrationInfo migration : pending) {
+            if (!isBaselineSkippedDuringAdoption(state, migration)) {
+                pendingCount++;
+            }
+        }
+        out.append("Pending migrations: ").append(pendingCount).append('\n');
+        for (MigrationInfo migration : pending) {
+            if (!isBaselineSkippedDuringAdoption(state, migration)) {
+                out.append("  - V").append(migration.getVersion()).append(' ')
+                        .append(migration.getDescription()).append('\n');
             }
         }
         return out.toString();
+    }
+
+    private static boolean isBaselineSkippedDuringAdoption(
+            SchemaPreflight.State state,
+            MigrationInfo migration) {
+        return state == SchemaPreflight.State.RECOGNISED_EXISTING
+                && migration.getVersion() != null
+                && BASELINE_VERSION.equals(migration.getVersion().getVersion());
     }
 
     private static Flyway flyway(DataSource dataSource) {

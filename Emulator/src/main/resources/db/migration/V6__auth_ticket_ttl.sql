@@ -36,11 +36,38 @@ EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
 
-UPDATE emulator_settings SET `key`='ws.whitelist' WHERE  `key`='websockets.whitelist';
-UPDATE emulator_settings SET `key`='ws.host' WHERE  `key`='ws.nitro.host';
-UPDATE emulator_settings SET `key`='ws.port' WHERE  `key`='ws.nitro.port';
+-- Copy legacy websocket values only when the replacement key is absent. Keeping
+-- the old aliases is harmless and avoids a duplicate-key failure on hotels
+-- where an operator or earlier update already created both names.
+INSERT INTO emulator_settings (`key`, `value`)
+SELECT 'ws.whitelist', legacy.`value`
+FROM emulator_settings legacy
+WHERE legacy.`key` = 'websockets.whitelist'
+  AND NOT EXISTS (
+      SELECT 1 FROM emulator_settings current_setting
+      WHERE current_setting.`key` = 'ws.whitelist'
+  );
+
+INSERT INTO emulator_settings (`key`, `value`)
+SELECT 'ws.host', legacy.`value`
+FROM emulator_settings legacy
+WHERE legacy.`key` = 'ws.nitro.host'
+  AND NOT EXISTS (
+      SELECT 1 FROM emulator_settings current_setting
+      WHERE current_setting.`key` = 'ws.host'
+  );
+
+INSERT INTO emulator_settings (`key`, `value`)
+SELECT 'ws.port', legacy.`value`
+FROM emulator_settings legacy
+WHERE legacy.`key` = 'ws.nitro.port'
+  AND NOT EXISTS (
+      SELECT 1 FROM emulator_settings current_setting
+      WHERE current_setting.`key` = 'ws.port'
+  );
 INSERT IGNORE INTO emulator_settings (`key`, `value`)
 VALUES ('ws.ip.header', 'X-Forwarded-For');
 
 INSERT IGNORE INTO emulator_settings (`key`, `value`)
 VALUES ('ws.enabled', 'true');
+-- Flyway migration; formerly Database Updates/001_auth_ticket_ttl.sql.

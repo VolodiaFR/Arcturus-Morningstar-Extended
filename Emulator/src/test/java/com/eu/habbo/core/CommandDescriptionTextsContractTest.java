@@ -11,7 +11,8 @@ import org.junit.jupiter.api.Test;
 
 class CommandDescriptionTextsContractTest {
     private static final Path FULL_DATABASE = Path.of("../Database/Default Database/FullDatabase.sql");
-    private static final Path LIVE_SCHEMA_UPDATE = Path.of("../Database/Database Updates/003_live_required_schema.sql");
+    private static final Path LIVE_SCHEMA_MIGRATION =
+            Path.of("src/main/resources/db/migration/V8__live_required_schema.sql");
 
     private static final List<String> REQUIRED_DESCRIPTION_KEYS = List.of(
             "commands.description.acc_modtool_room_info",
@@ -32,8 +33,10 @@ class CommandDescriptionTextsContractTest {
     }
 
     @Test
-    void liveSchemaUpdateBackfillsCommandDescriptionsForExistingDatabases() throws IOException {
-        assertContainsAllDescriptionKeys(Files.readString(LIVE_SCHEMA_UPDATE), "003_live_required_schema.sql");
+    void liveSchemaMigrationBackfillsCommandDescriptionsForExistingDatabases() throws IOException {
+        assertContainsAllDescriptionKeys(
+                Files.readString(LIVE_SCHEMA_MIGRATION),
+                "V8__live_required_schema.sql");
     }
 
     private static void assertContainsAllDescriptionKeys(String source, String fileName) {

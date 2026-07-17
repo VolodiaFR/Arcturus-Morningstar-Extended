@@ -22,3 +22,4 @@ UPDATE items_base SET interaction_type = 'wf_contract_trade'
 
 UPDATE items_base SET interaction_type = 'wf_xtra_custom_contract'
     WHERE item_name = 'wf_xtra_custom_contract' AND interaction_type <> 'wf_xtra_custom_contract';
+-- Flyway migration; formerly Database Updates/021_wired_contracts.sql.
