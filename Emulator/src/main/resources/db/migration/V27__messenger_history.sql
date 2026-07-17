@@ -1,4 +1,3 @@
--- Adopted from dev's 025_messenger_history.sql.
 CREATE TABLE IF NOT EXISTS `messenger_conversations` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `type` ENUM('direct','group') NOT NULL,

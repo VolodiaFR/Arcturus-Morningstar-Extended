@@ -1,24 +1,9 @@
--- ============================================================
 -- Live required schema
--- ============================================================
--- Consolidated schema for the currently used Nitro/Arcturus live
--- additions. This file intentionally excludes old/unused migration
--- artifacts and dump-only data.
---
--- Scope:
--- - tables/columns currently referenced by Java code
--- - runtime settings required by secure assets/API, login, wired, and UI
--- - safe CREATE IF NOT EXISTS / ADD COLUMN IF NOT EXISTS statements
---
--- Assumes the base Arcturus database already exists.
--- Tested for MariaDB-style syntax used by this project.
--- ============================================================
+-- Runtime tables, columns, and settings required by Polaris.
 
 SET NAMES utf8mb4;
 
--- ------------------------------------------------------------
 -- Core settings support
--- ------------------------------------------------------------
 
 ALTER TABLE `emulator_settings`
     ADD COLUMN IF NOT EXISTS `comment` TEXT NULL DEFAULT '' AFTER `value`;
@@ -101,9 +86,7 @@ INSERT INTO `wired_emulator_settings` (`key`, `value`, `comment`) VALUES
 ON DUPLICATE KEY UPDATE
     `comment` = VALUES(`comment`);
 
--- ------------------------------------------------------------
 -- Login API, room templates, remember-me, and news
--- ------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `password_resets` (
     `user_id` INT(11) NOT NULL,
@@ -199,9 +182,7 @@ INSERT INTO `ui_news` (`title`, `body`, `image`, `link_text`, `link_url`, `enabl
 SELECT 'Welcome to the Hotel!', 'Catch up on the latest events, updates and competitions happening right now in the hotel.', '', '', '', 1, 0
 WHERE NOT EXISTS (SELECT 1 FROM `ui_news`);
 
--- ------------------------------------------------------------
 -- Wired runtime data
--- ------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `room_wired_settings` (
     `room_id` INT(11) NOT NULL,
@@ -246,9 +227,7 @@ CREATE TABLE IF NOT EXISTS `room_furni_wired_variables` (
     KEY `idx_room_furni_wired_variables_furni` (`furni_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ------------------------------------------------------------
 -- User customization: prefixes, nick icons, profile backgrounds
--- ------------------------------------------------------------
 
 ALTER TABLE `users`
     ADD COLUMN IF NOT EXISTS `background_id` INT(11) NOT NULL DEFAULT 0 AFTER `machine_id`,
@@ -372,9 +351,7 @@ INSERT IGNORE INTO `custom_nick_icons_catalog` (`icon_key`, `display_name`, `poi
     ('5', 'Icon 5', 10, 0, 1, 5),
     ('6', 'Icon 6', 10, 0, 1, 6);
 
--- ------------------------------------------------------------
 -- Custom badge maker
--- ------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `users_custom_badge_settings` (
     `id` INT(11) NOT NULL AUTO_INCREMENT,
@@ -404,9 +381,7 @@ CREATE TABLE IF NOT EXISTS `user_custom_badge` (
         FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
--- ------------------------------------------------------------
 -- UI/catalog compatibility values used by the current client
--- ------------------------------------------------------------
 
 INSERT INTO `chat_bubbles` (`type`, `name`, `permission`, `overridable`, `triggers_talking_furniture`) VALUES
     (200, 'SHOW_MESSAGE_RED', '', 1, 0),
@@ -478,4 +453,3 @@ ON DUPLICATE KEY UPDATE
 
 -- Older users_remember_tokens tables are intentionally preserved. Removing
 -- operator data is a separate, explicit cleanup—not a startup migration.
--- Flyway migration; formerly Database Updates/003_live_required_schema.sql.

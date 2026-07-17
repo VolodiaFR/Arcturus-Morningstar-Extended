@@ -1,4 +1,3 @@
--- Adopted from dev's 026_economy_audit.sql.
 CREATE TABLE IF NOT EXISTS `logs_economy` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `operation_id` VARCHAR(96) NOT NULL,

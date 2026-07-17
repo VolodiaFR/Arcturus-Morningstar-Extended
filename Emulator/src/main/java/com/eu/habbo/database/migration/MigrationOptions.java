@@ -2,10 +2,7 @@ package com.eu.habbo.database.migration;
 
 import java.util.Locale;
 
-/**
- * Small command-line surface around Flyway. Normal startup remains automatic;
- * these options exist for deployment scripts and troubleshooting.
- */
+/** Command-line migration options for deployment and troubleshooting. */
 public record MigrationOptions(Mode mode, boolean migrationsOnly) {
 
     public enum Mode {

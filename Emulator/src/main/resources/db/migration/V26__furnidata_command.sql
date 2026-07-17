@@ -1,10 +1,7 @@
--- ---------------------------------------------------------------------------
 -- :furnidata command
---
 -- Toggles furni inspection mode: while enabled, clicking (using) a floor or
 -- wall item shows its items_base and room item data instead of toggling it.
 -- Replaces the old FurniData plugin; the command is now native emulator code.
--- ---------------------------------------------------------------------------
 
 -- Command texts
 INSERT INTO `emulator_texts` (`key`, `value`) VALUES
@@ -28,4 +25,3 @@ ON DUPLICATE KEY UPDATE `comment` = VALUES(`comment`);
 INSERT INTO `emulator_texts` (`key`, `value`)
 VALUES ('stickypole.click.info', 'Place a sticky note from your inventory on a wall to leave a message!')
 ON DUPLICATE KEY UPDATE `value` = VALUES(`value`);
--- Flyway migration; formerly Database Updates/024_furnidata_command.sql.

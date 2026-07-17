@@ -1,11 +1,11 @@
 # Implementation status — testing & migrations
 
 Branch: `feature/testing-and-migrations` (off `main`). **Not pushed** — for local
-review and testing first. Companion to `TESTING_AND_MIGRATIONS_PLAN.md`.
+review and testing first.
 
 The production migration implementation is complete through `V30` and is proven
-against real MariaDB 10.11 and 11 containers. Broader test-suite/seeder work in
-the companion plan remains separate from the migration deliverable.
+against real MariaDB 10.11 and 11 containers. Broader test-suite and seeder work
+remains separate from the migration deliverable.
 
 ## What's implemented and verified ✅
 

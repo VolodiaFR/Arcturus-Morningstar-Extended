@@ -26,12 +26,7 @@ public class Database {
     private DatabasePool databasePool;
     private final LegacySqlBridge legacySqlBridge = new LegacySqlBridge();
 
-    /**
-     * Test / embedding constructor: wraps an already-built {@link HikariDataSource}
-     * (for example a Testcontainers MariaDB) without the config-driven pool
-     * bootstrap or migration preflight. Additive only — not used by production
-     * startup and not a change to any existing signature.
-     */
+    /** Wraps a caller-provided datasource for integration tests. */
     Database(HikariDataSource dataSource) {
         this.dataSource = dataSource;
     }

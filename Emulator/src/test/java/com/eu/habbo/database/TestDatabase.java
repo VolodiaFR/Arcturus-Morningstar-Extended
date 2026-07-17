@@ -5,16 +5,10 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.testcontainers.containers.MariaDBContainer;
 import org.testcontainers.utility.DockerImageName;
 
-/**
- * Shared Testcontainers helpers for integration tests. Starts a single throwaway
- * MariaDB for the whole suite (disposed by Ryuk at JVM exit) and builds a Hikari
- * datasource against it. The image is pinned; CI can override the tag for the
- * supported-version matrix.
- */
+/** Shared MariaDB Testcontainers fixture for integration tests. */
 public final class TestDatabase {
 
-    /** Pinned supported image; CI's version matrix overrides it via
-     *  the POLARIS_TEST_MARIADB_IMAGE environment variable. */
+    /** CI overrides the pinned default for the supported-version matrix. */
     public static final String MARIADB_IMAGE =
             System.getenv().getOrDefault(
                     "POLARIS_TEST_MARIADB_IMAGE",
@@ -26,11 +20,7 @@ public final class TestDatabase {
     private TestDatabase() {
     }
 
-    /**
-     * True when Testcontainers can reach a Docker daemon. Integration tests use
-     * this to offer a local skip when no daemon is available. CI treats an
-     * unavailable container as a test failure.
-     */
+    /** Returns whether Testcontainers can reach a Docker daemon. */
     public static boolean dockerAvailable() {
         try {
             return org.testcontainers.DockerClientFactory.instance().isDockerAvailable();
@@ -62,16 +52,7 @@ public final class TestDatabase {
         return dataSource;
     }
 
-    /**
-     * Returns the shared datasource after resetting its database to empty (all
-     * tables dropped, including flyway_schema_history). The container's user only
-     * has rights on its own database, so tests share one database and reset it
-     * between runs rather than creating new ones. Integration tests run
-     * sequentially, so this is safe. The returned handle is a separate pool on
-     * that database and should be closed by the caller.
-     *
-     * @param label used only for logging
-     */
+    /** Resets the shared test database and returns a caller-owned pool. */
     public static synchronized HikariDataSource freshDatabase(String label) {
         HikariDataSource shared = sharedDataSource();
         try (var connection = shared.getConnection();
@@ -92,8 +73,7 @@ public final class TestDatabase {
             throw new IllegalStateException("Could not reset test database for " + label, e);
         }
 
-        // A separate, closeable pool on the same (now-empty) database, so the
-        // caller's try-with-resources doesn't close the shared suite pool.
+        // Keep the suite pool alive when the caller closes its handle.
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl(container.getJdbcUrl());
         config.setUsername(container.getUsername());

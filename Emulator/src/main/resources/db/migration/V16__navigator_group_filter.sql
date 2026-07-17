@@ -7,4 +7,3 @@ INSERT IGNORE INTO `navigator_filter` (`key`, `field`, `compare`, `database_quer
 ('owner', 'getOwnerName', 'equals_ignore_case', 'SELECT rooms.* FROM rooms WHERE rooms.owner_name LIKE ?'),
 ('tag', 'getTags', 'contains', 'SELECT rooms.* FROM rooms WHERE rooms.tags LIKE ?'),
 ('group', 'getGuildName', 'contains', 'SELECT rooms.* FROM rooms INNER JOIN guilds ON guilds.room_id = rooms.id WHERE guilds.name LIKE ?');
--- Flyway migration; formerly Database Updates/011_navigator_group_filter.sql.

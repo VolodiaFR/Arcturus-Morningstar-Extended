@@ -4,4 +4,3 @@ ALTER TABLE catalog_club_offers
 INSERT IGNORE INTO emulator_texts (`key`, `value`)
 VALUES ('prereg.reward.you.received', 'You have recived:'),
        ('generic.days', 'days');
--- Flyway migration; formerly Database Updates/005_HC_Allow_Gifts.sql.

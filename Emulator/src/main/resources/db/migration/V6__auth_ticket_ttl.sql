@@ -1,22 +1,4 @@
--- ============================================================================
--- 020_auth_ticket_ttl.sql
---
--- Adds an explicit expiry timestamp to the SSO auth_ticket on `users`.
---
--- The CMS issuing the ticket is expected to populate auth_ticket_expires_at
--- (e.g. NOW() + INTERVAL 60 SECOND) on every login redirect. The emulator-
--- side SELECT queries that look up a user by auth_ticket have been changed to
---
---     WHERE auth_ticket = ?
---       AND (auth_ticket_expires_at IS NULL OR auth_ticket_expires_at >= NOW())
---
--- The NULL branch keeps backward-compatibility with CMS deployments that do
--- not populate the column yet: existing rows continue to authenticate the
--- same way they always did, and the TTL kicks in only once the CMS starts
--- writing the expiry value.
---
--- Idempotent: skips the ALTER if the column already exists.
--- ============================================================================
+-- NULL preserves compatibility with CMSes that do not issue expiring tickets yet.
 
 SET @col_exists = (
     SELECT COUNT(*)
@@ -70,4 +52,3 @@ VALUES ('ws.ip.header', 'X-Forwarded-For');
 
 INSERT IGNORE INTO emulator_settings (`key`, `value`)
 VALUES ('ws.enabled', 'true');
--- Flyway migration; formerly Database Updates/001_auth_ticket_ttl.sql.

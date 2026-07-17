@@ -27,14 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-/**
- * Runs the real {@link MigrationRunner} (Flyway + the packaged V1..Vn migrations)
- * against a throwaway MariaDB. It verifies the currently packaged migration
- * chain and proves that fresh and Arcturus-converter paths converge through the
- * current packaged version.
- * If a migration is broken (as the V4 ROW_FORMAT bug was), this fails instead
- * of shipping.
- */
+/** Verifies the packaged migration chain against a real MariaDB. */
 class MigrationRunnerIT {
 
     /** Local builds may skip without Docker; CI must fail if its DB tests cannot run. */

@@ -13,11 +13,9 @@ import org.slf4j.LoggerFactory;
 import javax.sql.DataSource;
 
 /**
- * Runs Flyway migrations. Uses only free Flyway features (versioned migrations,
- * the {@code baseline} command, validation, repair). The Arc MS 3.5.5 schema is
- * {@code V1}; every Polaris change is {@code V2..Vn}.
+ * Runs Flyway migrations.
  *
- * <p>Design invariants:
+ * <p>Safety invariants:
  * <ul>
  *   <li>Runs against the <b>raw</b> {@link HikariDataSource}, never the
  *       {@code LegacySqlBridge}-wrapped path, so migration DDL is not rewritten.</li>
@@ -42,11 +40,7 @@ public final class MigrationRunner {
     private MigrationRunner() {
     }
 
-    /**
-     * Startup entry point. Called after the database connection is established and
-     * <b>before</b> configuration is loaded from the database, so schema/setting
-     * migrations are applied before anything reads them.
-     */
+    /** Startup entry point, called before database-backed configuration is loaded. */
     public static void runAtStartup(HikariDataSource runtimeDataSource, ConfigurationManager config) {
         if (!config.getBoolean(KEY_ON_STARTUP, true)) {
             LOGGER.warn("[migrate] {}=false — skipping automatic schema migration. The operator is responsible for schema state.", KEY_ON_STARTUP);
@@ -58,12 +52,8 @@ public final class MigrationRunner {
 
     /** Applies migrations immediately, regardless of the startup config switch. */
     public static MigrateResult migrateAtStartup(HikariDataSource runtimeDataSource) {
-        // Production's runtime datasource is a LegacyBridgeDataSource. Its
-        // getConnection() method wraps every JDBC statement so old plugin SQL can
-        // be translated. Flyway must not pass through that compatibility layer:
-        // a future migration mentioning a legacy table name could otherwise be
-        // silently rewritten. Reuse the normal DB credentials in a tiny,
-        // short-lived raw pool instead.
+        // The runtime datasource rewrites legacy plugin SQL. Migrations require an
+        // unwrapped pool so their DDL cannot be silently translated.
         try (HikariDataSource rawMigrationDataSource = rawMigrationDataSource(runtimeDataSource)) {
             return migrate(rawMigrationDataSource);
         }
@@ -76,10 +66,7 @@ public final class MigrationRunner {
         }
     }
 
-    /**
-     * Runs the appropriate action for the detected schema state. Package-visible
-     * for integration tests, which call it directly against a Testcontainers DB.
-     */
+    /** Runs the action permitted for the detected schema state. */
     public static MigrateResult migrate(DataSource dataSource) {
         SchemaPreflight.State state = SchemaPreflight.detect(dataSource);
         Flyway flyway = flyway(dataSource);
@@ -168,9 +155,7 @@ public final class MigrationRunner {
                 .baselineDescription("Arcturus MS 3.5.5 baseline")
                 .validateOnMigrate(true)
                 .outOfOrder(false)
-                // Emulator reference data legitimately contains ${...} template
-                // strings (e.g. ${image.library.url}); do not treat them as Flyway
-                // placeholders.
+                // Reference data contains literal ${...} client template strings.
                 .placeholderReplacement(false)
                 .load();
     }

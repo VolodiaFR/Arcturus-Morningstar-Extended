@@ -8,19 +8,7 @@ import java.sql.Statement;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-/**
- * Test factory for {@code users} rows — the Java equivalent of a Laravel model
- * factory. Inserts a valid user (respecting the table's NOT NULL constraints)
- * and returns its id. Defaults are deterministic (usernames use a sequence, not
- * randomness) so a failing test is reproducible.
- *
- * <p>Insert column set verified against the real schema. Other entities
- * (RoomFactory, BotFactory, …) follow the same shape.
- *
- * <pre>{@code
- *   int id = UserFactory.create(ds, u -> u.username("alice").credits(500));
- * }</pre>
- */
+/** Creates valid, deterministic {@code users} rows for integration tests. */
 public final class UserFactory {
 
     private static final AtomicInteger SEQ = new AtomicInteger();
@@ -28,7 +16,7 @@ public final class UserFactory {
     public static final class Spec {
         String username = "user_" + SEQ.incrementAndGet();
         String password = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
-        String mail = null;                                 // defaults to username@test.local
+        String mail = null;
         int credits = 0;
         String look = "hd-180-1.hr-100-0";
         String motto = "";

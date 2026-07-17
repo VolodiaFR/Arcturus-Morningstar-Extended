@@ -140,10 +140,7 @@ public final class Emulator {
                     Emulator.getConfig().getValue("enc.n"),
                     Emulator.getConfig().getValue("enc.d"));
             Emulator.database = new Database(Emulator.getConfig());
-            // Apply schema migrations after the connection is up but BEFORE any
-            // configuration is read from emulator_settings, so migrations that add
-            // or change settings/tables are in place before anything reads them.
-            // Fail-closed: MigrationException aborts startup.
+            // Migrate before loading database-backed configuration.
             if (Emulator.getDatabase() != null && Emulator.getDatabase().getDataSource() != null) {
                 if (migrationOptions.mode() == MigrationOptions.Mode.VALIDATE) {
                     System.out.print(MigrationRunner.statusAtStartup(Emulator.getDatabase().getDataSource()));
@@ -526,11 +523,7 @@ public final class Emulator {
         return database;
     }
 
-    /**
-     * Test-only seam: installs a {@link Database} backed by a test datasource so
-     * integration tests can point the code-under-test at a throwaway MariaDB.
-     * Package-private on purpose — this is not part of the plugin API.
-     */
+    /** Installs the integration-test database without exposing a public API. */
     static void setDatabaseForTesting(Database database) {
         Emulator.database = database;
     }

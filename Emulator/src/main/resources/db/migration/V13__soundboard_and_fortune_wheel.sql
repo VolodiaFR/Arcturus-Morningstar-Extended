@@ -10,9 +10,7 @@ CREATE TABLE IF NOT EXISTS `soundboard_sounds` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ----------------------------------------------------------------------------
 --  Fortune Wheel — tables
--- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `wheel_prizes` (
     `id`          INT(11)     NOT NULL AUTO_INCREMENT,
     `type`        VARCHAR(16) NOT NULL DEFAULT 'nothing', -- item | badge | credits | points | spin | nothing
@@ -87,4 +85,3 @@ SET @sql := CONCAT(
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
--- Flyway migration; formerly Database Updates/008_soundboard_fortune_wheel.sql.

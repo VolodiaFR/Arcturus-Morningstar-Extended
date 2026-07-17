@@ -17,4 +17,3 @@ CREATE TABLE IF NOT EXISTS `housekeeping_log` (
   PRIMARY KEY (`id`),
   KEY `timestamp` (`timestamp`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- Flyway migration; formerly Database Updates/006_Allow_Housekeeping_in_Client.sql.

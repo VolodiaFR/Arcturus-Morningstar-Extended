@@ -1,4 +1,3 @@
--- 020_furnidata_edit_log.sql
 -- Audit trail for furnidata name/description edits made through the furni editor,
 -- plus config keys for the editor write path. NOTE: *.enabled keys elsewhere are
 -- read via Boolean.parseBoolean (true/false), but these two are numeric.
@@ -32,4 +31,3 @@ INSERT IGNORE INTO `emulator_settings` (`key`,`value`) VALUES
 -- Furni editor: import official names/descriptions from Habbo
 ('furni.editor.import.url','https://www.habbo.com/gamedata/furnidata_json/1'),
 ('furni.editor.import.cache.ms','600000');
--- Flyway migration; formerly Database Updates/010_furnidata_edit_log.sql.

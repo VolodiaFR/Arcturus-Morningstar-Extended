@@ -3,8 +3,6 @@
 Flyway migrations. `V1` is the **Arcturus Morningstar 3.5.5 baseline**; every
 Polaris change is `V2…Vn`. Fresh installs run `V1` then the deltas; Arc and
 existing-Polaris installs are baselined at `V1` (skipped) and run the deltas.
-Uses only free Flyway features. See `TESTING_AND_MIGRATIONS_PLAN.md` for the full
-design.
 
 ## Rules
 

@@ -46,4 +46,3 @@ INSERT IGNORE INTO `infostand_backgrounds` (`id`, `category`, `min_rank`, `is_hc
     (23, 'border', 1, 0, 0),
     (24, 'border', 1, 0, 0),
     (25, 'border', 1, 0, 0);
--- Flyway migration; formerly Database Updates/002_backgounds_border.sql.
