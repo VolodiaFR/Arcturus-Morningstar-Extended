@@ -128,6 +128,10 @@ public final class MigrationRunner {
                 .baselineDescription("Arcturus MS 3.5.5 baseline")
                 .validateOnMigrate(true)
                 .outOfOrder(false)
+                // Emulator reference data legitimately contains ${...} template
+                // strings (e.g. ${image.library.url}); do not treat them as Flyway
+                // placeholders.
+                .placeholderReplacement(false)
                 .load();
     }
 
