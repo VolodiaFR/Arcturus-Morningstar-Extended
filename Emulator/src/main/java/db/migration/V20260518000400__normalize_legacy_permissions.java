@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
  * has populated normalized tables, they are treated as canonical and are not
  * overwritten from the stale compatibility table.
  */
-public final class V5__normalize_legacy_permissions extends BaseJavaMigration {
+public final class V20260518000400__normalize_legacy_permissions extends BaseJavaMigration {
 
     private static final Pattern SAFE_IDENTIFIER = Pattern.compile("[A-Za-z_][A-Za-z0-9_]*");
     private static final Set<String> METADATA_COLUMNS = Set.of(

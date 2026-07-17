@@ -22,7 +22,8 @@ class E2eInventoryFixtureContractTest {
 
     @Test
     void canonicalDumpContainsTheSelectedFloorItemBase() throws IOException {
-        String dump = Files.readString(REPOSITORY.resolve("Database/Default Database/FullDatabase.sql"));
+        String dump = Files.readString(REPOSITORY.resolve(
+                "Emulator/src/main/resources/db/migration/V20260518000000__base_database.sql"));
 
         assertTrue(dump.contains("(18, 18, 'Dining Chair', 'chair_polyfon', 's'"));
     }

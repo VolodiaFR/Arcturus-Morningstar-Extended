@@ -18,28 +18,13 @@ if ($Ticket -notmatch '^[A-Za-z0-9._-]+$') { throw 'E2E_SSO_TICKET contains unsu
 if ($SecondTicket -notmatch '^[A-Za-z0-9._-]+$') { throw 'E2E_SECOND_SSO_TICKET contains unsupported characters' }
 
 $repo = Split-Path -Parent $PSScriptRoot
-$dump = Join-Path $repo 'Database\Default Database\FullDatabase.sql'
-$migration = Join-Path $repo 'Database\Database Updates\002_backgounds_border.sql'
+$baseDatabase = Join-Path $repo 'Emulator\src\main\resources\db\migration\V20260518000000__base_database.sql'
 $seed = Join-Path $PSScriptRoot 'seed.sql'
-$temporaryDump = Join-Path ([System.IO.Path]::GetTempPath()) "polaris-e2e-$PID.sql"
 
-try {
-    $content = [System.IO.File]::ReadAllText($dump)
-    $content = $content.Replace('CREATE DATABASE IF NOT EXISTS `habbo`', "CREATE DATABASE IF NOT EXISTS ``$Database``")
-    $content = $content.Replace('USE `habbo`;', "USE ``$Database``;")
-    [System.IO.File]::WriteAllText($temporaryDump, $content, [System.Text.UTF8Encoding]::new($false))
+$passwordArgument = if ([string]::IsNullOrEmpty($env:E2E_DB_PASSWORD)) { @() } else { @("--password=$($env:E2E_DB_PASSWORD)") }
+& $Mysql "--host=$($env:E2E_DB_HOST)" "--port=$($env:E2E_DB_PORT)" "--user=$($env:E2E_DB_USER)" @passwordArgument "--database=$Database" --default-character-set=utf8mb4 --execute "source $($baseDatabase.Replace('\', '/'))"
+if ($LASTEXITCODE -ne 0) { throw "Database import failed with exit code $LASTEXITCODE" }
 
-    $passwordArgument = if ([string]::IsNullOrEmpty($env:E2E_DB_PASSWORD)) { @() } else { @("--password=$($env:E2E_DB_PASSWORD)") }
-    & $Mysql "--host=$($env:E2E_DB_HOST)" "--port=$($env:E2E_DB_PORT)" "--user=$($env:E2E_DB_USER)" @passwordArgument --default-character-set=utf8mb4 --execute "source $($temporaryDump.Replace('\', '/'))"
-    if ($LASTEXITCODE -ne 0) { throw "Database import failed with exit code $LASTEXITCODE" }
-
-    [System.IO.File]::ReadAllText($migration) | & $Mysql "--host=$($env:E2E_DB_HOST)" "--port=$($env:E2E_DB_PORT)" "--user=$($env:E2E_DB_USER)" @passwordArgument "--database=$Database"
-    if ($LASTEXITCODE -ne 0) { throw "Database migration failed with exit code $LASTEXITCODE" }
-
-    $seedContent = "SET @e2e_sso_ticket='$Ticket';`nSET @e2e_second_sso_ticket='$SecondTicket';`n" + [System.IO.File]::ReadAllText($seed)
-    $seedContent | & $Mysql "--host=$($env:E2E_DB_HOST)" "--port=$($env:E2E_DB_PORT)" "--user=$($env:E2E_DB_USER)" @passwordArgument "--database=$Database"
-    if ($LASTEXITCODE -ne 0) { throw "E2E seed failed with exit code $LASTEXITCODE" }
-}
-finally {
-    Remove-Item -LiteralPath $temporaryDump -Force -ErrorAction SilentlyContinue
-}
+$seedContent = "SET @e2e_sso_ticket='$Ticket';`nSET @e2e_second_sso_ticket='$SecondTicket';`n" + [System.IO.File]::ReadAllText($seed)
+$seedContent | & $Mysql "--host=$($env:E2E_DB_HOST)" "--port=$($env:E2E_DB_PORT)" "--user=$($env:E2E_DB_USER)" @passwordArgument "--database=$Database"
+if ($LASTEXITCODE -ne 0) { throw "E2E seed failed with exit code $LASTEXITCODE" }

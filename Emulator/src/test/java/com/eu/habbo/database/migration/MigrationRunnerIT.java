@@ -51,8 +51,8 @@ class MigrationRunnerIT {
 
             MigrationRunner.migrate(ds);
 
-            // Baseline table and a representative Polaris-only table both exist.
-            assertTrue(tableExists(ds, "users"), "Arc baseline table users must exist");
+            // Base table and representative Polaris-only tables both exist.
+            assertTrue(tableExists(ds, "users"), "base table users must exist");
             assertTrue(tableExists(ds, "permission_ranks"), "Polaris table permission_ranks must exist");
             assertTrue(tableExists(ds, "wired_emulator_settings"), "Polaris table wired_emulator_settings must exist");
             assertTrue(tableExists(ds, "habbo_mentions"), "current mentions schema must exist");
@@ -70,9 +70,9 @@ class MigrationRunnerIT {
             assertTrue(columnExists(ds, "users", "access_token_version"),
                     "credential revocation state must exist");
 
-            // V4 engine conversion took effect.
+            // The engine conversion took effect.
             assertEquals("InnoDB", tableEngine(ds, "marketplace_items"),
-                    "marketplace_items must be InnoDB after V4");
+                    "marketplace_items must be InnoDB after migration");
 
             // The dynamic Arc permissions conversion must produce usable Polaris
             // rows, not merely empty marker tables.
@@ -98,21 +98,16 @@ class MigrationRunnerIT {
     }
 
     @Test
-    void realArcturusFixtureConvergesWithFreshInstallAndPreservesHotelData() throws Exception {
+    void realArcturusFixtureMigratesAndPreservesHotelData() throws Exception {
         requireDocker();
-
-        List<String> freshManifest;
-        try (HikariDataSource fresh = TestDatabase.freshDatabase("mig_manifest_fresh")) {
-            MigrationRunner.migrate(fresh);
-            freshManifest = schemaManifest(fresh);
-        }
 
         try (HikariDataSource ds = TestDatabase.freshDatabase("mig_arc_355")) {
             installArcturusFixture(ds);
 
             assertEquals(SchemaPreflight.State.RECOGNISED_EXISTING, SchemaPreflight.detect(ds));
             String status = MigrationRunner.status(ds);
-            assertTrue(status.contains("Adoption: record Arcturus baseline V1"));
+            assertTrue(status.contains(
+                    "Adoption: record baseline V" + MigrationRunner.BASELINE_VERSION));
             assertTrue(status.contains("Pending migrations: 29"));
             assertTrue(!tableExists(ds, "flyway_schema_history"),
                     "read-only status must not adopt or mutate the hotel");
@@ -123,10 +118,19 @@ class MigrationRunnerIT {
             assertTrue(tableExists(ds, "old_guilds_forums"), "unused Arc tables must be tolerated and preserved");
             assertTrue(tableExists(ds, "old_guilds_forums_comments"), "unused Arc tables must be tolerated and preserved");
 
-            // Ignoring the two obsolete Arc-only tables, both supported install paths
-            // must produce the same tables, columns, indexes, constraints, engines,
-            // row formats and collations.
-            assertEquals(freshManifest, schemaManifest(ds));
+            // Conversion guarantees the schema Polaris requires without rewriting
+            // unrelated legacy defaults, collations or storage engines.
+            assertTrue(tableExists(ds, "permission_ranks"));
+            assertTrue(tableExists(ds, "wired_emulator_settings"));
+            assertTrue(tableExists(ds, "habbo_mentions"));
+            assertTrue(tableExists(ds, "messenger_messages"));
+            assertTrue(tableExists(ds, "logs_economy"));
+            assertTrue(columnExists(ds, "users", "auth_ticket_expires_at"));
+            assertTrue(columnExists(ds, "users", "background_border_id"));
+            assertTrue(columnExists(ds, "users", "access_token_version"));
+            assertEquals("InnoDB", tableEngine(ds, "marketplace_items"));
+            assertEquals(7, intValue(ds, "SELECT COUNT(*) FROM permission_ranks"));
+            assertTrue(intValue(ds, "SELECT COUNT(*) FROM permission_definitions") >= 200);
 
             // Representative operator-owned hotel data survives the conversion.
             assertEquals("Keep this hotel data",
@@ -151,7 +155,7 @@ class MigrationRunnerIT {
             Flyway.configure()
                     .dataSource(ds)
                     .locations(MigrationRunner.MIGRATION_LOCATION)
-                    .target("12")
+                    .target("20260528020000")
                     .placeholderReplacement(false)
                     .load()
                     .migrate();
@@ -329,20 +333,7 @@ class MigrationRunnerIT {
     }
 
     private static void installArcturusFixture(HikariDataSource ds) throws Exception {
-        // V1 is generated from the supplied BaseDB MS 3.5.5 dump. Apply only that
-        // baseline, remove Flyway's bookkeeping to model an unmanaged live hotel,
-        // then layer on committed operator data and the two obsolete source tables.
-        Flyway.configure()
-                .dataSource(ds)
-                .locations(MigrationRunner.MIGRATION_LOCATION)
-                .target(MigrationRunner.BASELINE_VERSION)
-                .placeholderReplacement(false)
-                .load()
-                .migrate();
-
-        try (Connection c = ds.getConnection(); Statement s = c.createStatement()) {
-            s.execute("DROP TABLE `flyway_schema_history`");
-        }
+        executeSqlResource(ds, "db/fixture/arcturus_ms_3_5_5_schema.sql");
         executeSqlResource(ds, "db/fixture/arcturus_ms_3_5_5_running_hotel.sql");
     }
 
@@ -363,7 +354,7 @@ class MigrationRunnerIT {
         }
 
         try (Connection c = ds.getConnection(); Statement s = c.createStatement()) {
-            for (String statement : sql.toString().split(";")) {
+            for (String statement : splitSqlStatements(sql.toString())) {
                 if (!statement.isBlank()) {
                     s.execute(statement);
                 }
@@ -371,51 +362,37 @@ class MigrationRunnerIT {
         }
     }
 
-    private static List<String> schemaManifest(HikariDataSource ds) throws Exception {
-        List<String> manifest = new ArrayList<>();
-        String retainedTables = "TABLE_NAME NOT IN ('old_guilds_forums','old_guilds_forums_comments')";
+    private static List<String> splitSqlStatements(String sql) {
+        List<String> statements = new ArrayList<>();
+        StringBuilder statement = new StringBuilder();
+        char quote = 0;
 
-        appendRows(ds, manifest,
-                "SELECT 'T', TABLE_NAME, ENGINE, ROW_FORMAT, TABLE_COLLATION "
-                        + "FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() "
-                        + "AND TABLE_TYPE='BASE TABLE' AND " + retainedTables + " ORDER BY TABLE_NAME",
-                5);
-        appendRows(ds, manifest,
-                "SELECT 'C', TABLE_NAME, COLUMN_NAME, ORDINAL_POSITION, COLUMN_DEFAULT, IS_NULLABLE, "
-                        + "COLUMN_TYPE, CHARACTER_SET_NAME, COLLATION_NAME, EXTRA, COLUMN_COMMENT "
-                        + "FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() "
-                        + "AND " + retainedTables + " ORDER BY TABLE_NAME, ORDINAL_POSITION",
-                11);
-        appendRows(ds, manifest,
-                "SELECT 'I', TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX, NON_UNIQUE, COLUMN_NAME, "
-                        + "COLLATION, SUB_PART, INDEX_TYPE "
-                        + "FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() "
-                        + "AND " + retainedTables + " ORDER BY TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX",
-                9);
-        appendRows(ds, manifest,
-                "SELECT 'K', TABLE_NAME, CONSTRAINT_NAME, CONSTRAINT_TYPE "
-                        + "FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA=DATABASE() "
-                        + "AND " + retainedTables + " ORDER BY TABLE_NAME, CONSTRAINT_NAME",
-                4);
-        return manifest;
-    }
+        for (int i = 0; i < sql.length(); i++) {
+            char current = sql.charAt(i);
+            statement.append(current);
 
-    private static void appendRows(HikariDataSource ds, List<String> target, String query, int columns) throws Exception {
-        try (Connection c = ds.getConnection();
-             Statement s = c.createStatement();
-             ResultSet rs = s.executeQuery(query)) {
-            while (rs.next()) {
-                StringBuilder row = new StringBuilder();
-                for (int i = 1; i <= columns; i++) {
-                    if (i > 1) {
-                        row.append('|');
+            if (quote != 0) {
+                if (current == '\\' && i + 1 < sql.length()) {
+                    statement.append(sql.charAt(++i));
+                } else if (current == quote) {
+                    if (i + 1 < sql.length() && sql.charAt(i + 1) == quote) {
+                        statement.append(sql.charAt(++i));
+                    } else {
+                        quote = 0;
                     }
-                    String value = rs.getString(i);
-                    row.append(value == null ? "<NULL>" : value);
                 }
-                target.add(row.toString());
+            } else if (current == '\'' || current == '"' || current == '`') {
+                quote = current;
+            } else if (current == ';') {
+                statements.add(statement.substring(0, statement.length() - 1));
+                statement.setLength(0);
             }
         }
+
+        if (!statement.isEmpty()) {
+            statements.add(statement.toString());
+        }
+        return statements;
     }
 
     private static String stringValue(HikariDataSource ds, String query) throws Exception {

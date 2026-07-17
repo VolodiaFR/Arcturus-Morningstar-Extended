@@ -71,7 +71,7 @@ bash ../emulatore/e2e/verify-inventory-state.sh
 kill "$(cat "${E2E_RUNTIME_DIR}/polaris.pid")"
 ```
 
-The GitHub workflows provide MariaDB as a service and set all variables explicitly. No additional E2E-only migration is required: preparation imports `Database/Default Database/FullDatabase.sql`, applies `Database/Database Updates/002_backgounds_border.sql`, then loads `e2e/seed.sql`.
+The GitHub workflows provide MariaDB as a service and set all variables explicitly. No additional E2E-only migration is required: preparation imports the timestamped Polaris base database, then loads `e2e/seed.sql`.
 
 ## Fixtures and diagnostics
 

@@ -32,8 +32,8 @@ public final class MigrationRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(MigrationRunner.class);
 
     public static final String MIGRATION_LOCATION = "classpath:db/migration";
-    /** Existing installs are baselined at the Arc baseline version so V1 is skipped. */
-    public static final String BASELINE_VERSION = "1";
+    /** Existing installs record this version so the clean-install database is never imported over hotel data. */
+    public static final String BASELINE_VERSION = "20260518000000";
 
     private static final String KEY_ON_STARTUP = "db.migrate.on_startup";
 
@@ -80,7 +80,7 @@ public final class MigrationRunner {
                                 + "conversion/recovery instructions before proceeding.");
                 case RECOGNISED_EXISTING -> {
                     LOGGER.warn("[migrate] Existing Arcturus/Polaris hotel detected with no migration history. "
-                            + "Polaris will preserve the hotel data, record the Arcturus V{} baseline, and apply the required upgrades now. "
+                            + "Polaris will preserve the hotel data, record adoption baseline V{}, and apply the required upgrades now. "
                             + "A full database backup before first startup is strongly recommended.", BASELINE_VERSION);
                     flyway.baseline();
                     return flyway.migrate();
@@ -118,7 +118,7 @@ public final class MigrationRunner {
         MigrationInfo current = info.current();
         out.append("Current version: ").append(current == null ? "(none)" : current.getVersion()).append('\n');
         if (state == SchemaPreflight.State.RECOGNISED_EXISTING) {
-            out.append("Adoption: record Arcturus baseline V").append(BASELINE_VERSION).append('\n');
+            out.append("Adoption: record baseline V").append(BASELINE_VERSION).append('\n');
         }
 
         MigrationInfo[] pending = info.pending();
@@ -152,7 +152,7 @@ public final class MigrationRunner {
                 .locations(MIGRATION_LOCATION)
                 .baselineOnMigrate(false)
                 .baselineVersion(BASELINE_VERSION)
-                .baselineDescription("Arcturus MS 3.5.5 baseline")
+                .baselineDescription("Existing Arcturus/Polaris installation")
                 .validateOnMigrate(true)
                 .outOfOrder(false)
                 // Reference data contains literal ${...} client template strings.

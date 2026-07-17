@@ -1,5 +1,5 @@
--- Representative operator-owned data layered onto the packaged Arcturus 3.5.5
--- baseline. The two old forum tables come from the supplied BaseDB MS 3.5.5.sql;
+-- Representative operator-owned data layered onto the Arcturus 3.5.5 schema
+-- fixture. The two old forum tables come from the supplied BaseDB MS 3.5.5.sql;
 -- Polaris does not use them, but a converter must tolerate and preserve them.
 
 CREATE TABLE `old_guilds_forums` (

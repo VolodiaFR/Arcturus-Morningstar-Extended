@@ -11,9 +11,9 @@ new or existing hotel.**
 The remaining subdirectories are retained as historical source material:
 
 - `Own_Database_RunFirst/` contains old aggregates, duplicate scripts and manual
-  experiments whose required effects were reconciled into `V1`–`V30`.
-- `Items_Base/` contains old bulk reference-data maintenance scripts. The Arc
-  baseline already contains their stable mappings; later wired mappings and the
+  experiments whose required effects were reconciled into the timestamped chain.
+- `Items_Base/` contains old bulk reference-data maintenance scripts. The Polaris
+  base database already contains their stable mappings; later wired mappings and the
   pet-breeding correction are versioned migrations.
 - `Set Rooms wallitems/` is an optional repair script, not a Polaris schema
   migration.
@@ -22,5 +22,4 @@ The destructive room-207 wired laboratory script was moved to
 `Database/Dev Seeds/room_207_wiredlab.sql`; it is development-only.
 
 Future production database changes must be added as a new Flyway migration.
-Never edit a released migration and never restart numbering based on the old
-filenames.
+Use a new UTC timestamp and never edit a released migration.

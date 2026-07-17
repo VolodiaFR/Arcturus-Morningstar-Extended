@@ -1,4 +1,4 @@
--- V2: tables Polaris adds over the Arcturus 3.5.5 baseline (additive).
+-- Tables Polaris adds to Arcturus 3.5.5 installations (additive).
 -- Names are trustworthy new objects, so a plain CREATE TABLE IF NOT EXISTS is safe.
 SET FOREIGN_KEY_CHECKS=0;
 

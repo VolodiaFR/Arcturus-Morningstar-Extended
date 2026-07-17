@@ -30,7 +30,7 @@ online.
 
 Create an empty MariaDB database and put its name and credentials in
 `config.ini`. Polaris creates the schema automatically on first startup; you do
-not need to import `FullDatabase.sql`.
+not need to import a database dump.
 
 Already running an Arcturus Morningstar 3.5.5 or older Polaris hotel? **Make a
 full database backup first**, point Polaris at that database, and start the

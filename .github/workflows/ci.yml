@@ -28,7 +28,7 @@ jobs:
           cache: maven
 
       # `verify` runs the unit tests (Surefire) and the *IT integration tests
-      # (Failsafe), which build the schema by running the real V1..Vn migrations
+      # (Failsafe), which build the schema by running the real timestamped migrations
       # against a Testcontainers MariaDB. A broken migration fails the build.
       - name: Build and test
         run: mvn -B verify

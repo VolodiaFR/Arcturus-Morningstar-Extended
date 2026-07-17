@@ -1,27 +1,13 @@
--- --------------------------------------------------------
--- Host:                         192.168.0.8
--- Server version:               12.3.1-MariaDB-ubu2404 - mariadb.org binary distribution
--- Server OS:                    debian-linux-gnu
--- HeidiSQL Version:             12.13.0.7147
--- --------------------------------------------------------
+-- Polaris base database.
+-- Flyway applies this only when the configured database is empty.
 
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET NAMES utf8 */;
-/*!50503 SET NAMES utf8mb4 */;
-/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
-/*!40103 SET TIME_ZONE='+00:00' */;
-/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
-/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
-
-
--- Dumping database structure for habbo
-CREATE DATABASE IF NOT EXISTS `habbo` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci */;
-USE `habbo`;
+SET NAMES utf8mb4;
+SET TIME_ZONE='+00:00';
+SET FOREIGN_KEY_CHECKS=0;
+SET SQL_MODE='NO_AUTO_VALUE_ON_ZERO';
 
 -- Dumping structure for table habbo.achievements
-DROP TABLE IF EXISTS `achievements`;
-CREATE TABLE IF NOT EXISTS `achievements` (
+CREATE TABLE `achievements` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(64) NOT NULL DEFAULT 'ACH_',
   `category` enum('identity','explore','music','social','games','room_builder','pets','tools','events') NOT NULL DEFAULT 'identity',
@@ -35,7 +21,6 @@ CREATE TABLE IF NOT EXISTS `achievements` (
 ) ENGINE=InnoDB AUTO_INCREMENT=2762 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.achievements: ~732 rows (approximately)
-DELETE FROM `achievements`;
 INSERT INTO `achievements` (`id`, `name`, `category`, `level`, `reward_amount`, `reward_type`, `points`, `progress_needed`) VALUES
 	(2708, 'AdvancedHorticulturist', 'explore', 1, 100, 0, 5, 1),
 	(2709, 'AdvancedHorticulturist', 'explore', 2, 100, 0, 10, 5),
@@ -771,8 +756,7 @@ INSERT INTO `achievements` (`id`, `name`, `category`, `level`, `reward_amount`, 
 	(2379, 'ViciousViking', 'explore', 10, 50, 0, 45, 600);
 
 -- Dumping structure for table habbo.achievements_talents
-DROP TABLE IF EXISTS `achievements_talents`;
-CREATE TABLE IF NOT EXISTS `achievements_talents` (
+CREATE TABLE `achievements_talents` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `type` enum('citizenship','helper') NOT NULL DEFAULT 'citizenship',
   `level` int(11) NOT NULL DEFAULT 0,
@@ -785,7 +769,6 @@ CREATE TABLE IF NOT EXISTS `achievements_talents` (
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.achievements_talents: ~4 rows (approximately)
-DELETE FROM `achievements_talents`;
 INSERT INTO `achievements_talents` (`id`, `type`, `level`, `achievement_ids`, `achievement_levels`, `reward_furni`, `reward_perks`, `reward_badges`) VALUES
 	(1, 'citizenship', 0, '481', '1', '179', '', ''),
 	(2, 'citizenship', 1, '467,479,469', '1,1,1', '179', '', ''),
@@ -793,8 +776,7 @@ INSERT INTO `achievements_talents` (`id`, `type`, `level`, `achievement_ids`, `a
 	(4, 'citizenship', 3, '467', '1', '179,5003', 'CITIZEN', 'ACH_Citizenship1');
 
 -- Dumping structure for table habbo.bans
-DROP TABLE IF EXISTS `bans`;
-CREATE TABLE IF NOT EXISTS `bans` (
+CREATE TABLE `bans` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `ip` varchar(50) NOT NULL DEFAULT '',
@@ -812,11 +794,9 @@ CREATE TABLE IF NOT EXISTS `bans` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.bans: ~0 rows (approximately)
-DELETE FROM `bans`;
 
 -- Dumping structure for table habbo.bot_serves
-DROP TABLE IF EXISTS `bot_serves`;
-CREATE TABLE IF NOT EXISTS `bot_serves` (
+CREATE TABLE `bot_serves` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `keys` varchar(128) NOT NULL,
   `item` int(11) NOT NULL,
@@ -824,13 +804,11 @@ CREATE TABLE IF NOT EXISTS `bot_serves` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.bot_serves: 0 rows
-DELETE FROM `bot_serves`;
 /*!40000 ALTER TABLE `bot_serves` DISABLE KEYS */;
 /*!40000 ALTER TABLE `bot_serves` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.bots
-DROP TABLE IF EXISTS `bots`;
-CREATE TABLE IF NOT EXISTS `bots` (
+CREATE TABLE `bots` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL DEFAULT 0,
   `room_id` int(11) NOT NULL DEFAULT 0,
@@ -856,11 +834,9 @@ CREATE TABLE IF NOT EXISTS `bots` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.bots: ~0 rows (approximately)
-DELETE FROM `bots`;
 
 -- Dumping structure for table habbo.builders_club_items
-DROP TABLE IF EXISTS `builders_club_items`;
-CREATE TABLE IF NOT EXISTS `builders_club_items` (
+CREATE TABLE `builders_club_items` (
   `item_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `room_id` int(11) NOT NULL DEFAULT 0,
@@ -870,11 +846,9 @@ CREATE TABLE IF NOT EXISTS `builders_club_items` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 -- Dumping data for table habbo.builders_club_items: ~0 rows (approximately)
-DELETE FROM `builders_club_items`;
 
 -- Dumping structure for table habbo.calendar_campaigns
-DROP TABLE IF EXISTS `calendar_campaigns`;
-CREATE TABLE IF NOT EXISTS `calendar_campaigns` (
+CREATE TABLE `calendar_campaigns` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL DEFAULT '',
   `image` varchar(255) NOT NULL DEFAULT '',
@@ -886,11 +860,9 @@ CREATE TABLE IF NOT EXISTS `calendar_campaigns` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.calendar_campaigns: ~0 rows (approximately)
-DELETE FROM `calendar_campaigns`;
 
 -- Dumping structure for table habbo.calendar_rewards
-DROP TABLE IF EXISTS `calendar_rewards`;
-CREATE TABLE IF NOT EXISTS `calendar_rewards` (
+CREATE TABLE `calendar_rewards` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `campaign_id` int(11) NOT NULL DEFAULT 0,
   `product_name` varchar(128) CHARACTER SET latin1 COLLATE latin1_swedish_ci NOT NULL DEFAULT '',
@@ -907,11 +879,9 @@ CREATE TABLE IF NOT EXISTS `calendar_rewards` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.calendar_rewards: ~0 rows (approximately)
-DELETE FROM `calendar_rewards`;
 
 -- Dumping structure for table habbo.calendar_rewards_claimed
-DROP TABLE IF EXISTS `calendar_rewards_claimed`;
-CREATE TABLE IF NOT EXISTS `calendar_rewards_claimed` (
+CREATE TABLE `calendar_rewards_claimed` (
   `user_id` int(11) NOT NULL,
   `campaign_id` int(11) NOT NULL DEFAULT 0,
   `day` int(11) NOT NULL,
@@ -920,11 +890,9 @@ CREATE TABLE IF NOT EXISTS `calendar_rewards_claimed` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.calendar_rewards_claimed: ~0 rows (approximately)
-DELETE FROM `calendar_rewards_claimed`;
 
 -- Dumping structure for table habbo.camera_web
-DROP TABLE IF EXISTS `camera_web`;
-CREATE TABLE IF NOT EXISTS `camera_web` (
+CREATE TABLE `camera_web` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `room_id` int(11) NOT NULL DEFAULT 0,
@@ -936,11 +904,9 @@ CREATE TABLE IF NOT EXISTS `camera_web` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.camera_web: ~0 rows (approximately)
-DELETE FROM `camera_web`;
 
 -- Dumping structure for table habbo.catalog_clothing
-DROP TABLE IF EXISTS `catalog_clothing`;
-CREATE TABLE IF NOT EXISTS `catalog_clothing` (
+CREATE TABLE `catalog_clothing` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(75) NOT NULL,
   `setid` varchar(75) NOT NULL,
@@ -948,7 +914,6 @@ CREATE TABLE IF NOT EXISTS `catalog_clothing` (
 ) ENGINE=MyISAM AUTO_INCREMENT=845 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.catalog_clothing: 589 rows
-DELETE FROM `catalog_clothing`;
 /*!40000 ALTER TABLE `catalog_clothing` DISABLE KEYS */;
 INSERT INTO `catalog_clothing` (`id`, `name`, `setid`) VALUES
 	(1, 'clothing_squid', '3356'),
@@ -1543,8 +1508,7 @@ INSERT INTO `catalog_clothing` (`id`, `name`, `setid`) VALUES
 /*!40000 ALTER TABLE `catalog_clothing` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.catalog_club_offers
-DROP TABLE IF EXISTS `catalog_club_offers`;
-CREATE TABLE IF NOT EXISTS `catalog_club_offers` (
+CREATE TABLE `catalog_club_offers` (
   `id` int(11) NOT NULL,
   `enabled` enum('0','1') NOT NULL DEFAULT '1',
   `name` varchar(35) NOT NULL,
@@ -1559,7 +1523,6 @@ CREATE TABLE IF NOT EXISTS `catalog_club_offers` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.catalog_club_offers: 2 rows
-DELETE FROM `catalog_club_offers`;
 /*!40000 ALTER TABLE `catalog_club_offers` DISABLE KEYS */;
 INSERT INTO `catalog_club_offers` (`id`, `enabled`, `name`, `days`, `credits`, `points`, `points_type`, `type`, `deal`, `giftable`) VALUES
 	(1, '1', 'HABBO_CLUB_1_MONTH', 31, 50, 50, 5, 'VIP', '0', '0'),
@@ -1567,8 +1530,7 @@ INSERT INTO `catalog_club_offers` (`id`, `enabled`, `name`, `days`, `credits`, `
 /*!40000 ALTER TABLE `catalog_club_offers` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.catalog_featured_pages
-DROP TABLE IF EXISTS `catalog_featured_pages`;
-CREATE TABLE IF NOT EXISTS `catalog_featured_pages` (
+CREATE TABLE `catalog_featured_pages` (
   `slot_id` int(11) NOT NULL,
   `image` varchar(70) NOT NULL DEFAULT '',
   `caption` varchar(130) NOT NULL DEFAULT '',
@@ -1581,7 +1543,6 @@ CREATE TABLE IF NOT EXISTS `catalog_featured_pages` (
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.catalog_featured_pages: 4 rows
-DELETE FROM `catalog_featured_pages`;
 /*!40000 ALTER TABLE `catalog_featured_pages` DISABLE KEYS */;
 INSERT INTO `catalog_featured_pages` (`slot_id`, `image`, `caption`, `type`, `expire_timestamp`, `page_name`, `page_id`, `product_name`) VALUES
 	(1, 'catalogue/feature_cata/feature_cata_hort_pets.png', 'The Habbo Pet Shop', 'page_name', -1, 'pet_animals', 277, ''),
@@ -1591,8 +1552,7 @@ INSERT INTO `catalog_featured_pages` (`slot_id`, `image`, `caption`, `type`, `ex
 /*!40000 ALTER TABLE `catalog_featured_pages` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.catalog_items
-DROP TABLE IF EXISTS `catalog_items`;
-CREATE TABLE IF NOT EXISTS `catalog_items` (
+CREATE TABLE `catalog_items` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `item_ids` varchar(666) NOT NULL,
   `page_id` int(11) NOT NULL,
@@ -1618,7 +1578,6 @@ CREATE TABLE IF NOT EXISTS `catalog_items` (
 ) ENGINE=InnoDB AUTO_INCREMENT=20501 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.catalog_items: ~10.790 rows (approximately)
-DELETE FROM `catalog_items`;
 INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_credits`, `cost_points`, `points_type`, `amount`, `limited_stack`, `limited_sells`, `order_number`, `offer_id`, `song_id`, `extradata`, `have_offer`, `club_only`) VALUES
 	(1, '1', 197, 'post.it', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(2, '2', 197, 'post.it.vd', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
@@ -2119,7 +2078,8 @@ INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_
 	(497, '1787', 292, 'couch_norja_4', 4, 0, 0, 1, 0, 0, 2, -1, 0, '', '1', '0'),
 	(498, '1788', 293, 'couch_norja_5', 4, 0, 0, 1, 0, 0, 2, -1, 0, '', '1', '0'),
 	(499, '1789', 294, 'couch_norja_6', 4, 0, 0, 1, 0, 0, 2, -1, 0, '', '1', '0'),
-	(500, '1790', 295, 'couch_norja_7', 4, 0, 0, 1, 0, 0, 2, -1, 0, '', '1', '0'),
+	(500, '1790', 295, 'couch_norja_7', 4, 0, 0, 1, 0, 0, 2, -1, 0, '', '1', '0');
+INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_credits`, `cost_points`, `points_type`, `amount`, `limited_stack`, `limited_sells`, `order_number`, `offer_id`, `song_id`, `extradata`, `have_offer`, `club_only`) VALUES
 	(501, '1791', 296, 'couch_norja_8', 4, 0, 0, 1, 0, 0, 2, -1, 0, '', '1', '0'),
 	(502, '1792', 297, 'couch_norja_9', 4, 0, 0, 1, 0, 0, 2, -1, 0, '', '1', '0'),
 	(503, '1793', 290, 'shelves_norja_2', 4, 0, 0, 1, 0, 0, 8, -1, 0, '', '1', '0'),
@@ -2619,7 +2579,8 @@ INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_
 	(997, '2577', 405, 'DEV summer_chair7', 2, 0, 0, 1, 0, 0, 7, -1, 0, '', '1', '0'),
 	(998, '2578', 405, 'DEV summer_chair8', 2, 0, 0, 1, 0, 0, 8, -1, 0, '', '1', '0'),
 	(999, '2579', 405, 'DEV summer_chair9', 2, 0, 0, 1, 0, 0, 9, -1, 0, '', '1', '0'),
-	(1000, '2580', 46, 'A0 sound_set_29', 4, 0, 0, 1, 0, 0, 29, -1, 0, '', '1', '0'),
+	(1000, '2580', 46, 'A0 sound_set_29', 4, 0, 0, 1, 0, 0, 29, -1, 0, '', '1', '0');
+INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_credits`, `cost_points`, `points_type`, `amount`, `limited_stack`, `limited_sells`, `order_number`, `offer_id`, `song_id`, `extradata`, `have_offer`, `club_only`) VALUES
 	(1001, '2581', 304, 'DEV exe_s_table', 5, 0, 0, 1, 0, 0, 25, -1, 0, '', '1', '0'),
 	(1002, '2582', 280, 'a0 tile_brown', 1, 0, 0, 1, 0, 0, 25, -1, 0, '', '1', '0'),
 	(1003, '2583', 46, 'A0 sound_set_36', 4, 0, 0, 1, 0, 0, 19, -1, 0, '', '1', '0'),
@@ -3119,7 +3080,8 @@ INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_
 	(1497, '3077', 303, 'lc_coral_divider_low', 4, 0, 0, 1, 0, 0, 4, -1, 0, '', '1', '0'),
 	(1498, '3078', 303, 'c_coral_divider_hi', 4, 0, 0, 1, 0, 0, 3, -1, 0, '', '1', '0'),
 	(1499, '3079', 58, 'ads_idol_clRack', 4, 0, 0, 1, 0, 0, 58, -1, 0, '', '1', '0'),
-	(1500, '3080', 58, 'ads_idol_hotspot', 4, 0, 0, 1, 0, 0, 64, -1, 0, '', '1', '0'),
+	(1500, '3080', 58, 'ads_idol_hotspot', 4, 0, 0, 1, 0, 0, 64, -1, 0, '', '1', '0');
+INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_credits`, `cost_points`, `points_type`, `amount`, `limited_stack`, `limited_sells`, `order_number`, `offer_id`, `song_id`, `extradata`, `have_offer`, `club_only`) VALUES
 	(1501, '3081', 58, 'ads_idol_voting_ch', 4, 0, 0, 1, 0, 0, 79, -1, 0, '', '1', '0'),
 	(1502, '3082', 499, 'eco_light2', 4, 0, 0, 1, 0, 0, 17, -1, 0, '', '1', '0'),
 	(1503, '3083', 499, 'eco_cactus1', 4, 0, 0, 1, 0, 0, 1, -1, 0, '', '1', '0'),
@@ -3619,7 +3581,8 @@ INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_
 	(1997, '3581', 59, 'ktchn10_stove', 4, 0, 0, 1, 0, 0, 5, -1, 0, '', '1', '0'),
 	(1998, '3582', 66, 'easel_0', 4, 0, 0, 1, 0, 0, 0, -1, 0, '', '1', '0'),
 	(1999, '3583', 52, 'petfood15', 0, 75, 0, 1, 0, 0, 1, -1, 0, '', '1', '0'),
-	(2000, '3584', 68, 'african_tree1', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
+	(2000, '3584', 68, 'african_tree1', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0');
+INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_credits`, `cost_points`, `points_type`, `amount`, `limited_stack`, `limited_sells`, `order_number`, `offer_id`, `song_id`, `extradata`, `have_offer`, `club_only`) VALUES
 	(2001, '3585', 553, 'ads_cheetos_hotdog', 4, 0, 0, 1, 0, 0, 2, -1, 0, '', '1', '0'),
 	(2002, '3586', 444, 'hosptl_cab1', 10, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(2003, '3587', 115, 'nest_lion2', 2, 0, 0, 1, 0, 0, 18, -1, 0, '', '1', '0'),
@@ -4119,7 +4082,8 @@ INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_
 	(2497, '4085', 55, 'studio_fence', 4, 0, 0, 1, 0, 0, 6, -1, 0, '', '1', '0'),
 	(2498, '4086', 55, 'studio_amp1', 4, 0, 0, 1, 0, 0, 1, -1, 0, '', '1', '0'),
 	(2499, '4087', 55, 'studio_floorlight', 2, 0, 0, 1, 0, 0, 8, -1, 0, '', '1', '0'),
-	(2500, '4088', 55, 'studio_mixingdesk', 5, 0, 0, 1, 0, 0, 12, -1, 0, '', '1', '0'),
+	(2500, '4088', 55, 'studio_mixingdesk', 5, 0, 0, 1, 0, 0, 12, -1, 0, '', '1', '0');
+INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_credits`, `cost_points`, `points_type`, `amount`, `limited_stack`, `limited_sells`, `order_number`, `offer_id`, `song_id`, `extradata`, `have_offer`, `club_only`) VALUES
 	(2501, '4089', 55, 'studio_camera', 4, 0, 0, 1, 0, 0, 3, -1, 0, '', '1', '0'),
 	(2502, '4090', 55, 'studio_tv', 4, 0, 0, 1, 0, 0, 14, -1, 0, '', '1', '0'),
 	(2503, '4091', 55, 'studio_lights3', 4, 0, 0, 1, 0, 0, 11, -1, 0, '', '1', '0'),
@@ -4619,7 +4583,8 @@ INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_
 	(2997, '4594', 738, 'dragonlamp_shinobi', 0, 3600, 5, 1, 0, 1, 14, -1, 0, '', '1', '0'),
 	(2998, '4595', 31, 'jp_divider', 3, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(2999, '4596', 31, 'jp_gate', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
-	(3000, '4597', 736, 'prizetrophy_breed_g', 0, 75, 0, 1, 0, 0, 37, -1, 0, '', '1', '0'),
+	(3000, '4597', 736, 'prizetrophy_breed_g', 0, 75, 0, 1, 0, 0, 37, -1, 0, '', '1', '0');
+INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_credits`, `cost_points`, `points_type`, `amount`, `limited_stack`, `limited_sells`, `order_number`, `offer_id`, `song_id`, `extradata`, `have_offer`, `club_only`) VALUES
 	(3001, '4598', 736, 'prizetrophy_breed_s', 0, 75, 0, 1, 0, 0, 38, -1, 0, '', '1', '0'),
 	(3002, '4599', 736, 'prizetrophy_breed_b', 0, 75, 0, 1, 0, 0, 39, -1, 0, '', '1', '0'),
 	(3003, '4600', 736, 'prizetrophy_nurture_g', 0, 75, 0, 1, 0, 0, 43, -1, 0, '', '1', '0'),
@@ -5119,7 +5084,8 @@ INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_
 	(3497, '5094', 255, 'wf_cnd_wearing_badge', 7, 0, 0, 1, 0, 0, 10, -1, 0, '', '1', '0'),
 	(3498, '5095', 255, 'wf_cnd_wearing_effect', 7, 0, 0, 1, 0, 0, 11, -1, 0, '', '1', '0'),
 	(3499, '5096', 682, 'mystics_gthrone', 4, 0, 0, 1, 0, 0, 21, -1, 0, '', '1', '0'),
-	(3500, '5097', 682, 'mystics_bthrone', 4, 0, 0, 1, 0, 0, 15, -1, 0, '', '1', '0'),
+	(3500, '5097', 682, 'mystics_bthrone', 4, 0, 0, 1, 0, 0, 15, -1, 0, '', '1', '0');
+INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_credits`, `cost_points`, `points_type`, `amount`, `limited_stack`, `limited_sells`, `order_number`, `offer_id`, `song_id`, `extradata`, `have_offer`, `club_only`) VALUES
 	(3501, '5098', 62, 'mystics_ltstatue', 4, 0, 0, 1, 0, 0, 23, -1, 0, '', '1', '0'),
 	(3502, '5099', 590, 'mystics_crystal_s', 4, 0, 0, 1, 0, 0, 24, -1, 0, '', '1', '0'),
 	(3503, '5100', 590, 'mystics_crystal_m', 4, 0, 0, 1, 0, 0, 25, -1, 0, '', '1', '0'),
@@ -5619,7 +5585,8 @@ INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_
 	(3997, '5594', 149, 'bc_block_marble_14', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(3998, '5595', 149, 'bc_block_marble_2', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(3999, '5596', 149, 'bc_block_marble_3', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
-	(4000, '5597', 149, 'bc_block_marble_4', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
+	(4000, '5597', 149, 'bc_block_marble_4', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0');
+INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_credits`, `cost_points`, `points_type`, `amount`, `limited_stack`, `limited_sells`, `order_number`, `offer_id`, `song_id`, `extradata`, `have_offer`, `club_only`) VALUES
 	(4001, '5598', 149, 'bc_block_marble_5', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(4002, '5599', 149, 'bc_block_marble_6', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(4003, '5600', 149, 'bc_block_marble_7', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
@@ -6119,7 +6086,8 @@ INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_
 	(4497, '6094', 6, 'matic_sanitizer', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(4498, '6095', 6, 'matic_light_cam_orange', 3, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(4499, '6096', 114, 'uni_messwardrobe', 4, 0, 0, 1, 0, 0, 21, -1, 0, '', '1', '0'),
-	(4500, '6097', 114, 'uni_plush1', 4, 0, 0, 1, 0, 0, 49, -1, 0, '', '1', '0'),
+	(4500, '6097', 114, 'uni_plush1', 4, 0, 0, 1, 0, 0, 49, -1, 0, '', '1', '0');
+INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_credits`, `cost_points`, `points_type`, `amount`, `limited_stack`, `limited_sells`, `order_number`, `offer_id`, `song_id`, `extradata`, `have_offer`, `club_only`) VALUES
 	(4501, '6098', 114, 'uni_owl', 4, 0, 0, 1, 0, 0, 23, -1, 0, '', '1', '0'),
 	(4502, '6099', 114, 'uni_ottoman', 4, 0, 0, 1, 0, 0, 44, -1, 0, '', '1', '0'),
 	(4503, '6100', 114, 'uni_drinks', 4, 0, 0, 1, 0, 0, 20, -1, 0, '', '1', '0'),
@@ -6619,7 +6587,8 @@ INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_
 	(4997, '6594', 129, 'bc_hemisphere_43', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(4998, '6595', 129, 'bc_hemisphere_44', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(4999, '6596', 129, 'bc_hemisphere_45', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
-	(5000, '6597', 129, 'bc_hemisphere_46', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
+	(5000, '6597', 129, 'bc_hemisphere_46', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0');
+INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_credits`, `cost_points`, `points_type`, `amount`, `limited_stack`, `limited_sells`, `order_number`, `offer_id`, `song_id`, `extradata`, `have_offer`, `club_only`) VALUES
 	(5001, '6598', 129, 'bc_hemisphere_47', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(5002, '6599', 129, 'bc_hemisphere_48', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(5003, '6600', 129, 'bc_hemisphere_49', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
@@ -7119,7 +7088,8 @@ INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_
 	(5497, '7094', 134, 'bc_standingtriangularprism_9', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(5498, '7095', 140, 'bc_block_1_15', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(5499, '7096', 140, 'bc_block_1_16', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
-	(5500, '7097', 140, 'bc_block_1_17', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
+	(5500, '7097', 140, 'bc_block_1_17', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0');
+INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_credits`, `cost_points`, `points_type`, `amount`, `limited_stack`, `limited_sells`, `order_number`, `offer_id`, `song_id`, `extradata`, `have_offer`, `club_only`) VALUES
 	(5501, '7098', 140, 'bc_block_1_18', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(5502, '7099', 140, 'bc_block_1_19', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(5503, '7100', 140, 'bc_block_1_20', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
@@ -7619,7 +7589,8 @@ INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_
 	(5997, '7594', 117, 'bc_alpha1_q_8', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(5998, '7595', 117, 'bc_alpha1_q_9', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(5999, '7596', 117, 'bc_alpha1_y_1', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
-	(6000, '7597', 117, 'bc_alpha1_y_10', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
+	(6000, '7597', 117, 'bc_alpha1_y_10', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0');
+INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_credits`, `cost_points`, `points_type`, `amount`, `limited_stack`, `limited_sells`, `order_number`, `offer_id`, `song_id`, `extradata`, `have_offer`, `club_only`) VALUES
 	(6001, '7598', 117, 'bc_alpha1_y_11', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(6002, '7599', 117, 'bc_alpha1_y_12', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(6003, '7600', 117, 'bc_alpha1_y_13', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
@@ -8119,7 +8090,8 @@ INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_
 	(6497, '8094', 694, 'dino15_fossil5', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(6498, '8095', 199, 'dino_c15_venusfly', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(6499, '8096', 199, 'dino_c15_nest', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
-	(6500, '8097', 202, 'clothing_dinohat', 4, 0, 0, 1, 0, 0, 42, -1, 0, '', '1', '0'),
+	(6500, '8097', 202, 'clothing_dinohat', 4, 0, 0, 1, 0, 0, 42, -1, 0, '', '1', '0');
+INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_credits`, `cost_points`, `points_type`, `amount`, `limited_stack`, `limited_sells`, `order_number`, `offer_id`, `song_id`, `extradata`, `have_offer`, `club_only`) VALUES
 	(6501, '8098', 741, 'dino15_throne', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(6502, '8099', 199, 'dino_c15_floor', 2, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(6503, '8100', 199, 'dino_c15_blocks', 4, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
@@ -8619,7 +8591,8 @@ INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_
 	(6997, '8594', 443, 'easter_c16_mallowduck', 4, 0, 0, 1, 0, 0, 0, -1, 0, '', '1', '0'),
 	(6998, '8595', 200, 'clothing_floraloutfit', 18, 0, 0, 1, 0, 0, 17, -1, 0, '0', '1', '0'),
 	(6999, '8596', 742, 'easter16_habberge9l td', 4, 0, 0, 1, 0, 0, 4, -1, 0, '', '1', '0'),
-	(7000, '8597', 202, 'clothing_duckhat', 6, 0, 0, 1, 0, 0, 31, -1, 0, '0', '1', '0'),
+	(7000, '8597', 202, 'clothing_duckhat', 6, 0, 0, 1, 0, 0, 31, -1, 0, '0', '1', '0');
+INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_credits`, `cost_points`, `points_type`, `amount`, `limited_stack`, `limited_sells`, `order_number`, `offer_id`, `song_id`, `extradata`, `have_offer`, `club_only`) VALUES
 	(7001, '8598', 200, 'clothing_punkoutfit2', 18, 0, 0, 1, 0, 0, 14, -1, 0, '0', '1', '0'),
 	(7002, '8599', 204, 'clothing_tuxshirt', 5, 0, 0, 1, 0, 0, 28, -1, 0, '0', '1', '0'),
 	(7003, '8600', 200, 'clothing_pjoutfit1', 12, 0, 0, 1, 0, 0, 13, -1, 0, '0', '1', '0'),
@@ -9119,7 +9092,8 @@ INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_
 	(7497, '9094', 361, 'classic3_div2*2', 4, 0, 0, 1, 0, 0, 44, -1, 0, '', '1', '0'),
 	(7498, '9095', 361, 'classic3_div2*3', 4, 0, 0, 1, 0, 0, 23, -1, 0, '', '1', '0'),
 	(7499, '9096', 361, 'classic3_div2*4', 4, 0, 0, 1, 0, 0, 46, -1, 0, '', '1', '0'),
-	(7500, '9097', 361, 'classic3_floor3*0', 4, 0, 0, 1, 0, 0, 28, -1, 0, '', '1', '0'),
+	(7500, '9097', 361, 'classic3_floor3*0', 4, 0, 0, 1, 0, 0, 28, -1, 0, '', '1', '0');
+INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_credits`, `cost_points`, `points_type`, `amount`, `limited_stack`, `limited_sells`, `order_number`, `offer_id`, `song_id`, `extradata`, `have_offer`, `club_only`) VALUES
 	(7501, '9098', 361, 'classic3_floor3*1', 4, 0, 0, 1, 0, 0, 57, -1, 0, '', '1', '0'),
 	(7502, '9099', 361, 'classic3_floor3*2', 4, 0, 0, 1, 0, 0, 58, -1, 0, '', '1', '0'),
 	(7503, '9100', 361, 'classic3_floor3*3', 4, 0, 0, 1, 0, 0, 59, -1, 0, '', '1', '0'),
@@ -9619,7 +9593,8 @@ INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_
 	(7997, '9594', 417, 'bazaar_c17_clothroof2', 4, 0, 0, 1, 0, 0, 9, -1, 0, '', '1', '0'),
 	(7998, '9595', 417, 'bazaar_c17_marketroofsmall', 4, 0, 0, 1, 0, 0, 23, -1, 0, '', '1', '0'),
 	(7999, '9596', 676, 'bazaar_c17_curtainbluepinktrim', 4, 0, 0, 1, 0, 0, 12, -1, 0, '', '1', '0'),
-	(8000, '9597', 417, 'bazaar_c17_balcony', 4, 0, 0, 1, 0, 0, 2, -1, 0, '', '1', '0'),
+	(8000, '9597', 417, 'bazaar_c17_balcony', 4, 0, 0, 1, 0, 0, 2, -1, 0, '', '1', '0');
+INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_credits`, `cost_points`, `points_type`, `amount`, `limited_stack`, `limited_sells`, `order_number`, `offer_id`, `song_id`, `extradata`, `have_offer`, `club_only`) VALUES
 	(8001, '9598', 417, 'bazaar_c17_dyeyellow', 4, 0, 0, 1, 0, 0, 29, -1, 0, '', '1', '0'),
 	(8002, '9599', 676, 'bazaar_c17_lampyellowbluetrim', 4, 0, 0, 1, 0, 0, 22, -1, 0, '', '1', '0'),
 	(8003, '9600', 200, 'clothing_bazaarfemale', 16, 0, 0, 1, 0, 0, 5, -1, 0, '0', '1', '0'),
@@ -10119,7 +10094,8 @@ INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_
 	(8497, '10094', 237, 'coralking_r18_vanitytable', 4, 0, 0, 1, 0, 0, 51, -1, 0, '', '1', '0'),
 	(8498, '10095', 424, 'coralking_c18_coralfloor', 2, 0, 0, 1, 0, 0, 21, -1, 0, '', '1', '0'),
 	(8499, '10096', 424, 'coralking_c18_bed', 3, 0, 0, 1, 0, 0, 3, -1, 0, '', '1', '0'),
-	(8500, '10097', 424, 'coralking_c18_gazebo', 4, 0, 0, 1, 0, 0, 16, -1, 0, '', '1', '0'),
+	(8500, '10097', 424, 'coralking_c18_gazebo', 4, 0, 0, 1, 0, 0, 16, -1, 0, '', '1', '0');
+INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_credits`, `cost_points`, `points_type`, `amount`, `limited_stack`, `limited_sells`, `order_number`, `offer_id`, `song_id`, `extradata`, `have_offer`, `club_only`) VALUES
 	(8501, '10098', 424, 'coralking_c18_neoncoral3', 4, 0, 0, 1, 0, 0, 31, -1, 0, '', '1', '0'),
 	(8502, '10099', 731, 'coralking_c18_trident', 4, 0, 0, 1, 0, 0, 46, -1, 0, '', '1', '0'),
 	(8503, '10100', 731, 'coralking_c18_starfish2', 4, 0, 0, 1, 0, 0, 42, -1, 0, '', '1', '0'),
@@ -10619,7 +10595,8 @@ INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_
 	(8997, '10594', 676, 'clothing_bohotunic', 5, 0, 0, 1, 0, 0, 7, -1, 0, '0', '1', '0'),
 	(8998, '10595', 525, 'fest_c19_backdrop1', 4, 0, 0, 1, 0, 0, 2, -1, 0, '', '1', '0'),
 	(8999, '10596', 705, 'fest_c19_dye1', 4, 0, 0, 1, 0, 0, 21, -1, 0, '', '1', '0'),
-	(9000, '10597', 705, 'fest_c19_dye2', 4, 0, 0, 1, 0, 0, 15, -1, 0, '', '1', '0'),
+	(9000, '10597', 705, 'fest_c19_dye2', 4, 0, 0, 1, 0, 0, 15, -1, 0, '', '1', '0');
+INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_credits`, `cost_points`, `points_type`, `amount`, `limited_stack`, `limited_sells`, `order_number`, `offer_id`, `song_id`, `extradata`, `have_offer`, `club_only`) VALUES
 	(9001, '10598', 676, 'fest_c19_cushion2', 4, 0, 0, 1, 0, 0, 14, -1, 0, '', '1', '0'),
 	(9002, '10599', 310, 'clothing_waistbag', 6, 0, 0, 1, 0, 0, 10, -1, 0, '0', '1', '0'),
 	(9003, '10600', 703, 'fest_c19_bprint1', 4, 0, 0, 1, 0, 0, 7, -1, 0, '', '1', '0'),
@@ -11119,7 +11096,8 @@ INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_
 	(9497, '11094', 570, 'clothing_puffyvest', 3, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(9498, '11095', 226, 'easter_c20_mountainslopes', 3, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(9499, '11096', 746, 'easter_ltd20_fortuneduck', 3, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
-	(9500, '11097', 691, 'easter_r20_mystictree', 3, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
+	(9500, '11097', 691, 'easter_r20_mystictree', 3, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0');
+INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_credits`, `cost_points`, `points_type`, `amount`, `limited_stack`, `limited_sells`, `order_number`, `offer_id`, `song_id`, `extradata`, `have_offer`, `club_only`) VALUES
 	(9501, '11098', 226, 'easter_c20_campingessentials', 3, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(9502, '11099', 570, 'clothing_binoculars', 3, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
 	(9503, '11100', 226, 'easter_c20_ornamentalrocks', 3, 0, 0, 1, 0, 0, 99, -1, 0, '', '1', '0'),
@@ -12684,8 +12662,7 @@ INSERT INTO `catalog_items` (`id`, `item_ids`, `page_id`, `catalog_name`, `cost_
 	(20500, '50512;2833;2822;2827;2816;2830;2819;2939;40600;8261;3704;8260;3707;9031;10240;10271;4373;4387;4835;3779;3776;3848;3786;43560;4151;8431;43390;3606;4342;4335;10258;10145;10162;4068;5984', 1110, 'targetoffer10500_bundle', 189, 189, 5, 1, 0, 0, 1, -1, 0, '', '0', '0');
 
 -- Dumping structure for table habbo.catalog_items_bc
-DROP TABLE IF EXISTS `catalog_items_bc`;
-CREATE TABLE IF NOT EXISTS `catalog_items_bc` (
+CREATE TABLE `catalog_items_bc` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `item_ids` varchar(666) NOT NULL,
   `page_id` int(11) NOT NULL,
@@ -12696,11 +12673,9 @@ CREATE TABLE IF NOT EXISTS `catalog_items_bc` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.catalog_items_bc: ~0 rows (approximately)
-DELETE FROM `catalog_items_bc`;
 
 -- Dumping structure for table habbo.catalog_items_limited
-DROP TABLE IF EXISTS `catalog_items_limited`;
-CREATE TABLE IF NOT EXISTS `catalog_items_limited` (
+CREATE TABLE `catalog_items_limited` (
   `catalog_item_id` int(11) NOT NULL,
   `number` int(11) NOT NULL,
   `user_id` int(11) NOT NULL DEFAULT 0,
@@ -12711,13 +12686,11 @@ CREATE TABLE IF NOT EXISTS `catalog_items_limited` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.catalog_items_limited: 0 rows
-DELETE FROM `catalog_items_limited`;
 /*!40000 ALTER TABLE `catalog_items_limited` DISABLE KEYS */;
 /*!40000 ALTER TABLE `catalog_items_limited` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.catalog_pages
-DROP TABLE IF EXISTS `catalog_pages`;
-CREATE TABLE IF NOT EXISTS `catalog_pages` (
+CREATE TABLE `catalog_pages` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `parent_id` int(11) NOT NULL DEFAULT -1,
   `caption_save` varchar(25) NOT NULL DEFAULT '',
@@ -12746,7 +12719,6 @@ CREATE TABLE IF NOT EXISTS `catalog_pages` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1111 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.catalog_pages: ~769 rows (approximately)
-DELETE FROM `catalog_pages`;
 INSERT INTO `catalog_pages` (`id`, `parent_id`, `caption_save`, `caption`, `page_layout`, `icon_color`, `icon_image`, `min_rank`, `order_num`, `visible`, `enabled`, `club_only`, `catalog_mode`, `vip_only`, `page_headline`, `page_teaser`, `page_special`, `page_text1`, `page_text2`, `page_text_details`, `page_text_teaser`, `room_id`, `includes`) VALUES
 	(1, -1, 'front_page', 'Front Page', 'frontpage', 1, 213, 1, 1, '1', '1', '0', 'NORMAL', '0', 'catalog_frontpage_headline_shop_EN', '', '', '', 'Redeem a voucher code here:', '', '', 0, ''),
 	(2, -1, 'furni', 'Furni', 'default_3x3', 1, 263, 1, 2, '1', '1', '0', 'NORMAL', '0', 'catalog_header_roombuilder', 'cr_infopic3', '', '', 'Furni Shop', NULL, '', 0, ''),
@@ -13519,8 +13491,7 @@ INSERT INTO `catalog_pages` (`id`, `parent_id`, `caption_save`, `caption`, `page
 	(1110, 7, 'targetoffer_int', 'Targeted Offers', 'default_3x3', 1, 180, 4, 4, '1', '1', '0', 'NORMAL', '0', '', '', '', 'Targeted offers Packs', '', '', '', 0, '');
 
 -- Dumping structure for table habbo.catalog_pages_bc
-DROP TABLE IF EXISTS `catalog_pages_bc`;
-CREATE TABLE IF NOT EXISTS `catalog_pages_bc` (
+CREATE TABLE `catalog_pages_bc` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `parent_id` int(11) NOT NULL DEFAULT -1,
   `caption` varchar(128) NOT NULL,
@@ -13541,7 +13512,6 @@ CREATE TABLE IF NOT EXISTS `catalog_pages_bc` (
 ) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.catalog_pages_bc: 2 rows
-DELETE FROM `catalog_pages_bc`;
 /*!40000 ALTER TABLE `catalog_pages_bc` DISABLE KEYS */;
 INSERT INTO `catalog_pages_bc` (`id`, `parent_id`, `caption`, `page_layout`, `icon_color`, `icon_image`, `order_num`, `visible`, `enabled`, `page_headline`, `page_teaser`, `page_special`, `page_text1`, `page_text2`, `page_text_details`, `page_text_teaser`) VALUES
 	(1, -1, 'Furniture', 'default_3x3', 1, 1, 0, '1', '1', '', '', '', NULL, NULL, NULL, NULL),
@@ -13549,8 +13519,7 @@ INSERT INTO `catalog_pages_bc` (`id`, `parent_id`, `caption`, `page_layout`, `ic
 /*!40000 ALTER TABLE `catalog_pages_bc` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.catalog_target_offers
-DROP TABLE IF EXISTS `catalog_target_offers`;
-CREATE TABLE IF NOT EXISTS `catalog_target_offers` (
+CREATE TABLE `catalog_target_offers` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `offer_code` varchar(32) NOT NULL,
   `title` varchar(128) NOT NULL DEFAULT '',
@@ -13568,13 +13537,11 @@ CREATE TABLE IF NOT EXISTS `catalog_target_offers` (
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.catalog_target_offers: ~1 rows (approximately)
-DELETE FROM `catalog_target_offers`;
 INSERT INTO `catalog_target_offers` (`id`, `offer_code`, `title`, `description`, `image`, `icon`, `end_timestamp`, `credits`, `points`, `points_type`, `purchase_limit`, `catalog_item`, `vars`) VALUES
 	(1, '10500', 'Machines Offer One!', '<a href="event:habbopages/7machines1tto20">Click here</a> to see a list of all items included in this deal.', 'targetedoffers/ufo_habbo20_mach1.png', 'targetedoffers/tto_blkfri_20_small.png', 1598745600, 189, 189, 5, 1, 20500, '');
 
 -- Dumping structure for table habbo.chat_bubbles
-DROP TABLE IF EXISTS `chat_bubbles`;
-CREATE TABLE IF NOT EXISTS `chat_bubbles` (
+CREATE TABLE `chat_bubbles` (
   `type` int(11) NOT NULL AUTO_INCREMENT COMMENT 'Only 46 and higher will work',
   `name` varchar(255) NOT NULL DEFAULT '',
   `permission` varchar(255) NOT NULL DEFAULT '',
@@ -13584,7 +13551,6 @@ CREATE TABLE IF NOT EXISTS `chat_bubbles` (
 ) ENGINE=InnoDB AUTO_INCREMENT=253 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Dumping data for table habbo.chat_bubbles: ~19 rows (approximately)
-DELETE FROM `chat_bubbles`;
 INSERT INTO `chat_bubbles` (`type`, `name`, `permission`, `overridable`, `triggers_talking_furniture`) VALUES
 	(200, 'SHOW_MESSAGE_RED', '', 1, 0),
 	(201, 'SHOW_MESSAGE_GREEN', '', 1, 0),
@@ -13607,8 +13573,7 @@ INSERT INTO `chat_bubbles` (`type`, `name`, `permission`, `overridable`, `trigge
 	(252, 'SHOW_MESSAGE_MAGNIFIER', '', 1, 0);
 
 -- Dumping structure for table habbo.chatlogs_private
-DROP TABLE IF EXISTS `chatlogs_private`;
-CREATE TABLE IF NOT EXISTS `chatlogs_private` (
+CREATE TABLE `chatlogs_private` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_from_id` int(11) NOT NULL,
   `user_to_id` int(11) NOT NULL,
@@ -13622,13 +13587,11 @@ CREATE TABLE IF NOT EXISTS `chatlogs_private` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.chatlogs_private: 0 rows
-DELETE FROM `chatlogs_private`;
 /*!40000 ALTER TABLE `chatlogs_private` DISABLE KEYS */;
 /*!40000 ALTER TABLE `chatlogs_private` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.chatlogs_room
-DROP TABLE IF EXISTS `chatlogs_room`;
-CREATE TABLE IF NOT EXISTS `chatlogs_room` (
+CREATE TABLE `chatlogs_room` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `room_id` int(11) NOT NULL DEFAULT 0,
   `user_from_id` int(11) NOT NULL,
@@ -13644,13 +13607,11 @@ CREATE TABLE IF NOT EXISTS `chatlogs_room` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.chatlogs_room: 0 rows
-DELETE FROM `chatlogs_room`;
 /*!40000 ALTER TABLE `chatlogs_room` DISABLE KEYS */;
 /*!40000 ALTER TABLE `chatlogs_room` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.commandlogs
-DROP TABLE IF EXISTS `commandlogs`;
-CREATE TABLE IF NOT EXISTS `commandlogs` (
+CREATE TABLE `commandlogs` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `timestamp` int(11) NOT NULL,
@@ -13664,20 +13625,17 @@ CREATE TABLE IF NOT EXISTS `commandlogs` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.commandlogs: 0 rows
-DELETE FROM `commandlogs`;
 /*!40000 ALTER TABLE `commandlogs` DISABLE KEYS */;
 /*!40000 ALTER TABLE `commandlogs` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.crafting_altars_recipes
-DROP TABLE IF EXISTS `crafting_altars_recipes`;
-CREATE TABLE IF NOT EXISTS `crafting_altars_recipes` (
+CREATE TABLE `crafting_altars_recipes` (
   `altar_id` int(11) NOT NULL,
   `recipe_id` int(11) NOT NULL,
   UNIQUE KEY `altar_id` (`altar_id`,`recipe_id`) USING BTREE
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.crafting_altars_recipes: 243 rows
-DELETE FROM `crafting_altars_recipes`;
 /*!40000 ALTER TABLE `crafting_altars_recipes` DISABLE KEYS */;
 INSERT INTO `crafting_altars_recipes` (`altar_id`, `recipe_id`) VALUES
 	(8388, 1),
@@ -13926,8 +13884,7 @@ INSERT INTO `crafting_altars_recipes` (`altar_id`, `recipe_id`) VALUES
 /*!40000 ALTER TABLE `crafting_altars_recipes` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.crafting_recipes
-DROP TABLE IF EXISTS `crafting_recipes`;
-CREATE TABLE IF NOT EXISTS `crafting_recipes` (
+CREATE TABLE `crafting_recipes` (
   `id` int(11) NOT NULL,
   `product_name` varchar(64) NOT NULL COMMENT 'WARNING! This field must match a entry in your productdata or crafting WILL NOT WORK!',
   `reward` int(11) NOT NULL,
@@ -13942,7 +13899,6 @@ CREATE TABLE IF NOT EXISTS `crafting_recipes` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.crafting_recipes: 246 rows
-DELETE FROM `crafting_recipes`;
 /*!40000 ALTER TABLE `crafting_recipes` DISABLE KEYS */;
 INSERT INTO `crafting_recipes` (`id`, `product_name`, `reward`, `enabled`, `achievement`, `secret`, `limited`, `remaining`) VALUES
 	(1, 'clothing_firehelm', 8342, '1', '', '0', '0', 0),
@@ -14194,15 +14150,13 @@ INSERT INTO `crafting_recipes` (`id`, `product_name`, `reward`, `enabled`, `achi
 /*!40000 ALTER TABLE `crafting_recipes` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.crafting_recipes_ingredients
-DROP TABLE IF EXISTS `crafting_recipes_ingredients`;
-CREATE TABLE IF NOT EXISTS `crafting_recipes_ingredients` (
+CREATE TABLE `crafting_recipes_ingredients` (
   `recipe_id` int(11) NOT NULL,
   `item_id` int(11) NOT NULL,
   `amount` int(11) NOT NULL DEFAULT 1
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.crafting_recipes_ingredients: 565 rows
-DELETE FROM `crafting_recipes_ingredients`;
 /*!40000 ALTER TABLE `crafting_recipes_ingredients` DISABLE KEYS */;
 INSERT INTO `crafting_recipes_ingredients` (`recipe_id`, `item_id`, `amount`) VALUES
 	(1, 8373, 4),
@@ -14773,8 +14727,7 @@ INSERT INTO `crafting_recipes_ingredients` (`recipe_id`, `item_id`, `amount`) VA
 /*!40000 ALTER TABLE `crafting_recipes_ingredients` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.custom_nick_icons_catalog
-DROP TABLE IF EXISTS `custom_nick_icons_catalog`;
-CREATE TABLE IF NOT EXISTS `custom_nick_icons_catalog` (
+CREATE TABLE `custom_nick_icons_catalog` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `icon_key` varchar(50) NOT NULL,
   `display_name` varchar(100) NOT NULL DEFAULT '',
@@ -14787,7 +14740,6 @@ CREATE TABLE IF NOT EXISTS `custom_nick_icons_catalog` (
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Dumping data for table habbo.custom_nick_icons_catalog: ~6 rows (approximately)
-DELETE FROM `custom_nick_icons_catalog`;
 INSERT INTO `custom_nick_icons_catalog` (`id`, `icon_key`, `display_name`, `points`, `points_type`, `enabled`, `sort_order`) VALUES
 	(1, '1', 'Icon 1', 10, 0, 1, 1),
 	(2, '2', 'Icon 2', 10, 0, 1, 2),
@@ -14797,8 +14749,7 @@ INSERT INTO `custom_nick_icons_catalog` (`id`, `icon_key`, `display_name`, `poin
 	(6, '6', 'Icon 6', 10, 0, 1, 6);
 
 -- Dumping structure for table habbo.custom_prefix_blacklist
-DROP TABLE IF EXISTS `custom_prefix_blacklist`;
-CREATE TABLE IF NOT EXISTS `custom_prefix_blacklist` (
+CREATE TABLE `custom_prefix_blacklist` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `word` varchar(100) NOT NULL,
   PRIMARY KEY (`id`),
@@ -14806,7 +14757,6 @@ CREATE TABLE IF NOT EXISTS `custom_prefix_blacklist` (
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Dumping data for table habbo.custom_prefix_blacklist: ~4 rows (approximately)
-DELETE FROM `custom_prefix_blacklist`;
 INSERT INTO `custom_prefix_blacklist` (`id`, `word`) VALUES
 	(1, 'admin'),
 	(2, 'staff'),
@@ -14814,15 +14764,13 @@ INSERT INTO `custom_prefix_blacklist` (`id`, `word`) VALUES
 	(4, 'owner');
 
 -- Dumping structure for table habbo.custom_prefix_settings
-DROP TABLE IF EXISTS `custom_prefix_settings`;
-CREATE TABLE IF NOT EXISTS `custom_prefix_settings` (
+CREATE TABLE `custom_prefix_settings` (
   `key_name` varchar(100) NOT NULL,
   `value` varchar(255) NOT NULL,
   PRIMARY KEY (`key_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Dumping data for table habbo.custom_prefix_settings: ~8 rows (approximately)
-DELETE FROM `custom_prefix_settings`;
 INSERT INTO `custom_prefix_settings` (`key_name`, `value`) VALUES
 	('font_points_type', '0'),
 	('font_price_credits', '10'),
@@ -14834,8 +14782,7 @@ INSERT INTO `custom_prefix_settings` (`key_name`, `value`) VALUES
 	('price_points', '0');
 
 -- Dumping structure for table habbo.custom_prefixes_catalog
-DROP TABLE IF EXISTS `custom_prefixes_catalog`;
-CREATE TABLE IF NOT EXISTS `custom_prefixes_catalog` (
+CREATE TABLE `custom_prefixes_catalog` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `display_name` varchar(100) NOT NULL DEFAULT '',
   `text` varchar(50) NOT NULL,
@@ -14851,15 +14798,13 @@ CREATE TABLE IF NOT EXISTS `custom_prefixes_catalog` (
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Dumping data for table habbo.custom_prefixes_catalog: ~3 rows (approximately)
-DELETE FROM `custom_prefixes_catalog`;
 INSERT INTO `custom_prefixes_catalog` (`id`, `display_name`, `text`, `color`, `icon`, `effect`, `font`, `points`, `points_type`, `enabled`, `sort_order`) VALUES
 	(1, 'VIP', 'VIP', '#FFD700', '', 'glow', '', 10, 0, 1, 1),
 	(2, 'Legend', 'Legend', '#8B5CF6', '', 'discord-neon', '', 15, 0, 1, 2),
 	(3, 'Staff Pick', 'Staff', '#3B82F6', '*', 'cartoon', '', 20, 0, 1, 3);
 
 -- Dumping structure for table habbo.emulator_errors
-DROP TABLE IF EXISTS `emulator_errors`;
-CREATE TABLE IF NOT EXISTS `emulator_errors` (
+CREATE TABLE `emulator_errors` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `timestamp` int(11) NOT NULL DEFAULT 0,
   `version` varchar(64) NOT NULL,
@@ -14870,13 +14815,11 @@ CREATE TABLE IF NOT EXISTS `emulator_errors` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.emulator_errors: 0 rows
-DELETE FROM `emulator_errors`;
 /*!40000 ALTER TABLE `emulator_errors` DISABLE KEYS */;
 /*!40000 ALTER TABLE `emulator_errors` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.emulator_settings
-DROP TABLE IF EXISTS `emulator_settings`;
-CREATE TABLE IF NOT EXISTS `emulator_settings` (
+CREATE TABLE `emulator_settings` (
   `key` varchar(100) NOT NULL,
   `value` varchar(512) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
   `comment` text DEFAULT '',
@@ -14884,7 +14827,6 @@ CREATE TABLE IF NOT EXISTS `emulator_settings` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.emulator_settings: 394 rows
-DELETE FROM `emulator_settings`;
 /*!40000 ALTER TABLE `emulator_settings` DISABLE KEYS */;
 INSERT INTO `emulator_settings` (`key`, `value`, `comment`) VALUES
 	('allowed.username.characters', 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-=!?@:,.', 'Characters allowed when users choose or change a username.'),
@@ -15285,15 +15227,13 @@ INSERT INTO `emulator_settings` (`key`, `value`, `comment`) VALUES
 /*!40000 ALTER TABLE `emulator_settings` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.emulator_texts
-DROP TABLE IF EXISTS `emulator_texts`;
-CREATE TABLE IF NOT EXISTS `emulator_texts` (
+CREATE TABLE `emulator_texts` (
   `key` varchar(100) NOT NULL,
   `value` varchar(4096) NOT NULL,
   PRIMARY KEY (`key`) USING BTREE
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.emulator_texts: 804 rows
-DELETE FROM `emulator_texts`;
 /*!40000 ALTER TABLE `emulator_texts` DISABLE KEYS */;
 INSERT INTO `emulator_texts` (`key`, `value`) VALUES
 	('', ''),
@@ -16113,8 +16053,7 @@ INSERT INTO `emulator_texts` (`key`, `value`) VALUES
 /*!40000 ALTER TABLE `emulator_texts` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.gift_wrappers
-DROP TABLE IF EXISTS `gift_wrappers`;
-CREATE TABLE IF NOT EXISTS `gift_wrappers` (
+CREATE TABLE `gift_wrappers` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `sprite_id` int(11) NOT NULL,
   `item_id` int(11) NOT NULL,
@@ -16123,7 +16062,6 @@ CREATE TABLE IF NOT EXISTS `gift_wrappers` (
 ) ENGINE=MyISAM AUTO_INCREMENT=18 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.gift_wrappers: 17 rows
-DELETE FROM `gift_wrappers`;
 /*!40000 ALTER TABLE `gift_wrappers` DISABLE KEYS */;
 INSERT INTO `gift_wrappers` (`id`, `sprite_id`, `item_id`, `type`) VALUES
 	(1, 187, 187, 'gift'),
@@ -16146,8 +16084,7 @@ INSERT INTO `gift_wrappers` (`id`, `sprite_id`, `item_id`, `type`) VALUES
 /*!40000 ALTER TABLE `gift_wrappers` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.groups_items
-DROP TABLE IF EXISTS `groups_items`;
-CREATE TABLE IF NOT EXISTS `groups_items` (
+CREATE TABLE `groups_items` (
   `type` enum('base','symbol','color','color2','color3') NOT NULL,
   `id` int(11) NOT NULL,
   `firstvalue` varchar(255) NOT NULL,
@@ -16159,7 +16096,6 @@ CREATE TABLE IF NOT EXISTS `groups_items` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.groups_items: ~480 rows (approximately)
-DELETE FROM `groups_items`;
 INSERT INTO `groups_items` (`type`, `id`, `firstvalue`, `secondvalue`, `enabled`) VALUES
 	('base', 1, 'base_basic_1.gif', '', '1'),
 	('symbol', 1, 'symbol_background_1.gif', '', '1'),
@@ -16643,8 +16579,7 @@ INSERT INTO `groups_items` (`type`, `id`, `firstvalue`, `secondvalue`, `enabled`
 	('symbol', 212, 'symbol_vip_part2.gif', 'symbol_vip_part1.gif', '1');
 
 -- Dumping structure for table habbo.guild_forum_views
-DROP TABLE IF EXISTS `guild_forum_views`;
-CREATE TABLE IF NOT EXISTS `guild_forum_views` (
+CREATE TABLE `guild_forum_views` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `guild_id` int(11) NOT NULL,
@@ -16654,11 +16589,9 @@ CREATE TABLE IF NOT EXISTS `guild_forum_views` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.guild_forum_views: ~0 rows (approximately)
-DELETE FROM `guild_forum_views`;
 
 -- Dumping structure for table habbo.guilds
-DROP TABLE IF EXISTS `guilds`;
-CREATE TABLE IF NOT EXISTS `guilds` (
+CREATE TABLE `guilds` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL DEFAULT 0,
   `name` varchar(50) NOT NULL DEFAULT '',
@@ -16685,11 +16618,9 @@ CREATE TABLE IF NOT EXISTS `guilds` (
 ) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.guilds: ~0 rows (approximately)
-DELETE FROM `guilds`;
 
 -- Dumping structure for table habbo.guilds_elements
-DROP TABLE IF EXISTS `guilds_elements`;
-CREATE TABLE IF NOT EXISTS `guilds_elements` (
+CREATE TABLE `guilds_elements` (
   `id` int(11) NOT NULL,
   `firstvalue` varchar(300) NOT NULL,
   `secondvalue` varchar(300) NOT NULL,
@@ -16700,7 +16631,6 @@ CREATE TABLE IF NOT EXISTS `guilds_elements` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.guilds_elements: ~480 rows (approximately)
-DELETE FROM `guilds_elements`;
 INSERT INTO `guilds_elements` (`id`, `firstvalue`, `secondvalue`, `type`, `enabled`) VALUES
 	(1, 'ffffff', '', 'background_color', '1'),
 	(1, 'base_basic_1.gif', '', 'base', '1'),
@@ -17184,8 +17114,7 @@ INSERT INTO `guilds_elements` (`id`, `firstvalue`, `secondvalue`, `type`, `enabl
 	(212, 'symbol_vip_part2.gif', 'symbol_vip_part1.gif', 'symbol', '1');
 
 -- Dumping structure for table habbo.guilds_forums_comments
-DROP TABLE IF EXISTS `guilds_forums_comments`;
-CREATE TABLE IF NOT EXISTS `guilds_forums_comments` (
+CREATE TABLE `guilds_forums_comments` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `thread_id` int(11) NOT NULL DEFAULT 0,
   `user_id` int(11) NOT NULL DEFAULT 0,
@@ -17199,11 +17128,9 @@ CREATE TABLE IF NOT EXISTS `guilds_forums_comments` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin ROW_FORMAT=COMPACT;
 
 -- Dumping data for table habbo.guilds_forums_comments: ~0 rows (approximately)
-DELETE FROM `guilds_forums_comments`;
 
 -- Dumping structure for table habbo.guilds_forums_threads
-DROP TABLE IF EXISTS `guilds_forums_threads`;
-CREATE TABLE IF NOT EXISTS `guilds_forums_threads` (
+CREATE TABLE `guilds_forums_threads` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `guild_id` int(11) DEFAULT 0,
   `opener_id` int(11) DEFAULT 0,
@@ -17219,11 +17146,9 @@ CREATE TABLE IF NOT EXISTS `guilds_forums_threads` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin ROW_FORMAT=COMPACT;
 
 -- Dumping data for table habbo.guilds_forums_threads: ~0 rows (approximately)
-DELETE FROM `guilds_forums_threads`;
 
 -- Dumping structure for table habbo.guilds_members
-DROP TABLE IF EXISTS `guilds_members`;
-CREATE TABLE IF NOT EXISTS `guilds_members` (
+CREATE TABLE `guilds_members` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `guild_id` int(11) NOT NULL DEFAULT 0,
   `user_id` int(11) NOT NULL DEFAULT 0,
@@ -17239,11 +17164,9 @@ CREATE TABLE IF NOT EXISTS `guilds_members` (
 ) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.guilds_members: ~0 rows (approximately)
-DELETE FROM `guilds_members`;
 
 -- Dumping structure for table habbo.hotelview_news
-DROP TABLE IF EXISTS `hotelview_news`;
-CREATE TABLE IF NOT EXISTS `hotelview_news` (
+CREATE TABLE `hotelview_news` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `title` varchar(100) NOT NULL,
   `text` varchar(500) NOT NULL,
@@ -17255,13 +17178,11 @@ CREATE TABLE IF NOT EXISTS `hotelview_news` (
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.hotelview_news: ~1 rows (approximately)
-DELETE FROM `hotelview_news`;
 INSERT INTO `hotelview_news` (`id`, `title`, `text`, `button_text`, `button_type`, `button_link`, `image`) VALUES
 	(1, 'Open Your Summer Calendar!', 'Between the 1st and 31st od July, every day you will recive a free gift from your Summer Calendar. Open yours Now!', 'Open it!', 'client', 'openView/calendar', 'web_promo_small/spromo_h20_calrew.png');
 
 -- Dumping structure for table habbo.infostand_backgrounds
-DROP TABLE IF EXISTS `infostand_backgrounds`;
-CREATE TABLE IF NOT EXISTS `infostand_backgrounds` (
+CREATE TABLE `infostand_backgrounds` (
   `id` int(11) NOT NULL,
   `category` enum('background','stand','overlay','card') NOT NULL,
   `min_rank` int(11) NOT NULL DEFAULT 0,
@@ -17271,7 +17192,6 @@ CREATE TABLE IF NOT EXISTS `infostand_backgrounds` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
 -- Dumping data for table habbo.infostand_backgrounds: ~234 rows (approximately)
-DELETE FROM `infostand_backgrounds`;
 INSERT INTO `infostand_backgrounds` (`id`, `category`, `min_rank`, `is_hc_only`, `is_ambassador_only`) VALUES
 	(0, 'background', 0, 0, 0),
 	(0, 'stand', 0, 0, 0),
@@ -17509,8 +17429,7 @@ INSERT INTO `infostand_backgrounds` (`id`, `category`, `min_rank`, `is_hc_only`,
 	(187, 'background', 0, 1, 0);
 
 -- Dumping structure for table habbo.items
-DROP TABLE IF EXISTS `items`;
-CREATE TABLE IF NOT EXISTS `items` (
+CREATE TABLE `items` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL DEFAULT 0,
   `room_id` int(11) NOT NULL DEFAULT 0,
@@ -17534,11 +17453,9 @@ CREATE TABLE IF NOT EXISTS `items` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.items: ~0 rows (approximately)
-DELETE FROM `items`;
 
 -- Dumping structure for table habbo.items_base
-DROP TABLE IF EXISTS `items_base`;
-CREATE TABLE IF NOT EXISTS `items_base` (
+CREATE TABLE `items_base` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `sprite_id` int(11) NOT NULL DEFAULT 0,
   `public_name` varchar(56) NOT NULL DEFAULT '',
@@ -17568,7 +17485,6 @@ CREATE TABLE IF NOT EXISTS `items_base` (
 ) ENGINE=InnoDB AUTO_INCREMENT=599724 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.items_base: ~10.420 rows (approximately)
-DELETE FROM `items_base`;
 INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`, `width`, `length`, `stack_height`, `allow_stack`, `allow_sit`, `allow_lay`, `allow_walk`, `allow_gift`, `allow_trade`, `allow_recycle`, `allow_marketplace_sell`, `allow_inventory_stack`, `interaction_type`, `interaction_modes_count`, `vending_ids`, `multiheight`, `customparams`, `effect_id_male`, `effect_id_female`, `clothing_on_walk`) VALUES
 	(1, 1, 'post.it', 'post.it', 'i', 0, 0, 1.00, 1, 0, 0, 0, 0, 0, 0, 1, 1, 'postit', 1, '0', '', '', 0, 0, ''),
 	(2, 2, 'Heart stickies', 'post.it.vd', 'i', 0, 0, 1.00, 1, 0, 0, 0, 0, 0, 0, 1, 1, 'postit', 1, '0', '', '', 0, 0, ''),
@@ -18069,7 +17985,8 @@ INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`,
 	(1784, 1784, 'Red Coffee Table', 'table_norja_med*9', 's', 2, 2, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(1785, 1785, 'Black Bench', 'couch_norja*2', 's', 2, 1, 1.00, 0, 1, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(1786, 1786, 'White Bench', 'couch_norja*3', 's', 2, 1, 1.00, 0, 1, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
-	(1787, 1787, 'Aquamarine Bench', 'couch_norja*4', 's', 2, 1, 1.00, 0, 1, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
+	(1787, 1787, 'Aquamarine Bench', 'couch_norja*4', 's', 2, 1, 1.00, 0, 1, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, '');
+INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`, `width`, `length`, `stack_height`, `allow_stack`, `allow_sit`, `allow_lay`, `allow_walk`, `allow_gift`, `allow_trade`, `allow_recycle`, `allow_marketplace_sell`, `allow_inventory_stack`, `interaction_type`, `interaction_modes_count`, `vending_ids`, `multiheight`, `customparams`, `effect_id_male`, `effect_id_female`, `clothing_on_walk`) VALUES
 	(1788, 1788, 'Pink Bench', 'couch_norja*5', 's', 2, 1, 1.00, 0, 1, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(1789, 1789, 'Blue Bench', 'couch_norja*6', 's', 2, 1, 1.00, 0, 1, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(1790, 1790, 'Green Iced Bench', 'couch_norja*7', 's', 2, 1, 1.00, 0, 1, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
@@ -18569,7 +18486,8 @@ INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`,
 	(2576, 2576, 'Blue Deck Chair', 'summer_chair*6', 's', 1, 1, 1.10, 0, 1, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(2577, 2577, 'Green Deck Chair', 'summer_chair*7', 's', 1, 1, 1.10, 0, 1, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(2578, 2578, 'Yellow Deck Chair', 'summer_chair*8', 's', 1, 1, 1.10, 0, 1, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
-	(2579, 2579, 'Red Deck Chair', 'summer_chair*9', 's', 1, 1, 1.10, 0, 1, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
+	(2579, 2579, 'Red Deck Chair', 'summer_chair*9', 's', 1, 1, 1.10, 0, 1, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, '');
+INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`, `width`, `length`, `stack_height`, `allow_stack`, `allow_sit`, `allow_lay`, `allow_walk`, `allow_gift`, `allow_trade`, `allow_recycle`, `allow_marketplace_sell`, `allow_inventory_stack`, `interaction_type`, `interaction_modes_count`, `vending_ids`, `multiheight`, `customparams`, `effect_id_male`, `effect_id_female`, `clothing_on_walk`) VALUES
 	(2580, 2580, 'Dance 2', 'sound_set_29', 's', 1, 1, 0.20, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(2581, 2581, 'Glass Table', 'exe_s_table', 's', 2, 2, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(2582, 2582, 'Brown tile', 'tile_brown', 's', 1, 1, 0.10, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
@@ -19069,7 +18987,8 @@ INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`,
 	(3076, 3076, 'Marble Floor Tile', 'lc_tile1', 's', 2, 2, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(3077, 3077, 'Coral Divider', 'lc_coral_divider_low', 's', 2, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(3078, 3078, 'Large Coral Divider', 'lc_coral_divider_hi', 's', 2, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
-	(3079, 3079, 'Clothes Rack', 'ads_idol_clRack', 's', 3, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
+	(3079, 3079, 'Clothes Rack', 'ads_idol_clRack', 's', 3, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, '');
+INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`, `width`, `length`, `stack_height`, `allow_stack`, `allow_sit`, `allow_lay`, `allow_walk`, `allow_gift`, `allow_trade`, `allow_recycle`, `allow_marketplace_sell`, `allow_inventory_stack`, `interaction_type`, `interaction_modes_count`, `vending_ids`, `multiheight`, `customparams`, `effect_id_male`, `effect_id_female`, `clothing_on_walk`) VALUES
 	(3080, 3080, 'Hot Spot & Scoreboard', 'ads_idol_hotspot', 's', 1, 1, 0.20, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 103, '0', '', '', 0, 0, ''),
 	(3081, 3081, 'Voting Chair', 'ads_idol_voting_ch', 's', 1, 1, 1.20, 1, 1, 0, 0, 1, 1, 0, 0, 1, 'default', 3, '0', '', '', 0, 0, ''),
 	(3082, 3082, 'Eco Light 2', 'eco_light2', 's', 1, 1, 1.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
@@ -19569,7 +19488,8 @@ INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`,
 	(3580, 3580, 'Boiling Water', 'ktchn10_pot', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 3, '0', '', '', 0, 0, ''),
 	(3581, 3581, 'Kitchen Stove', 'ktchn10_stove', 's', 2, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(3582, 3582, 'StrayPixels Winner x1', 'easel_0', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 1, 1, 'default', 2, '0', '', '', 0, 0, ''),
-	(3583, 3583, 'Hay', 'petfood15', 's', 1, 1, 0.10, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'pet_food', 5, '0', '', '', 0, 0, ''),
+	(3583, 3583, 'Hay', 'petfood15', 's', 1, 1, 0.10, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'pet_food', 5, '0', '', '', 0, 0, '');
+INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`, `width`, `length`, `stack_height`, `allow_stack`, `allow_sit`, `allow_lay`, `allow_walk`, `allow_gift`, `allow_trade`, `allow_recycle`, `allow_marketplace_sell`, `allow_inventory_stack`, `interaction_type`, `interaction_modes_count`, `vending_ids`, `multiheight`, `customparams`, `effect_id_male`, `effect_id_female`, `clothing_on_walk`) VALUES
 	(3584, 3584, 'Accacia Tree', 'african_tree1', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(3585, 3585, 'ads_cheetos_hotdog name', 'ads_cheetos_hotdog', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(3586, 3586, 'Hospital Cabinet', 'hosptl_cab1', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'vendingmachine', 1, '1011,1013,1014,1015', '', '', 0, 0, ''),
@@ -20069,7 +19989,8 @@ INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`,
 	(4084, 4084, 'Amplifier 2', 'studio_amp2', 's', 2, 1, 2.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(4085, 4085, 'Stage Fence', 'studio_fence', 's', 1, 2, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(4086, 4086, 'Amplifier 1', 'studio_amp1', 's', 2, 1, 2.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
-	(4087, 4087, 'Floor Spotlight', 'studio_floorlight', 's', 2, 2, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 5, '0', '', '', 0, 0, ''),
+	(4087, 4087, 'Floor Spotlight', 'studio_floorlight', 's', 2, 2, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 5, '0', '', '', 0, 0, '');
+INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`, `width`, `length`, `stack_height`, `allow_stack`, `allow_sit`, `allow_lay`, `allow_walk`, `allow_gift`, `allow_trade`, `allow_recycle`, `allow_marketplace_sell`, `allow_inventory_stack`, `interaction_type`, `interaction_modes_count`, `vending_ids`, `multiheight`, `customparams`, `effect_id_male`, `effect_id_female`, `clothing_on_walk`) VALUES
 	(4088, 4088, 'Mixing Desk', 'studio_mixingdesk', 's', 5, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(4089, 4089, 'Studio Camera', 'studio_camera', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(4090, 4090, 'Stage Screen', 'studio_tv', 's', 1, 1, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
@@ -20569,7 +20490,8 @@ INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`,
 	(4592, 4592, 'Rebreeding Potion 1', 'mnstr_rebreed', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(4593, 4593, 'Monster Plant Fertiliser', 'mnstr_fert', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '16', 0, 0, ''),
 	(4594, 4594, 'Darkstar Dragons', 'dragonlamp_shinobi', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 1, 1, 'default', 3, '0', '', '', 0, 0, ''),
-	(4595, 4595, 'Shoji Divider', 'jp_divider', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
+	(4595, 4595, 'Shoji Divider', 'jp_divider', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, '');
+INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`, `width`, `length`, `stack_height`, `allow_stack`, `allow_sit`, `allow_lay`, `allow_walk`, `allow_gift`, `allow_trade`, `allow_recycle`, `allow_marketplace_sell`, `allow_inventory_stack`, `interaction_type`, `interaction_modes_count`, `vending_ids`, `multiheight`, `customparams`, `effect_id_male`, `effect_id_female`, `clothing_on_walk`) VALUES
 	(4596, 4596, 'Shoji Gate', 'jp_gate', 's', 1, 1, 1.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(4597, 4597, 'Golden Man-Eating Plant Trophy', 'prizetrophy_breed*1', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'trophy', 1, '0', '', '', 0, 0, ''),
 	(4598, 4598, 'Silver Man-Eating Plant Trophy', 'prizetrophy_breed*2', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'trophy', 1, '0', '', '', 0, 0, ''),
@@ -21069,7 +20991,8 @@ INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`,
 	(5092, 5092, 'Good Side Sculpture', 'mystics_gbed', 's', 1, 3, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(5093, 5093, 'Good Side Tree', 'mystics_gtree', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(5094, 5094, 'Wired Condition: Wearing Badge', 'wf_cnd_wearing_badge', 's', 1, 1, 0.65, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'wf_cnd_habbo_owns_badge', 2, '0', '', '', 0, 0, ''),
-	(5095, 5095, 'Wired Condition: Wearing Avatar Effect', 'wf_cnd_wearing_effect', 's', 1, 1, 0.65, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'wf_cnd_wearing_effect', 2, '0', '', '', 0, 0, ''),
+	(5095, 5095, 'Wired Condition: Wearing Avatar Effect', 'wf_cnd_wearing_effect', 's', 1, 1, 0.65, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'wf_cnd_wearing_effect', 2, '0', '', '', 0, 0, '');
+INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`, `width`, `length`, `stack_height`, `allow_stack`, `allow_sit`, `allow_lay`, `allow_walk`, `allow_gift`, `allow_trade`, `allow_recycle`, `allow_marketplace_sell`, `allow_inventory_stack`, `interaction_type`, `interaction_modes_count`, `vending_ids`, `multiheight`, `customparams`, `effect_id_male`, `effect_id_female`, `clothing_on_walk`) VALUES
 	(5096, 5096, 'Good Side Throne', 'mystics_gthrone', 's', 1, 1, 2.50, 0, 1, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(5097, 5097, 'Bad Side Throne', 'mystics_bthrone', 's', 1, 1, 2.50, 0, 1, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(5098, 5098, 'Crystal Loyalty Statue', 'mystics_ltstatue', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
@@ -21569,7 +21492,8 @@ INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`,
 	(5592, 5592, 'Marble Block 12', 'bc_block_marble*12', 's', 1, 1, 1.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(5593, 5593, 'Marble Block 13', 'bc_block_marble*13', 's', 1, 1, 1.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(5594, 5594, 'Marble Block 14', 'bc_block_marble*14', 's', 1, 1, 1.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
-	(5595, 5595, 'Marble Block 2', 'bc_block_marble*2', 's', 1, 1, 1.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
+	(5595, 5595, 'Marble Block 2', 'bc_block_marble*2', 's', 1, 1, 1.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, '');
+INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`, `width`, `length`, `stack_height`, `allow_stack`, `allow_sit`, `allow_lay`, `allow_walk`, `allow_gift`, `allow_trade`, `allow_recycle`, `allow_marketplace_sell`, `allow_inventory_stack`, `interaction_type`, `interaction_modes_count`, `vending_ids`, `multiheight`, `customparams`, `effect_id_male`, `effect_id_female`, `clothing_on_walk`) VALUES
 	(5596, 5596, 'Marble Block 3', 'bc_block_marble*3', 's', 1, 1, 1.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(5597, 5597, 'Marble Block 4', 'bc_block_marble*4', 's', 1, 1, 1.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(5598, 5598, 'Marble Block 5', 'bc_block_marble*5', 's', 1, 1, 1.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
@@ -22069,7 +21993,8 @@ INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`,
 	(6092, 6092, 'Blue Zone CCTV', 'matic_light_cam_blue', 's', 1, 1, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(6093, 6093, 'Green Zone CCTV', 'matic_light_cam_green', 's', 1, 1, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(6094, 6094, 'Body Sanitizer', 'matic_sanitizer', 's', 1, 1, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
-	(6095, 6095, 'Orange Zone CCTV', 'matic_light_cam_orange', 's', 1, 1, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
+	(6095, 6095, 'Orange Zone CCTV', 'matic_light_cam_orange', 's', 1, 1, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, '');
+INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`, `width`, `length`, `stack_height`, `allow_stack`, `allow_sit`, `allow_lay`, `allow_walk`, `allow_gift`, `allow_trade`, `allow_recycle`, `allow_marketplace_sell`, `allow_inventory_stack`, `interaction_type`, `interaction_modes_count`, `vending_ids`, `multiheight`, `customparams`, `effect_id_male`, `effect_id_female`, `clothing_on_walk`) VALUES
 	(6096, 6096, 'Messy Wardrobe', 'uni_messwardrobe', 's', 1, 2, 0.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(6097, 6097, 'Dragon Plushy', 'uni_plush1', 's', 1, 1, 0.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(6098, 6098, 'Hootie the Owl', 'uni_owl', 's', 1, 1, 0.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 3, '0', '', '', 0, 0, ''),
@@ -22569,7 +22494,8 @@ INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`,
 	(6592, 6592, 'Hemisphere Block 41', 'bc_hemisphere*41', 's', 1, 1, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'multiheight', 4, '0', '0.9;0.6;0.5;0.35', '', 0, 0, ''),
 	(6593, 6593, 'Hemisphere Block 42', 'bc_hemisphere*42', 's', 1, 1, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'multiheight', 4, '0', '0.9;0.6;0.5;0.35', '', 0, 0, ''),
 	(6594, 6594, 'Hemisphere Block 43', 'bc_hemisphere*43', 's', 1, 1, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'multiheight', 4, '0', '0.9;0.6;0.5;0.35', '', 0, 0, ''),
-	(6595, 6595, 'Hemisphere Block 44', 'bc_hemisphere*44', 's', 1, 1, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'multiheight', 4, '0', '0.9;0.6;0.5;0.35', '', 0, 0, ''),
+	(6595, 6595, 'Hemisphere Block 44', 'bc_hemisphere*44', 's', 1, 1, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'multiheight', 4, '0', '0.9;0.6;0.5;0.35', '', 0, 0, '');
+INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`, `width`, `length`, `stack_height`, `allow_stack`, `allow_sit`, `allow_lay`, `allow_walk`, `allow_gift`, `allow_trade`, `allow_recycle`, `allow_marketplace_sell`, `allow_inventory_stack`, `interaction_type`, `interaction_modes_count`, `vending_ids`, `multiheight`, `customparams`, `effect_id_male`, `effect_id_female`, `clothing_on_walk`) VALUES
 	(6596, 6596, 'Hemisphere Block 45', 'bc_hemisphere*45', 's', 1, 1, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'multiheight', 4, '0', '0.9;0.6;0.5;0.35', '', 0, 0, ''),
 	(6597, 6597, 'Hemisphere Block 46', 'bc_hemisphere*46', 's', 1, 1, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'multiheight', 4, '0', '0.9;0.6;0.5;0.35', '', 0, 0, ''),
 	(6598, 6598, 'Hemisphere Block 47', 'bc_hemisphere*47', 's', 1, 1, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'multiheight', 4, '0', '0.9;0.6;0.5;0.35', '', 0, 0, ''),
@@ -23069,7 +22995,8 @@ INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`,
 	(7092, 7092, 'Standing Triangular Prism 7', 'bc_standingtriangularprism*7', 's', 1, 1, 0.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'multiheight', 5, '0', '1.0;0.75;0.5;0.25;0.1', '', 0, 0, ''),
 	(7093, 7093, 'Standing Triangular Prism 8', 'bc_standingtriangularprism*8', 's', 1, 1, 0.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'multiheight', 5, '0', '1.0;0.75;0.5;0.25;0.1', '', 0, 0, ''),
 	(7094, 7094, 'Standing Triangular Prism 9', 'bc_standingtriangularprism*9', 's', 1, 1, 0.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'multiheight', 5, '0', '1.0;0.75;0.5;0.25;0.1', '', 0, 0, ''),
-	(7095, 7095, 'Large Block 15', 'bc_block_1*15', 's', 1, 1, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'multiheight', 5, '0', '1.0;0.75;0.5;0.25;0.1', '', 0, 0, ''),
+	(7095, 7095, 'Large Block 15', 'bc_block_1*15', 's', 1, 1, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'multiheight', 5, '0', '1.0;0.75;0.5;0.25;0.1', '', 0, 0, '');
+INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`, `width`, `length`, `stack_height`, `allow_stack`, `allow_sit`, `allow_lay`, `allow_walk`, `allow_gift`, `allow_trade`, `allow_recycle`, `allow_marketplace_sell`, `allow_inventory_stack`, `interaction_type`, `interaction_modes_count`, `vending_ids`, `multiheight`, `customparams`, `effect_id_male`, `effect_id_female`, `clothing_on_walk`) VALUES
 	(7096, 7096, 'Large Block 16', 'bc_block_1*16', 's', 1, 1, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'multiheight', 5, '0', '1.0;0.75;0.5;0.25;0.1', '', 0, 0, ''),
 	(7097, 7097, 'Large Block 17', 'bc_block_1*17', 's', 1, 1, 1.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'multiheight', 5, '0', '1.0;0.75;0.5;0.25;0.1', '', 0, 0, ''),
 	(7098, 7098, 'Large Block 18', 'bc_block_1*18', 's', 1, 1, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'multiheight', 5, '0', '1.0;0.75;0.5;0.25;0.1', '', 0, 0, ''),
@@ -23569,7 +23496,8 @@ INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`,
 	(7592, 7592, 'Q Block', 'bc_alpha1_q*6', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(7593, 7593, 'Q Block', 'bc_alpha1_q*7', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(7594, 7594, 'Q Block', 'bc_alpha1_q*8', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
-	(7595, 7595, 'Q Block', 'bc_alpha1_q*9', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
+	(7595, 7595, 'Q Block', 'bc_alpha1_q*9', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, '');
+INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`, `width`, `length`, `stack_height`, `allow_stack`, `allow_sit`, `allow_lay`, `allow_walk`, `allow_gift`, `allow_trade`, `allow_recycle`, `allow_marketplace_sell`, `allow_inventory_stack`, `interaction_type`, `interaction_modes_count`, `vending_ids`, `multiheight`, `customparams`, `effect_id_male`, `effect_id_female`, `clothing_on_walk`) VALUES
 	(7596, 7596, 'Y Block', 'bc_alpha1_y*1', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(7597, 7597, 'Y Block', 'bc_alpha1_y*10', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(7598, 7598, 'Y Block', 'bc_alpha1_y*11', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
@@ -24069,7 +23997,8 @@ INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`,
 	(8092, 8092, 'Pamela the Parasaurolophus', 'dino15_dinoprize6', 's', 1, 1, 0.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(8093, 8093, 'Plesiosaurus Fossil', 'dino15_fossil2', 's', 2, 1, 0.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'dino_fossil', 20, '0', '', '', 0, 0, ''),
 	(8094, 8094, 'Archaeopteryx Fossil', 'dino15_fossil5', 's', 2, 1, 0.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'dino_fossil', 20, '0', '', '', 0, 0, ''),
-	(8095, 8095, 'Venus Fly Trap', 'dino_c15_venusfly', 's', 1, 1, 0.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
+	(8095, 8095, 'Venus Fly Trap', 'dino_c15_venusfly', 's', 1, 1, 0.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, '');
+INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`, `width`, `length`, `stack_height`, `allow_stack`, `allow_sit`, `allow_lay`, `allow_walk`, `allow_gift`, `allow_trade`, `allow_recycle`, `allow_marketplace_sell`, `allow_inventory_stack`, `interaction_type`, `interaction_modes_count`, `vending_ids`, `multiheight`, `customparams`, `effect_id_male`, `effect_id_female`, `clothing_on_walk`) VALUES
 	(8096, 8096, 'Baby Dino Nest', 'dino_c15_nest', 's', 1, 1, 0.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(8097, 8097, 'Dinosaur Hat', 'clothing_dinohat', 's', 1, 1, 0.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'clothing', 2, '0', '', '', 0, 0, ''),
 	(8098, 8098, 'T-Rex Bone throne', 'dino15_throne', 's', 1, 1, 2.00, 0, 1, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
@@ -24569,7 +24498,8 @@ INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`,
 	(8592, 8592, 'Denim Shorts', 'clothing_denimshorts', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'clothing', 1, '0', '', '', 0, 0, ''),
 	(8593, 8593, 'clothing_brainjar', 'clothing_brainjar', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'clothing', 1, '0', '', '', 0, 0, ''),
 	(8594, 8594, 'Candy Duck', 'easter_c16_mallowduck', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 1, '0', '', '', 0, 0, ''),
-	(8595, 8595, 'Flower Power Outfit', 'clothing_floraloutfit', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'clothing', 1, '0', '', '', 0, 0, ''),
+	(8595, 8595, 'Flower Power Outfit', 'clothing_floraloutfit', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'clothing', 1, '0', '', '', 0, 0, '');
+INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`, `width`, `length`, `stack_height`, `allow_stack`, `allow_sit`, `allow_lay`, `allow_walk`, `allow_gift`, `allow_trade`, `allow_recycle`, `allow_marketplace_sell`, `allow_inventory_stack`, `interaction_type`, `interaction_modes_count`, `vending_ids`, `multiheight`, `customparams`, `effect_id_male`, `effect_id_female`, `clothing_on_walk`) VALUES
 	(8596, 8596, 'easter16_habberge9ltd', 'easter16_habberge9ltd', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 1, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(8597, 8597, 'Duck Hat', 'clothing_duckhat', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'clothing', 1, '0', '', '', 0, 0, ''),
 	(8598, 8598, 'Punk Outfit', 'clothing_punkoutfit2', 's', 1, 1, 1.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'clothing', 1, '0', '', '', 0, 0, ''),
@@ -25069,7 +24999,8 @@ INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`,
 	(9092, 9092, 'classic3_div2*0', 'classic3_div2*0', 's', 2, 1, 0.70, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(9093, 9093, 'classic3_div2*1', 'classic3_div2*1', 's', 2, 1, 0.70, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(9094, 9094, 'classic3_div2*2', 'classic3_div2*2', 's', 2, 1, 0.70, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
-	(9095, 9095, 'classic3_div2*3', 'classic3_div2*3', 's', 2, 1, 0.70, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
+	(9095, 9095, 'classic3_div2*3', 'classic3_div2*3', 's', 2, 1, 0.70, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, '');
+INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`, `width`, `length`, `stack_height`, `allow_stack`, `allow_sit`, `allow_lay`, `allow_walk`, `allow_gift`, `allow_trade`, `allow_recycle`, `allow_marketplace_sell`, `allow_inventory_stack`, `interaction_type`, `interaction_modes_count`, `vending_ids`, `multiheight`, `customparams`, `effect_id_male`, `effect_id_female`, `clothing_on_walk`) VALUES
 	(9096, 9096, 'classic3_div2*4', 'classic3_div2*4', 's', 2, 1, 0.70, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(9097, 9097, 'classic3_floor3*0', 'classic3_floor3*0', 's', 2, 2, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 1, '0', '', '', 0, 0, ''),
 	(9098, 9098, 'classic3_floor3*1', 'classic3_floor3*1', 's', 2, 2, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 1, '0', '', '', 0, 0, ''),
@@ -25569,7 +25500,8 @@ INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`,
 	(9592, 9592, 'Sininen basaarilamppu', 'bazaar_c17_lampblue', 's', 1, 1, 0.00, 0, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(9593, 9593, 'Sininen basaarityyny', 'bazaar_c17_pillowblue', 's', 1, 1, 1.00, 0, 1, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(9594, 9594, 'Basaarin kulmakatto', 'bazaar_c17_clothroof2', 's', 1, 1, 0.00, 0, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
-	(9595, 9595, 'Torikatos', 'bazaar_c17_marketroofsmall', 's', 2, 1, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
+	(9595, 9595, 'Torikatos', 'bazaar_c17_marketroofsmall', 's', 2, 1, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, '');
+INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`, `width`, `length`, `stack_height`, `allow_stack`, `allow_sit`, `allow_lay`, `allow_walk`, `allow_gift`, `allow_trade`, `allow_recycle`, `allow_marketplace_sell`, `allow_inventory_stack`, `interaction_type`, `interaction_modes_count`, `vending_ids`, `multiheight`, `customparams`, `effect_id_male`, `effect_id_female`, `clothing_on_walk`) VALUES
 	(9596, 9596, 'Vaaleanpunakirjailtu basaariverho', 'bazaar_c17_curtainbluepinktrim', 's', 2, 1, 0.00, 0, 0, 0, 0, 1, 1, 0, 0, 1, 'gate', 2, '0', '', '', 0, 0, ''),
 	(9597, 9597, 'Basaariparveke', 'bazaar_c17_balcony', 's', 0, 2, 0.00, 0, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(9598, 9598, 'Keltainen värjäysaine', 'bazaar_c17_dyeyellow', 's', 1, 1, 0.00, 0, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
@@ -26069,7 +26001,8 @@ INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`,
 	(10092, 10092, 'coralking_c18_boulders1 name', 'coralking_c18_boulders1', 's', 1, 1, 0.00, 0, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 3, '0', '', '', 0, 0, ''),
 	(10093, 10093, 'clothing_r18_goldfish', 'clothing_r18_goldfish', 's', 1, 1, 0.00, 0, 0, 0, 0, 0, 1, 0, 1, 1, 'clothing', 2, '0', '', '', 0, 0, ''),
 	(10094, 10094, 'coralking_r18_vanitytable name', 'coralking_r18_vanitytable', 's', 2, 2, 0.00, 0, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
-	(10095, 10095, 'coralking_c18_coralfloor name', 'coralking_c18_coralfloor', 's', 2, 2, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 3, '0', '', '', 0, 0, ''),
+	(10095, 10095, 'coralking_c18_coralfloor name', 'coralking_c18_coralfloor', 's', 2, 2, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 3, '0', '', '', 0, 0, '');
+INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`, `width`, `length`, `stack_height`, `allow_stack`, `allow_sit`, `allow_lay`, `allow_walk`, `allow_gift`, `allow_trade`, `allow_recycle`, `allow_marketplace_sell`, `allow_inventory_stack`, `interaction_type`, `interaction_modes_count`, `vending_ids`, `multiheight`, `customparams`, `effect_id_male`, `effect_id_female`, `clothing_on_walk`) VALUES
 	(10096, 10096, 'coralking_c18_bed name', 'coralking_c18_bed', 's', 1, 3, 2.00, 0, 0, 1, 0, 1, 1, 0, 0, 1, 'bed', 2, '0', '', '', 0, 0, ''),
 	(10097, 10097, 'coralking_c18_gazebo name', 'coralking_c18_gazebo', 's', 2, 2, 0.00, 1, 0, 0, 1, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(10098, 10098, 'coralking_c18_neoncoral3 name', 'coralking_c18_neoncoral3', 's', 1, 1, 0.00, 0, 0, 0, 0, 1, 1, 0, 0, 1, 'default', 2, '0', '', '', 0, 0, ''),
@@ -26569,7 +26502,8 @@ INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`,
 	(10592, 10592, 'fest_c19_hangingdecor', 'fest_c19_hangingdecor', 's', 1, 1, 0.00, 1, 0, 0, 1, 1, 1, 0, 1, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(10593, 10593, 'clothing_r19_rainbowhair', 'clothing_r19_rainbowhair', 's', 1, 1, 0.00, 0, 0, 0, 0, 1, 1, 0, 1, 1, 'clothing', 2, '0', '', '', 0, 0, ''),
 	(10594, 10594, 'clothing_bohotunic', 'clothing_bohotunic', 's', 1, 1, 0.00, 0, 0, 0, 0, 1, 1, 0, 1, 1, 'clothing', 2, '0', '', '', 0, 0, ''),
-	(10595, 10595, 'fest_c19_backdrop1', 'fest_c19_backdrop1', 's', 1, 1, 0.00, 1, 0, 0, 1, 1, 1, 0, 1, 1, 'default', 2, '0', '', '', 0, 0, ''),
+	(10595, 10595, 'fest_c19_backdrop1', 'fest_c19_backdrop1', 's', 1, 1, 0.00, 1, 0, 0, 1, 1, 1, 0, 1, 1, 'default', 2, '0', '', '', 0, 0, '');
+INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`, `width`, `length`, `stack_height`, `allow_stack`, `allow_sit`, `allow_lay`, `allow_walk`, `allow_gift`, `allow_trade`, `allow_recycle`, `allow_marketplace_sell`, `allow_inventory_stack`, `interaction_type`, `interaction_modes_count`, `vending_ids`, `multiheight`, `customparams`, `effect_id_male`, `effect_id_female`, `clothing_on_walk`) VALUES
 	(10596, 10596, 'fest_c19_dye1', 'fest_c19_dye1', 's', 1, 1, 0.00, 0, 0, 0, 0, 1, 1, 0, 1, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(10597, 10597, 'fest_c19_dye2', 'fest_c19_dye2', 's', 1, 1, 0.00, 0, 0, 0, 0, 1, 1, 0, 1, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(10598, 10598, 'fest_c19_cushion2', 'fest_c19_cushion2', 's', 1, 1, 1.20, 0, 1, 0, 0, 1, 1, 0, 1, 1, 'default', 2, '0', '', '', 0, 0, ''),
@@ -27069,7 +27003,8 @@ INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`,
 	(11092, 11092, 'clothing_r20_bunnyoutfit', 'clothing_r20_bunnyoutfit', 's', 1, 1, 0.00, 0, 0, 0, 0, 1, 1, 0, 1, 1, 'clothing', 2, '0', '', '', 0, 0, ''),
 	(11093, 11093, 'easter_c20_darkprize2', 'easter_c20_darkprize2', 's', 1, 1, 0.00, 0, 0, 0, 0, 1, 1, 0, 1, 1, 'crackable', 1, '0', '', '', 0, 0, ''),
 	(11094, 11094, 'clothing_puffyvest', 'clothing_puffyvest', 's', 1, 1, 0.00, 0, 0, 0, 0, 1, 1, 0, 1, 1, 'clothing', 2, '0', '', '', 0, 0, ''),
-	(11095, 11095, 'easter_c20_mountainslopes', 'easter_c20_mountainslopes', 's', 2, 2, 0.00, 0, 0, 0, 0, 1, 1, 0, 1, 1, 'default', 2, '0', '', '', 0, 0, ''),
+	(11095, 11095, 'easter_c20_mountainslopes', 'easter_c20_mountainslopes', 's', 2, 2, 0.00, 0, 0, 0, 0, 1, 1, 0, 1, 1, 'default', 2, '0', '', '', 0, 0, '');
+INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`, `width`, `length`, `stack_height`, `allow_stack`, `allow_sit`, `allow_lay`, `allow_walk`, `allow_gift`, `allow_trade`, `allow_recycle`, `allow_marketplace_sell`, `allow_inventory_stack`, `interaction_type`, `interaction_modes_count`, `vending_ids`, `multiheight`, `customparams`, `effect_id_male`, `effect_id_female`, `clothing_on_walk`) VALUES
 	(11096, 11096, 'easter_ltd20_fortuneduck', 'easter_ltd20_fortuneduck', 's', 2, 2, 0.00, 0, 0, 0, 0, 1, 1, 0, 1, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(11097, 11097, 'easter_r20_mystictree', 'easter_r20_mystictree', 's', 1, 1, 0.00, 0, 0, 0, 0, 1, 1, 0, 1, 1, 'default', 2, '0', '', '', 0, 0, ''),
 	(11098, 11098, 'easter_c20_campingessentials', 'easter_c20_campingessentials', 's', 1, 1, 0.00, 0, 0, 0, 0, 1, 1, 0, 1, 1, 'default', 2, '0', '', '', 0, 0, ''),
@@ -28053,8 +27988,7 @@ INSERT INTO `items_base` (`id`, `sprite_id`, `public_name`, `item_name`, `type`,
 	(50512, 0, 'MCH01', 'MCH01', 'b', 1, 1, 0.00, 1, 0, 0, 0, 1, 1, 0, 0, 1, 'badge', 1, '0', '0', '', 0, 0, '');
 
 -- Dumping structure for table habbo.items_crackable
-DROP TABLE IF EXISTS `items_crackable`;
-CREATE TABLE IF NOT EXISTS `items_crackable` (
+CREATE TABLE `items_crackable` (
   `item_id` int(11) NOT NULL,
   `item_name` varchar(255) NOT NULL COMMENT 'Item name for identification',
   `count` int(11) NOT NULL,
@@ -28070,7 +28004,6 @@ CREATE TABLE IF NOT EXISTS `items_crackable` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.items_crackable: 153 rows
-DELETE FROM `items_crackable`;
 /*!40000 ALTER TABLE `items_crackable` DISABLE KEYS */;
 INSERT INTO `items_crackable` (`item_id`, `item_name`, `count`, `prizes`, `achievement_tick`, `achievement_cracked`, `required_effect`, `subscription_duration`, `subscription_type`) VALUES
 	(4986, 'easter13_egg_0', 1000, '2012:12;2004:13;1934:12;1874:13;1866:12;1850:13;1842:12;1834:13', '', '', 0, NULL, NULL),
@@ -28229,8 +28162,7 @@ INSERT INTO `items_crackable` (`item_id`, `item_name`, `count`, `prizes`, `achie
 /*!40000 ALTER TABLE `items_crackable` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.items_highscore_data
-DROP TABLE IF EXISTS `items_highscore_data`;
-CREATE TABLE IF NOT EXISTS `items_highscore_data` (
+CREATE TABLE `items_highscore_data` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `item_id` int(11) NOT NULL,
   `user_ids` varchar(500) NOT NULL,
@@ -28244,35 +28176,29 @@ CREATE TABLE IF NOT EXISTS `items_highscore_data` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.items_highscore_data: ~0 rows (approximately)
-DELETE FROM `items_highscore_data`;
 
 -- Dumping structure for table habbo.items_hoppers
-DROP TABLE IF EXISTS `items_hoppers`;
-CREATE TABLE IF NOT EXISTS `items_hoppers` (
+CREATE TABLE `items_hoppers` (
   `item_id` int(11) NOT NULL,
   `base_item` int(11) NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.items_hoppers: 0 rows
-DELETE FROM `items_hoppers`;
 /*!40000 ALTER TABLE `items_hoppers` DISABLE KEYS */;
 /*!40000 ALTER TABLE `items_hoppers` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.items_presents
-DROP TABLE IF EXISTS `items_presents`;
-CREATE TABLE IF NOT EXISTS `items_presents` (
+CREATE TABLE `items_presents` (
   `item_id` int(11) NOT NULL,
   `base_item_reward` int(11) NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.items_presents: 0 rows
-DELETE FROM `items_presents`;
 /*!40000 ALTER TABLE `items_presents` DISABLE KEYS */;
 /*!40000 ALTER TABLE `items_presents` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.items_teleports
-DROP TABLE IF EXISTS `items_teleports`;
-CREATE TABLE IF NOT EXISTS `items_teleports` (
+CREATE TABLE `items_teleports` (
   `teleport_one_id` int(11) NOT NULL,
   `teleport_two_id` int(11) NOT NULL,
   KEY `teleport_one_id` (`teleport_one_id`) USING BTREE,
@@ -28280,13 +28206,11 @@ CREATE TABLE IF NOT EXISTS `items_teleports` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.items_teleports: 0 rows
-DELETE FROM `items_teleports`;
 /*!40000 ALTER TABLE `items_teleports` DISABLE KEYS */;
 /*!40000 ALTER TABLE `items_teleports` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.logs_hc_payday
-DROP TABLE IF EXISTS `logs_hc_payday`;
-CREATE TABLE IF NOT EXISTS `logs_hc_payday` (
+CREATE TABLE `logs_hc_payday` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `timestamp` int(10) unsigned DEFAULT NULL,
   `user_id` int(10) unsigned DEFAULT NULL,
@@ -28303,11 +28227,9 @@ CREATE TABLE IF NOT EXISTS `logs_hc_payday` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.logs_hc_payday: ~0 rows (approximately)
-DELETE FROM `logs_hc_payday`;
 
 -- Dumping structure for table habbo.logs_shop_purchases
-DROP TABLE IF EXISTS `logs_shop_purchases`;
-CREATE TABLE IF NOT EXISTS `logs_shop_purchases` (
+CREATE TABLE `logs_shop_purchases` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `timestamp` int(10) unsigned DEFAULT NULL,
   `user_id` int(11) DEFAULT NULL,
@@ -28324,11 +28246,9 @@ CREATE TABLE IF NOT EXISTS `logs_shop_purchases` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.logs_shop_purchases: ~0 rows (approximately)
-DELETE FROM `logs_shop_purchases`;
 
 -- Dumping structure for table habbo.marketplace_items
-DROP TABLE IF EXISTS `marketplace_items`;
-CREATE TABLE IF NOT EXISTS `marketplace_items` (
+CREATE TABLE `marketplace_items` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `item_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
@@ -28344,13 +28264,11 @@ CREATE TABLE IF NOT EXISTS `marketplace_items` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.marketplace_items: 0 rows
-DELETE FROM `marketplace_items`;
 /*!40000 ALTER TABLE `marketplace_items` DISABLE KEYS */;
 /*!40000 ALTER TABLE `marketplace_items` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.messenger_categories
-DROP TABLE IF EXISTS `messenger_categories`;
-CREATE TABLE IF NOT EXISTS `messenger_categories` (
+CREATE TABLE `messenger_categories` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(25) NOT NULL,
   `user_id` int(11) NOT NULL,
@@ -28358,11 +28276,9 @@ CREATE TABLE IF NOT EXISTS `messenger_categories` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.messenger_categories: ~0 rows (approximately)
-DELETE FROM `messenger_categories`;
 
 -- Dumping structure for table habbo.messenger_friendrequests
-DROP TABLE IF EXISTS `messenger_friendrequests`;
-CREATE TABLE IF NOT EXISTS `messenger_friendrequests` (
+CREATE TABLE `messenger_friendrequests` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_to_id` int(11) NOT NULL DEFAULT 0,
   `user_from_id` int(11) NOT NULL DEFAULT 0,
@@ -28372,11 +28288,9 @@ CREATE TABLE IF NOT EXISTS `messenger_friendrequests` (
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.messenger_friendrequests: ~0 rows (approximately)
-DELETE FROM `messenger_friendrequests`;
 
 -- Dumping structure for table habbo.messenger_friendships
-DROP TABLE IF EXISTS `messenger_friendships`;
-CREATE TABLE IF NOT EXISTS `messenger_friendships` (
+CREATE TABLE `messenger_friendships` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_one_id` int(11) NOT NULL DEFAULT 0,
   `user_two_id` int(11) NOT NULL DEFAULT 0,
@@ -28391,11 +28305,9 @@ CREATE TABLE IF NOT EXISTS `messenger_friendships` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.messenger_friendships: ~0 rows (approximately)
-DELETE FROM `messenger_friendships`;
 
 -- Dumping structure for table habbo.messenger_offline
-DROP TABLE IF EXISTS `messenger_offline`;
-CREATE TABLE IF NOT EXISTS `messenger_offline` (
+CREATE TABLE `messenger_offline` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL DEFAULT 0,
   `user_from_id` int(11) NOT NULL DEFAULT 0,
@@ -28405,11 +28317,9 @@ CREATE TABLE IF NOT EXISTS `messenger_offline` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.messenger_offline: ~0 rows (approximately)
-DELETE FROM `messenger_offline`;
 
 -- Dumping structure for table habbo.namechange_log
-DROP TABLE IF EXISTS `namechange_log`;
-CREATE TABLE IF NOT EXISTS `namechange_log` (
+CREATE TABLE `namechange_log` (
   `user_id` int(11) NOT NULL,
   `old_name` varchar(32) NOT NULL,
   `new_name` varchar(32) NOT NULL,
@@ -28417,13 +28327,11 @@ CREATE TABLE IF NOT EXISTS `namechange_log` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.namechange_log: 0 rows
-DELETE FROM `namechange_log`;
 /*!40000 ALTER TABLE `namechange_log` DISABLE KEYS */;
 /*!40000 ALTER TABLE `namechange_log` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.navigator_filter
-DROP TABLE IF EXISTS `navigator_filter`;
-CREATE TABLE IF NOT EXISTS `navigator_filter` (
+CREATE TABLE `navigator_filter` (
   `key` varchar(11) NOT NULL,
   `field` varchar(32) NOT NULL,
   `compare` enum('equals','equals_ignore_case','contains') NOT NULL,
@@ -28432,7 +28340,6 @@ CREATE TABLE IF NOT EXISTS `navigator_filter` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.navigator_filter: 7 rows
-DELETE FROM `navigator_filter`;
 /*!40000 ALTER TABLE `navigator_filter` DISABLE KEYS */;
 INSERT INTO `navigator_filter` (`key`, `field`, `compare`, `database_query`) VALUES
 	('anything', 'filterAnything', 'contains', 'SELECT rooms.*, CONCAT_WS(rooms.owner_name, rooms.name, rooms.description, rooms.tags, guilds.name, guilds.description) as whole FROM rooms LEFT JOIN guilds ON rooms.guild_id = guilds.id HAVING whole LIKE ? '),
@@ -28445,8 +28352,7 @@ INSERT INTO `navigator_filter` (`key`, `field`, `compare`, `database_query`) VAL
 /*!40000 ALTER TABLE `navigator_filter` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.navigator_flatcats
-DROP TABLE IF EXISTS `navigator_flatcats`;
-CREATE TABLE IF NOT EXISTS `navigator_flatcats` (
+CREATE TABLE `navigator_flatcats` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `min_rank` int(11) NOT NULL DEFAULT 0,
   `caption_save` varchar(32) NOT NULL DEFAULT 'caption_save',
@@ -28460,7 +28366,6 @@ CREATE TABLE IF NOT EXISTS `navigator_flatcats` (
 ) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.navigator_flatcats: ~9 rows (approximately)
-DELETE FROM `navigator_flatcats`;
 INSERT INTO `navigator_flatcats` (`id`, `min_rank`, `caption_save`, `caption`, `can_trade`, `max_user_count`, `public`, `list_type`, `order_num`) VALUES
 	(1, 1, 'caption_save', '${navigator.flatcategory.global.BC}', '0', 100, '0', 0, 0),
 	(2, 1, 'caption_save_building', '${navigator.flatcategory.global.BUILDING}', '0', 100, '0', 0, 0),
@@ -28473,8 +28378,7 @@ INSERT INTO `navigator_flatcats` (`id`, `min_rank`, `caption_save`, `caption`, `
 	(9, 1, 'caption_save_party', '${navigator.flatcategory.global.PARTY}', '0', 100, '0', 0, 0);
 
 -- Dumping structure for table habbo.navigator_publiccats
-DROP TABLE IF EXISTS `navigator_publiccats`;
-CREATE TABLE IF NOT EXISTS `navigator_publiccats` (
+CREATE TABLE `navigator_publiccats` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(32) NOT NULL DEFAULT 'Staff Picks',
   `image` enum('0','1') NOT NULL DEFAULT '0',
@@ -28484,7 +28388,6 @@ CREATE TABLE IF NOT EXISTS `navigator_publiccats` (
 ) ENGINE=MyISAM AUTO_INCREMENT=7 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.navigator_publiccats: 6 rows
-DELETE FROM `navigator_publiccats`;
 /*!40000 ALTER TABLE `navigator_publiccats` DISABLE KEYS */;
 INSERT INTO `navigator_publiccats` (`id`, `name`, `image`, `visible`, `order_num`) VALUES
 	(1, 'Staff Picks', '0', '1', 0),
@@ -28496,21 +28399,18 @@ INSERT INTO `navigator_publiccats` (`id`, `name`, `image`, `visible`, `order_num
 /*!40000 ALTER TABLE `navigator_publiccats` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.navigator_publics
-DROP TABLE IF EXISTS `navigator_publics`;
-CREATE TABLE IF NOT EXISTS `navigator_publics` (
+CREATE TABLE `navigator_publics` (
   `public_cat_id` int(11) NOT NULL,
   `room_id` int(11) NOT NULL,
   `visible` enum('0','1') NOT NULL DEFAULT '1'
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.navigator_publics: 0 rows
-DELETE FROM `navigator_publics`;
 /*!40000 ALTER TABLE `navigator_publics` DISABLE KEYS */;
 /*!40000 ALTER TABLE `navigator_publics` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.nux_gifts
-DROP TABLE IF EXISTS `nux_gifts`;
-CREATE TABLE IF NOT EXISTS `nux_gifts` (
+CREATE TABLE `nux_gifts` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `type` enum('item','room') NOT NULL DEFAULT 'item',
   `value` varchar(32) NOT NULL COMMENT 'If type item then items.item_name. If type room then room id to copy.',
@@ -28519,7 +28419,6 @@ CREATE TABLE IF NOT EXISTS `nux_gifts` (
 ) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.nux_gifts: 3 rows
-DELETE FROM `nux_gifts`;
 /*!40000 ALTER TABLE `nux_gifts` DISABLE KEYS */;
 INSERT INTO `nux_gifts` (`id`, `type`, `value`, `image`) VALUES
 	(1, 'item', 'rare_daffodil_rug', 'notifications/rare_daffodil_rug.png'),
@@ -28528,8 +28427,7 @@ INSERT INTO `nux_gifts` (`id`, `type`, `value`, `image`) VALUES
 /*!40000 ALTER TABLE `nux_gifts` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.password_resets
-DROP TABLE IF EXISTS `password_resets`;
-CREATE TABLE IF NOT EXISTS `password_resets` (
+CREATE TABLE `password_resets` (
   `user_id` int(11) NOT NULL,
   `token` varchar(128) NOT NULL,
   `expires_at` timestamp NOT NULL,
@@ -28539,11 +28437,9 @@ CREATE TABLE IF NOT EXISTS `password_resets` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Dumping data for table habbo.password_resets: ~0 rows (approximately)
-DELETE FROM `password_resets`;
 
 -- Dumping structure for table habbo.permission_definitions
-DROP TABLE IF EXISTS `permission_definitions`;
-CREATE TABLE IF NOT EXISTS `permission_definitions` (
+CREATE TABLE `permission_definitions` (
   `permission_key` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
   `max_value` tinyint(3) unsigned NOT NULL DEFAULT 1,
   `comment` text NOT NULL,
@@ -28558,7 +28454,6 @@ CREATE TABLE IF NOT EXISTS `permission_definitions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_uca1400_ai_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.permission_definitions: ~201 rows (approximately)
-DELETE FROM `permission_definitions`;
 INSERT INTO `permission_definitions` (`permission_key`, `max_value`, `comment`, `rank_1`, `rank_2`, `rank_3`, `rank_4`, `rank_5`, `rank_6`, `rank_7`) VALUES
 	('acc_ads_background', 1, 'Allows editing room advertisement backgrounds.', 0, 0, 0, 0, 0, 0, 1),
 	('acc_ambassador', 1, 'Marks the rank as an ambassador for ambassador-only tools and visuals.', 0, 0, 0, 0, 0, 0, 1),
@@ -28763,8 +28658,7 @@ INSERT INTO `permission_definitions` (`permission_key`, `max_value`, `comment`, 
 	('kiss_cmd', 2, 'Legacy alias used for the kiss command permission.', 0, 0, 0, 0, 0, 0, 0);
 
 -- Dumping structure for table habbo.permission_ranks
-DROP TABLE IF EXISTS `permission_ranks`;
-CREATE TABLE IF NOT EXISTS `permission_ranks` (
+CREATE TABLE `permission_ranks` (
   `id` int(11) NOT NULL,
   `rank_name` varchar(25) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
   `hidden_rank` tinyint(1) NOT NULL DEFAULT 0,
@@ -28785,7 +28679,6 @@ CREATE TABLE IF NOT EXISTS `permission_ranks` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_uca1400_ai_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.permission_ranks: ~7 rows (approximately)
-DELETE FROM `permission_ranks`;
 INSERT INTO `permission_ranks` (`id`, `rank_name`, `hidden_rank`, `badge`, `job_description`, `staff_color`, `staff_background`, `level`, `room_effect`, `log_commands`, `prefix`, `prefix_color`, `auto_credits_amount`, `auto_pixels_amount`, `auto_gotw_amount`, `auto_points_amount`) VALUES
 	(1, 'Member', 0, '', 'Here to help', '#327fa8', 'staff-bg.png', 1, 0, '0', '', '', 0, 0, 0, 0),
 	(2, 'VIP', 0, '', 'Here to help', '#327fa8', 'staff-bg.png', 2, 0, '0', '', '', 0, 0, 0, 0),
@@ -28796,8 +28689,7 @@ INSERT INTO `permission_ranks` (`id`, `rank_name`, `hidden_rank`, `badge`, `job_
 	(7, 'Administrator', 0, 'ADM', 'Here to help', '#327fa8', 'staff-bg.png', 7, 0, '0', 'ADM', '#A1A1A1', 0, 0, 0, 0);
 
 -- Dumping structure for table habbo.permissions
-DROP TABLE IF EXISTS `permissions`;
-CREATE TABLE IF NOT EXISTS `permissions` (
+CREATE TABLE `permissions` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `rank_name` varchar(25) NOT NULL,
   `hidden_rank` tinyint(1) NOT NULL DEFAULT 0,
@@ -29014,7 +28906,6 @@ CREATE TABLE IF NOT EXISTS `permissions` (
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.permissions: ~7 rows (approximately)
-DELETE FROM `permissions`;
 INSERT INTO `permissions` (`id`, `rank_name`, `hidden_rank`, `badge`, `job_description`, `staff_color`, `staff_background`, `level`, `room_effect`, `log_commands`, `prefix`, `prefix_color`, `cmd_about`, `cmd_alert`, `cmd_allow_trading`, `cmd_badge`, `cmd_ban`, `cmd_blockalert`, `cmd_bots`, `cmd_bundle`, `cmd_calendar`, `cmd_changename`, `cmd_chatcolor`, `cmd_commands`, `cmd_connect_camera`, `cmd_control`, `cmd_coords`, `cmd_credits`, `cms_dance`, `cmd_subscription`, `cmd_danceall`, `cmd_diagonal`, `cmd_disconnect`, `cmd_duckets`, `cmd_ejectall`, `cmd_empty`, `cmd_empty_bots`, `cmd_empty_pets`, `cmd_enable`, `cmd_event`, `cmd_faceless`, `cmd_fastwalk`, `cmd_filterword`, `cmd_freeze`, `cmd_freeze_bots`, `cmd_gift`, `cmd_give_rank`, `cmd_ha`, `acc_can_stalk`, `cmd_hal`, `cmd_invisible`, `cmd_ip_ban`, `cmd_machine_ban`, `cmd_hand_item`, `cmd_happyhour`, `cmd_hidewired`, `cmd_kickall`, `cmd_softkick`, `cmd_massbadge`, `cmd_roombadge`, `cmd_masscredits`, `cmd_massduckets`, `cmd_massgift`, `cmd_masspoints`, `cmd_moonwalk`, `cmd_mimic`, `cmd_multi`, `cmd_mute`, `cmd_pet_info`, `cmd_pickall`, `cmd_plugins`, `cmd_points`, `cmd_promote_offer`, `cmd_pull`, `cmd_push`, `cmd_redeem`, `cmd_reload_room`, `cmd_roomalert`, `cmd_roomcredits`, `cmd_roomeffect`, `cmd_roomgift`, `cmd_roomitem`, `cmd_roommute`, `cmd_roompixels`, `cmd_roompoints`, `cmd_say`, `cmd_say_all`, `cmd_setmax`, `cmd_set_poll`, `cmd_setpublic`, `cmd_setspeed`, `cmd_shout`, `cmd_shout_all`, `cmd_shutdown`, `cmd_sitdown`, `cmd_staffalert`, `cmd_staffonline`, `cmd_summon`, `cmd_summonrank`, `cmd_super_ban`, `cmd_stalk`, `cmd_superpull`, `cmd_take_badge`, `cmd_talk`, `cmd_teleport`, `cmd_trash`, `cmd_transform`, `cmd_unban`, `cmd_unload`, `cmd_unmute`, `cmd_update_achievements`, `cmd_update_all`, `cmd_update_bots`, `cmd_update_catalogue`, `cmd_update_config`, `cmd_update_guildparts`, `cmd_update_hotel_view`, `cmd_update_items`, `cmd_update_navigator`, `cmd_update_permissions`, `cmd_update_pet_data`, `cmd_update_plugins`, `cmd_update_polls`, `cmd_update_texts`, `cmd_update_wordfilter`, `cmd_userinfo`, `cmd_word_quiz`, `cmd_warp`, `acc_anychatcolor`, `acc_anyroomowner`, `acc_empty_others`, `acc_enable_others`, `acc_see_whispers`, `acc_see_tentchat`, `acc_superwired`, `acc_supporttool`, `acc_unkickable`, `acc_guildgate`, `acc_moverotate`, `acc_placefurni`, `acc_unlimited_bots`, `acc_unlimited_pets`, `acc_hide_ip`, `acc_hide_mail`, `acc_not_mimiced`, `acc_chat_no_flood`, `acc_staff_chat`, `acc_staff_pick`, `acc_enteranyroom`, `acc_fullrooms`, `acc_infinite_credits`, `acc_infinite_pixels`, `acc_infinite_points`, `acc_ambassador`, `acc_debug`, `acc_chat_no_limit`, `acc_chat_no_filter`, `acc_nomute`, `acc_guild_admin`, `acc_catalog_ids`, `acc_catalogfurni`, `acc_modtool_ticket_q`, `acc_modtool_user_logs`, `acc_modtool_user_alert`, `acc_modtool_user_kick`, `acc_modtool_user_ban`, `acc_modtool_room_info`, `acc_modtool_room_logs`, `acc_trade_anywhere`, `acc_update_notifications`, `acc_helper_use_guide_tool`, `acc_helper_give_guide_tours`, `acc_helper_judge_chat_reviews`, `acc_floorplan_editor`, `acc_camera`, `acc_ads_background`, `cmd_wordquiz`, `acc_room_staff_tags`, `acc_infinite_friends`, `acc_mimic_unredeemed`, `cmd_update_youtube_playlists`, `cmd_add_youtube_playlist`, `auto_credits_amount`, `auto_pixels_amount`, `auto_gotw_amount`, `auto_points_amount`, `acc_mention`, `cmd_setstate`, `cmd_buildheight`, `cmd_setrotation`, `cmd_sellroom`, `cmd_buyroom`, `cmd_pay`, `cmd_kill`, `cmd_hoverboard`, `cmd_kiss`, `cmd_hug`, `cmd_welcome`, `cmd_disable_effects`, `cmd_brb`, `cmd_nuke`, `cmd_slime`, `cmd_explain`, `cmd_closedice`, `acc_closedice_room`, `cmd_set`, `cmd_furnidata`, `kiss_cmd`, `acc_calendar_force`, `cmd_update_calendar`, `acc_unignorable`, `cmd_update_chat_bubbles`) VALUES
 	(1, 'Member', 0, '', 'Here to help', '#327fa8', 'staff-bg.png', 1, 0, '0', '', '', '1', '0', '1', '0', '0', '0', '1', '0', '0', '0', '0', '1', '0', '0', '1', '0', '0', '0', '0', '1', '0', '0', '1', '1', '1', '1', '1', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '2', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '1', '0', '0', '0', '0', '0', '0', '2', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '1', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', 0, 0, 0, 0, '0', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '0', '2', '1', '1', '1', '1', '1', '2', '1', '0', '0', '0', '0', '0', '0'),
 	(2, 'VIP', 0, '', 'Here to help', '#327fa8', 'staff-bg.png', 2, 0, '0', '', '', '1', '0', '1', '0', '0', '0', '1', '0', '0', '0', '0', '1', '0', '0', '0', '0', '0', '0', '0', '1', '0', '0', '1', '1', '1', '1', '1', '0', '0', '0', '0', '0', '1', '0', '0', '0', '0', '0', '0', '0', '0', '1', '0', '2', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '1', '1', '0', '0', '0', '0', '0', '2', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '1', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '1', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', 0, 0, 0, 0, '0', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '0', '2', '1', '1', '1', '1', '1', '2', '1', '0', '0', '0', '0', '0', '0'),
@@ -29025,8 +28916,7 @@ INSERT INTO `permissions` (`id`, `rank_name`, `hidden_rank`, `badge`, `job_descr
 	(7, 'Administrator', 0, 'ADM', 'Here to help', '#327fa8', 'staff-bg.png', 7, 0, '0', 'ADM', '#A1A1A1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '0', '0', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '0', '1', '0', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '0', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '0', '1', '1', '1', '1', '1', '1', '1', '1', '1', '0', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '0', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', 0, 0, 0, 0, '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '0', '0', '0', '0', '0');
 
 -- Dumping structure for table habbo.pet_actions
-DROP TABLE IF EXISTS `pet_actions`;
-CREATE TABLE IF NOT EXISTS `pet_actions` (
+CREATE TABLE `pet_actions` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `pet_type` int(11) NOT NULL,
   `pet_name` varchar(32) NOT NULL,
@@ -29039,7 +28929,6 @@ CREATE TABLE IF NOT EXISTS `pet_actions` (
 ) ENGINE=MyISAM AUTO_INCREMENT=77 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.pet_actions: 36 rows
-DELETE FROM `pet_actions`;
 /*!40000 ALTER TABLE `pet_actions` DISABLE KEYS */;
 INSERT INTO `pet_actions` (`ID`, `pet_type`, `pet_name`, `offspring_type`, `happy_actions`, `tired_actions`, `random_actions`, `can_swim`) VALUES
 	(0, 0, 'Dog', 29, '', '', '', '0'),
@@ -29081,14 +28970,12 @@ INSERT INTO `pet_actions` (`ID`, `pet_type`, `pet_name`, `offspring_type`, `happ
 /*!40000 ALTER TABLE `pet_actions` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.pet_breeding
-DROP TABLE IF EXISTS `pet_breeding`;
-CREATE TABLE IF NOT EXISTS `pet_breeding` (
+CREATE TABLE `pet_breeding` (
   `pet_id` int(11) NOT NULL,
   `offspring_id` int(11) NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.pet_breeding: 5 rows
-DELETE FROM `pet_breeding`;
 /*!40000 ALTER TABLE `pet_breeding` DISABLE KEYS */;
 INSERT INTO `pet_breeding` (`pet_id`, `offspring_id`) VALUES
 	(0, 29),
@@ -29099,15 +28986,13 @@ INSERT INTO `pet_breeding` (`pet_id`, `offspring_id`) VALUES
 /*!40000 ALTER TABLE `pet_breeding` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.pet_breeding_races
-DROP TABLE IF EXISTS `pet_breeding_races`;
-CREATE TABLE IF NOT EXISTS `pet_breeding_races` (
+CREATE TABLE `pet_breeding_races` (
   `pet_type` int(11) NOT NULL,
   `rarity_level` int(11) NOT NULL,
   `breed` int(11) NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.pet_breeding_races: 100 rows
-DELETE FROM `pet_breeding_races`;
 /*!40000 ALTER TABLE `pet_breeding_races` DISABLE KEYS */;
 INSERT INTO `pet_breeding_races` (`pet_type`, `rarity_level`, `breed`) VALUES
 	(29, 1, 0),
@@ -29213,8 +29098,7 @@ INSERT INTO `pet_breeding_races` (`pet_type`, `rarity_level`, `breed`) VALUES
 /*!40000 ALTER TABLE `pet_breeding_races` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.pet_breeds
-DROP TABLE IF EXISTS `pet_breeds`;
-CREATE TABLE IF NOT EXISTS `pet_breeds` (
+CREATE TABLE `pet_breeds` (
   `race` int(11) NOT NULL,
   `color_one` int(11) NOT NULL,
   `color_two` int(11) NOT NULL,
@@ -29224,7 +29108,6 @@ CREATE TABLE IF NOT EXISTS `pet_breeds` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.pet_breeds: 408 rows
-DELETE FROM `pet_breeds`;
 /*!40000 ALTER TABLE `pet_breeds` DISABLE KEYS */;
 INSERT INTO `pet_breeds` (`race`, `color_one`, `color_two`, `has_color_one`, `has_color_two`) VALUES
 	(0, 0, 0, '1', '0'),
@@ -29638,14 +29521,12 @@ INSERT INTO `pet_breeds` (`race`, `color_one`, `color_two`, `has_color_one`, `ha
 /*!40000 ALTER TABLE `pet_breeds` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.pet_commands
-DROP TABLE IF EXISTS `pet_commands`;
-CREATE TABLE IF NOT EXISTS `pet_commands` (
+CREATE TABLE `pet_commands` (
   `pet_id` int(11) NOT NULL,
   `command_id` int(11) NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.pet_commands: 22 rows
-DELETE FROM `pet_commands`;
 /*!40000 ALTER TABLE `pet_commands` DISABLE KEYS */;
 INSERT INTO `pet_commands` (`pet_id`, `command_id`) VALUES
 	(12, 0),
@@ -29673,8 +29554,7 @@ INSERT INTO `pet_commands` (`pet_id`, `command_id`) VALUES
 /*!40000 ALTER TABLE `pet_commands` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.pet_commands_data
-DROP TABLE IF EXISTS `pet_commands_data`;
-CREATE TABLE IF NOT EXISTS `pet_commands_data` (
+CREATE TABLE `pet_commands_data` (
   `command_id` int(11) NOT NULL,
   `text` varchar(15) NOT NULL,
   `required_level` int(11) NOT NULL,
@@ -29685,7 +29565,6 @@ CREATE TABLE IF NOT EXISTS `pet_commands_data` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.pet_commands_data: 46 rows
-DELETE FROM `pet_commands_data`;
 /*!40000 ALTER TABLE `pet_commands_data` DISABLE KEYS */;
 INSERT INTO `pet_commands_data` (`command_id`, `text`, `required_level`, `reward_xp`, `cost_happiness`, `cost_energy`) VALUES
 	(0, 'Free', 1, 5, 0, 0),
@@ -29737,51 +29616,43 @@ INSERT INTO `pet_commands_data` (`command_id`, `text`, `required_level`, `reward
 /*!40000 ALTER TABLE `pet_commands_data` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.pet_drinks
-DROP TABLE IF EXISTS `pet_drinks`;
-CREATE TABLE IF NOT EXISTS `pet_drinks` (
+CREATE TABLE `pet_drinks` (
   `pet_id` int(11) NOT NULL DEFAULT 0 COMMENT 'Leave 0 to have it affect all pet types.',
   `item_id` int(11) NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.pet_drinks: 0 rows
-DELETE FROM `pet_drinks`;
 /*!40000 ALTER TABLE `pet_drinks` DISABLE KEYS */;
 /*!40000 ALTER TABLE `pet_drinks` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.pet_foods
-DROP TABLE IF EXISTS `pet_foods`;
-CREATE TABLE IF NOT EXISTS `pet_foods` (
+CREATE TABLE `pet_foods` (
   `pet_id` int(11) NOT NULL DEFAULT 0 COMMENT 'Leave 0 to have it affect all pet types.',
   `item_id` int(11) NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.pet_foods: 0 rows
-DELETE FROM `pet_foods`;
 /*!40000 ALTER TABLE `pet_foods` DISABLE KEYS */;
 /*!40000 ALTER TABLE `pet_foods` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.pet_items
-DROP TABLE IF EXISTS `pet_items`;
-CREATE TABLE IF NOT EXISTS `pet_items` (
+CREATE TABLE `pet_items` (
   `pet_id` int(11) NOT NULL COMMENT 'Leave 0 to have it affect all pet types.',
   `item_id` int(11) NOT NULL COMMENT 'Item id of a item having one of the following interactions: nest, pet_food, pet_drink'
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.pet_items: 0 rows
-DELETE FROM `pet_items`;
 /*!40000 ALTER TABLE `pet_items` DISABLE KEYS */;
 /*!40000 ALTER TABLE `pet_items` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.pet_vocals
-DROP TABLE IF EXISTS `pet_vocals`;
-CREATE TABLE IF NOT EXISTS `pet_vocals` (
+CREATE TABLE `pet_vocals` (
   `pet_id` int(11) NOT NULL DEFAULT 0 COMMENT 'Leave 0 to have it apply to all pet types.',
   `type` enum('DISOBEY','DRINKING','EATING','GENERIC_HAPPY','GENERIC_NEUTRAL','GENERIC_SAD','GREET_OWNER','HUNGRY','LEVEL_UP','MUTED','PLAYFUL','SLEEPING','THIRSTY','TIRED','UNKNOWN_COMMAND') NOT NULL DEFAULT 'GENERIC_HAPPY',
   `message` varchar(100) NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.pet_vocals: 5 rows
-DELETE FROM `pet_vocals`;
 /*!40000 ALTER TABLE `pet_vocals` DISABLE KEYS */;
 INSERT INTO `pet_vocals` (`pet_id`, `type`, `message`) VALUES
 	(0, 'GENERIC_HAPPY', 'Yay, lets play!'),
@@ -29792,8 +29663,7 @@ INSERT INTO `pet_vocals` (`pet_id`, `type`, `message`) VALUES
 /*!40000 ALTER TABLE `pet_vocals` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.polls
-DROP TABLE IF EXISTS `polls`;
-CREATE TABLE IF NOT EXISTS `polls` (
+CREATE TABLE `polls` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `title` varchar(255) NOT NULL DEFAULT 'Hey! We''d appreciate it if you could take some time to answer these questions. It will help improve our hotel.',
   `thanks_message` varchar(255) NOT NULL,
@@ -29802,13 +29672,11 @@ CREATE TABLE IF NOT EXISTS `polls` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.polls: 0 rows
-DELETE FROM `polls`;
 /*!40000 ALTER TABLE `polls` DISABLE KEYS */;
 /*!40000 ALTER TABLE `polls` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.polls_answers
-DROP TABLE IF EXISTS `polls_answers`;
-CREATE TABLE IF NOT EXISTS `polls_answers` (
+CREATE TABLE `polls_answers` (
   `poll_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `question_id` int(11) NOT NULL,
@@ -29817,13 +29685,11 @@ CREATE TABLE IF NOT EXISTS `polls_answers` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.polls_answers: 0 rows
-DELETE FROM `polls_answers`;
 /*!40000 ALTER TABLE `polls_answers` DISABLE KEYS */;
 /*!40000 ALTER TABLE `polls_answers` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.polls_questions
-DROP TABLE IF EXISTS `polls_questions`;
-CREATE TABLE IF NOT EXISTS `polls_questions` (
+CREATE TABLE `polls_questions` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `parent_id` int(11) NOT NULL DEFAULT 0,
   `poll_id` int(11) NOT NULL,
@@ -29836,25 +29702,21 @@ CREATE TABLE IF NOT EXISTS `polls_questions` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.polls_questions: 0 rows
-DELETE FROM `polls_questions`;
 /*!40000 ALTER TABLE `polls_questions` DISABLE KEYS */;
 /*!40000 ALTER TABLE `polls_questions` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.recycler_prizes
-DROP TABLE IF EXISTS `recycler_prizes`;
-CREATE TABLE IF NOT EXISTS `recycler_prizes` (
+CREATE TABLE `recycler_prizes` (
   `rarity` int(11) NOT NULL,
   `item_id` int(11) NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.recycler_prizes: 0 rows
-DELETE FROM `recycler_prizes`;
 /*!40000 ALTER TABLE `recycler_prizes` DISABLE KEYS */;
 /*!40000 ALTER TABLE `recycler_prizes` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.room_bans
-DROP TABLE IF EXISTS `room_bans`;
-CREATE TABLE IF NOT EXISTS `room_bans` (
+CREATE TABLE `room_bans` (
   `room_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `ends` int(11) NOT NULL,
@@ -29862,13 +29724,11 @@ CREATE TABLE IF NOT EXISTS `room_bans` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.room_bans: 0 rows
-DELETE FROM `room_bans`;
 /*!40000 ALTER TABLE `room_bans` DISABLE KEYS */;
 /*!40000 ALTER TABLE `room_bans` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.room_enter_log
-DROP TABLE IF EXISTS `room_enter_log`;
-CREATE TABLE IF NOT EXISTS `room_enter_log` (
+CREATE TABLE `room_enter_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `room_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
@@ -29884,13 +29744,11 @@ CREATE TABLE IF NOT EXISTS `room_enter_log` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.room_enter_log: 0 rows
-DELETE FROM `room_enter_log`;
 /*!40000 ALTER TABLE `room_enter_log` DISABLE KEYS */;
 /*!40000 ALTER TABLE `room_enter_log` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.room_furni_wired_variables
-DROP TABLE IF EXISTS `room_furni_wired_variables`;
-CREATE TABLE IF NOT EXISTS `room_furni_wired_variables` (
+CREATE TABLE `room_furni_wired_variables` (
   `room_id` int(11) NOT NULL,
   `furni_id` int(11) NOT NULL,
   `variable_item_id` int(11) NOT NULL,
@@ -29903,11 +29761,9 @@ CREATE TABLE IF NOT EXISTS `room_furni_wired_variables` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Dumping data for table habbo.room_furni_wired_variables: ~0 rows (approximately)
-DELETE FROM `room_furni_wired_variables`;
 
 -- Dumping structure for table habbo.room_game_scores
-DROP TABLE IF EXISTS `room_game_scores`;
-CREATE TABLE IF NOT EXISTS `room_game_scores` (
+CREATE TABLE `room_game_scores` (
   `room_id` int(11) NOT NULL,
   `game_start_timestamp` int(11) NOT NULL,
   `game_name` varchar(64) NOT NULL DEFAULT '',
@@ -29918,13 +29774,11 @@ CREATE TABLE IF NOT EXISTS `room_game_scores` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.room_game_scores: 0 rows
-DELETE FROM `room_game_scores`;
 /*!40000 ALTER TABLE `room_game_scores` DISABLE KEYS */;
 /*!40000 ALTER TABLE `room_game_scores` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.room_models
-DROP TABLE IF EXISTS `room_models`;
-CREATE TABLE IF NOT EXISTS `room_models` (
+CREATE TABLE `room_models` (
   `name` varchar(100) NOT NULL,
   `door_x` int(11) NOT NULL,
   `door_y` int(11) NOT NULL,
@@ -29936,7 +29790,6 @@ CREATE TABLE IF NOT EXISTS `room_models` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.room_models: 60 rows
-DELETE FROM `room_models`;
 /*!40000 ALTER TABLE `room_models` DISABLE KEYS */;
 INSERT INTO `room_models` (`name`, `door_x`, `door_y`, `door_dir`, `heightmap`, `public_items`, `club_only`) VALUES
 	('cinema_a', 20, 27, 0, 'xxxxxxx1xx11111111xxxxxx\r\nxxx1111111111111111xxxxx\r\nxxx111xxxx1111111111xxxx\r\nxxxx2xxxxxxxxxxxxxxxxxxx\r\nxx3x3x333311xxxxxxxxxx11\r\nxx3333333311111111111111\r\nxx3333333311111111111111\r\nxx3333333311111111122111\r\nxx3333333311x22222222111\r\nxx3333333311x22222222111\r\nxx3333333311xxxxxxxxx111\r\nxx3333333311111111111111\r\nxx3333333311111111111111\r\nxx3333333311111111111111\r\nxx3333333311111xxxx11111\r\nxx3333333311111xxxx11111\r\nxx3333333311111xxxx11111\r\nxx3333333311111xxxx11111\r\nxx3333333311111xxxx11111\r\nxx3333333311111xxxx11111\r\nxx3333333311111xxxx11111\r\n333333332111111xxxx11111\r\n333333332111111111111111\r\n333333332111111111111111\r\n333333332111111111111111\r\nxx3333332111111111111111\r\nxxxxxxxxxxxxxxxxxxx11111\r\nxxxxxxxxxxxxxxxxxxx11111\r\nxxxxxxxxxxxxxxxxxxx11111', 'PUHC42orangeJPAKHHA47loungey_chairSAPAKJHV48loungey_tablebigbPBPAKHHA49loungey_chairQBPAKRAHA52loungey_chairJQAKPAHA57loungey_chairSAQAKJHU58loungey_tablebigaPBQAKHHA59loungey_chairQBQAKRAHB62loungey_tableJRAKHHA72loungey_chairJSAKHHh713theater_chairQCSAIHHh714theater_chairRCSAIHHh715theater_chairSCSAIHHh716theater_chairPDSAIHHh717theater_chairQDSAIHHh718theater_chairRDSAIHHz721stairQESAIHHL89lightpoleQBPBKHHq813pomomaskiQCPBJJHq814pomomaskiRCPBJHHq815pomomaskiSCPBJHHq816pomomaskiPDPBJHHq817pomomaskiQDPBJHHq818pomomaskiRDPBJHHq819pomomaskiSDPBJIHz821stairQEPBIHHC92orangeJQBKHHh913theater_chairQCQBJHHh914theater_chairRCQBJHHh915theater_chairSCQBJHHh916theater_chairPDQBJHHh917theater_chairQDQBJHHh918theater_chairRDQBJHHh919theater_chairSDQBJHHh920theater_chairPEQBJHHz921stairQEQBIHHA102loungey_chairJRBKPAHA109loungey_chairQBRBKPAHB112loungey_tableJSBKHHB119loungey_tableQBSBKHHA122loungey_chairJPCKHHA129loungey_chairQBPCKHHd1217cubicb_chairQDPCIRAHc1219cubico_chairSDPCIJHd1315cubicb_chairSCQCIJHL1319lightpoleSDQCIHHd1320cubicb_chairPEQCIRAHL149lightpoleQBRCKHHA152loungey_chairJSCKPAHd1514cubicb_chairRCSCIPAHc1519cubico_chairSDSCIPAHB162loungey_tableJPDKHHA167loungey_chairSAPDKJHB168loungey_tablePBPDKJHA169loungey_chairQBPDKRAHd1613cubicb_chairQCPDIJHd1614cubicb_chairRCPDIRAHC1619orangeSDPDIHHA172loungey_chairJQDKHHA177loungey_chairSAQDKJHB178loungey_tablePBQDKJHA179loungey_chairQBQDKRAHd1719cubicb_chairSDQDIJHC182orangeJRDKHHd1814cubicb_chairRCRDIPAHK192bardesqueJSDKHHK202bardesqueJPEKIHb203bar_chairKPEKRAHL209lightpoleQBPEKHHd2014cubicb_chairRCPEIHHd2019cubicb_chairSDPEIJHc2020cubico_chairPEPEIRAHK212bardesqueJQEKIHb213bar_chairKQEKRAHd2119cubicb_chairSDQEIHHK222bardesqueJREKIHb223bar_chairKREKRAHL2216lightpolePDREIHHc2218cubico_chairRDREIHHK232bardesqueJSEKIHb233bar_chairKSEKRAHK242bardesqueJPFKIHb243bar_chairKPFKRAHK252bardesqueJQFKJ', '0'),
@@ -30002,8 +29855,7 @@ INSERT INTO `room_models` (`name`, `door_x`, `door_y`, `door_dir`, `heightmap`, 
 /*!40000 ALTER TABLE `room_models` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.room_models_custom
-DROP TABLE IF EXISTS `room_models_custom`;
-CREATE TABLE IF NOT EXISTS `room_models_custom` (
+CREATE TABLE `room_models_custom` (
   `id` int(11) NOT NULL,
   `name` varchar(100) NOT NULL,
   `door_x` int(11) NOT NULL,
@@ -30014,26 +29866,22 @@ CREATE TABLE IF NOT EXISTS `room_models_custom` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.room_models_custom: 0 rows
-DELETE FROM `room_models_custom`;
 /*!40000 ALTER TABLE `room_models_custom` DISABLE KEYS */;
 /*!40000 ALTER TABLE `room_models_custom` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.room_mutes
-DROP TABLE IF EXISTS `room_mutes`;
-CREATE TABLE IF NOT EXISTS `room_mutes` (
+CREATE TABLE `room_mutes` (
   `room_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `ends` int(11) NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.room_mutes: 0 rows
-DELETE FROM `room_mutes`;
 /*!40000 ALTER TABLE `room_mutes` DISABLE KEYS */;
 /*!40000 ALTER TABLE `room_mutes` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.room_promotions
-DROP TABLE IF EXISTS `room_promotions`;
-CREATE TABLE IF NOT EXISTS `room_promotions` (
+CREATE TABLE `room_promotions` (
   `room_id` int(11) NOT NULL,
   `title` varchar(127) NOT NULL,
   `description` varchar(1024) NOT NULL,
@@ -30044,25 +29892,21 @@ CREATE TABLE IF NOT EXISTS `room_promotions` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.room_promotions: 0 rows
-DELETE FROM `room_promotions`;
 /*!40000 ALTER TABLE `room_promotions` DISABLE KEYS */;
 /*!40000 ALTER TABLE `room_promotions` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.room_rights
-DROP TABLE IF EXISTS `room_rights`;
-CREATE TABLE IF NOT EXISTS `room_rights` (
+CREATE TABLE `room_rights` (
   `room_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.room_rights: 0 rows
-DELETE FROM `room_rights`;
 /*!40000 ALTER TABLE `room_rights` DISABLE KEYS */;
 /*!40000 ALTER TABLE `room_rights` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.room_templates
-DROP TABLE IF EXISTS `room_templates`;
-CREATE TABLE IF NOT EXISTS `room_templates` (
+CREATE TABLE `room_templates` (
   `template_id` int(11) NOT NULL AUTO_INCREMENT,
   `title` varchar(128) NOT NULL DEFAULT '',
   `description` varchar(256) NOT NULL DEFAULT '',
@@ -30093,11 +29937,9 @@ CREATE TABLE IF NOT EXISTS `room_templates` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.room_templates: ~0 rows (approximately)
-DELETE FROM `room_templates`;
 
 -- Dumping structure for table habbo.room_templates_items
-DROP TABLE IF EXISTS `room_templates_items`;
-CREATE TABLE IF NOT EXISTS `room_templates_items` (
+CREATE TABLE `room_templates_items` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `template_id` int(11) NOT NULL,
   `item_id` int(11) unsigned NOT NULL,
@@ -30116,11 +29958,9 @@ CREATE TABLE IF NOT EXISTS `room_templates_items` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.room_templates_items: ~0 rows (approximately)
-DELETE FROM `room_templates_items`;
 
 -- Dumping structure for table habbo.room_trade_log
-DROP TABLE IF EXISTS `room_trade_log`;
-CREATE TABLE IF NOT EXISTS `room_trade_log` (
+CREATE TABLE `room_trade_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_one_id` int(11) NOT NULL,
   `user_two_id` int(11) NOT NULL,
@@ -30135,11 +29975,9 @@ CREATE TABLE IF NOT EXISTS `room_trade_log` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.room_trade_log: ~0 rows (approximately)
-DELETE FROM `room_trade_log`;
 
 -- Dumping structure for table habbo.room_trade_log_items
-DROP TABLE IF EXISTS `room_trade_log_items`;
-CREATE TABLE IF NOT EXISTS `room_trade_log_items` (
+CREATE TABLE `room_trade_log_items` (
   `id` int(11) NOT NULL,
   `item_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
@@ -30150,32 +29988,26 @@ CREATE TABLE IF NOT EXISTS `room_trade_log_items` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.room_trade_log_items: ~0 rows (approximately)
-DELETE FROM `room_trade_log_items`;
 
 -- Dumping structure for table habbo.room_trax
-DROP TABLE IF EXISTS `room_trax`;
-CREATE TABLE IF NOT EXISTS `room_trax` (
+CREATE TABLE `room_trax` (
   `room_id` int(11) NOT NULL,
   `trax_item_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=armscii8 COLLATE=armscii8_general_ci ROW_FORMAT=COMPACT;
 
 -- Dumping data for table habbo.room_trax: ~0 rows (approximately)
-DELETE FROM `room_trax`;
 
 -- Dumping structure for table habbo.room_trax_playlist
-DROP TABLE IF EXISTS `room_trax_playlist`;
-CREATE TABLE IF NOT EXISTS `room_trax_playlist` (
+CREATE TABLE `room_trax_playlist` (
   `room_id` int(11) NOT NULL,
   `item_id` int(11) NOT NULL,
   KEY `room_id` (`room_id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.room_trax_playlist: ~0 rows (approximately)
-DELETE FROM `room_trax_playlist`;
 
 -- Dumping structure for table habbo.room_user_wired_variables
-DROP TABLE IF EXISTS `room_user_wired_variables`;
-CREATE TABLE IF NOT EXISTS `room_user_wired_variables` (
+CREATE TABLE `room_user_wired_variables` (
   `room_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `variable_item_id` int(11) NOT NULL,
@@ -30188,23 +30020,19 @@ CREATE TABLE IF NOT EXISTS `room_user_wired_variables` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Dumping data for table habbo.room_user_wired_variables: ~0 rows (approximately)
-DELETE FROM `room_user_wired_variables`;
 
 -- Dumping structure for table habbo.room_votes
-DROP TABLE IF EXISTS `room_votes`;
-CREATE TABLE IF NOT EXISTS `room_votes` (
+CREATE TABLE `room_votes` (
   `user_id` int(11) NOT NULL,
   `room_id` int(11) NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.room_votes: 0 rows
-DELETE FROM `room_votes`;
 /*!40000 ALTER TABLE `room_votes` DISABLE KEYS */;
 /*!40000 ALTER TABLE `room_votes` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.room_wired_settings
-DROP TABLE IF EXISTS `room_wired_settings`;
-CREATE TABLE IF NOT EXISTS `room_wired_settings` (
+CREATE TABLE `room_wired_settings` (
   `room_id` int(11) NOT NULL,
   `inspect_mask` int(11) NOT NULL DEFAULT 0 COMMENT 'Bitmask for who can open and inspect Wired in the room. 1=everyone, 2=users with rights, 4=group members, 8=group admins.',
   `modify_mask` int(11) NOT NULL DEFAULT 0 COMMENT 'Bitmask for who can modify Wired in the room. 2=users with rights, 4=group members, 8=group admins.',
@@ -30213,11 +30041,9 @@ CREATE TABLE IF NOT EXISTS `room_wired_settings` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Dumping data for table habbo.room_wired_settings: ~0 rows (approximately)
-DELETE FROM `room_wired_settings`;
 
 -- Dumping structure for table habbo.room_wired_variables
-DROP TABLE IF EXISTS `room_wired_variables`;
-CREATE TABLE IF NOT EXISTS `room_wired_variables` (
+CREATE TABLE `room_wired_variables` (
   `room_id` int(11) NOT NULL,
   `variable_item_id` int(11) NOT NULL,
   `value` int(11) NOT NULL DEFAULT 0,
@@ -30228,24 +30054,20 @@ CREATE TABLE IF NOT EXISTS `room_wired_variables` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Dumping data for table habbo.room_wired_variables: ~0 rows (approximately)
-DELETE FROM `room_wired_variables`;
 
 -- Dumping structure for table habbo.room_wordfilter
-DROP TABLE IF EXISTS `room_wordfilter`;
-CREATE TABLE IF NOT EXISTS `room_wordfilter` (
+CREATE TABLE `room_wordfilter` (
   `room_id` int(11) NOT NULL,
   `word` varchar(25) NOT NULL,
   UNIQUE KEY `unique_index` (`room_id`,`word`) USING BTREE
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.room_wordfilter: 0 rows
-DELETE FROM `room_wordfilter`;
 /*!40000 ALTER TABLE `room_wordfilter` DISABLE KEYS */;
 /*!40000 ALTER TABLE `room_wordfilter` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.rooms
-DROP TABLE IF EXISTS `rooms`;
-CREATE TABLE IF NOT EXISTS `rooms` (
+CREATE TABLE `rooms` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `owner_id` int(11) NOT NULL DEFAULT 0,
   `owner_name` varchar(25) NOT NULL DEFAULT '',
@@ -30310,11 +30132,9 @@ CREATE TABLE IF NOT EXISTS `rooms` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.rooms: ~0 rows (approximately)
-DELETE FROM `rooms`;
 
 -- Dumping structure for table habbo.sanction_levels
-DROP TABLE IF EXISTS `sanction_levels`;
-CREATE TABLE IF NOT EXISTS `sanction_levels` (
+CREATE TABLE `sanction_levels` (
   `level` int(11) NOT NULL,
   `type` enum('ALERT','BAN','MUTE') NOT NULL,
   `hour_length` int(11) NOT NULL,
@@ -30323,7 +30143,6 @@ CREATE TABLE IF NOT EXISTS `sanction_levels` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.sanction_levels: ~7 rows (approximately)
-DELETE FROM `sanction_levels`;
 INSERT INTO `sanction_levels` (`level`, `type`, `hour_length`, `probation_days`) VALUES
 	(1, 'ALERT', 0, 30),
 	(2, 'MUTE', 1, 30),
@@ -30334,8 +30153,7 @@ INSERT INTO `sanction_levels` (`level`, `type`, `hour_length`, `probation_days`)
 	(7, 'BAN', 876581, 876581);
 
 -- Dumping structure for table habbo.sanctions
-DROP TABLE IF EXISTS `sanctions`;
-CREATE TABLE IF NOT EXISTS `sanctions` (
+CREATE TABLE `sanctions` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `habbo_id` int(11) NOT NULL DEFAULT 0,
   `sanction_level` int(11) NOT NULL DEFAULT 0,
@@ -30348,11 +30166,9 @@ CREATE TABLE IF NOT EXISTS `sanctions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.sanctions: ~0 rows (approximately)
-DELETE FROM `sanctions`;
 
 -- Dumping structure for table habbo.soundtracks
-DROP TABLE IF EXISTS `soundtracks`;
-CREATE TABLE IF NOT EXISTS `soundtracks` (
+CREATE TABLE `soundtracks` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `code` varchar(32) NOT NULL,
   `name` varchar(100) NOT NULL,
@@ -30363,7 +30179,6 @@ CREATE TABLE IF NOT EXISTS `soundtracks` (
 ) ENGINE=InnoDB AUTO_INCREMENT=28 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.soundtracks: ~27 rows (approximately)
-DELETE FROM `soundtracks`;
 INSERT INTO `soundtracks` (`id`, `code`, `name`, `author`, `track`, `length`) VALUES
 	(1, 'ballad_of_bonnie', 'The Ballad of Bonnie Blonde', 'Pixel! at the Disco', '1:371,8;374,4;378,4;0,4;378,4;0,4;377,4;378,4;0,6;371,4;0,4;370,3;377,2;0,7:2:353,24;358,4;363,4;353,10;367,4;353,4;367,4;353,8:3:0,4;291,2;365,2;0,2;365,2;377,2;365,2;377,2;365,2;377,2;0,2;359,4;352,4;357,1;0,1;365,2;0,2;292,4;0,3;357,1;292,4;0,3;357,1;292,4;296,4:4:0,2;368,22;354,4;368,26;361,8:', 124),
 	(2, 'bossa_nova', 'Push the Call for Help', 'BanzaiBabes', '1:317,6;318,4;319,4;317,4;319,4;0,2:2:0,2;316,4;0,4;316,4;0,4;316,4;0,2:3:0,6;321,4;323,4;322,10:4:0,18;321,2;324,2;0,2:', 48),
@@ -30394,15 +30209,13 @@ INSERT INTO `soundtracks` (`id`, `code`, `name`, `author`, `track`, `length`) VA
 	(27, 'who_dares_stacks', 'Who Dares Stacks', 'Rage Against the Fuse', '1:255,4;310,7;0,9;310,14;0,4:2:0,3;309,1;308,7;309,1;308,7;309,1;308,7;309,1;308,7;309,1;0,2:3:0,4;162,7;0,1;162,7;0,1;162,15;0,3:4:0,6;135,4;135,4;135,4;0,2;135,4;135,4;135,4;135,4;0,2:5:0,14;155,2;0,2;155,2;314,1;315,1;314,1;315,1;314,1;315,1;314,1;0,1;314,1;315,1;314,1;315,1;314,1;315,1;314,1;315,1;0,2:6:0,12;311,1;0,1;311,1;0,1;311,1;0,1;311,1;0,1;311,1;0,5;155,2;311,1;0,1;311,1;0,1;311,1;0,3;311,1;0,1:', 76);
 
 -- Dumping structure for table habbo.special_enables
-DROP TABLE IF EXISTS `special_enables`;
-CREATE TABLE IF NOT EXISTS `special_enables` (
+CREATE TABLE `special_enables` (
   `effect_id` int(11) NOT NULL,
   `min_rank` int(11) NOT NULL,
   UNIQUE KEY `effect_id` (`effect_id`) USING BTREE
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.special_enables: 3 rows
-DELETE FROM `special_enables`;
 /*!40000 ALTER TABLE `special_enables` DISABLE KEYS */;
 INSERT INTO `special_enables` (`effect_id`, `min_rank`) VALUES
 	(102, 5),
@@ -30411,8 +30224,7 @@ INSERT INTO `special_enables` (`effect_id`, `min_rank`) VALUES
 /*!40000 ALTER TABLE `special_enables` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.support_cfh_categories
-DROP TABLE IF EXISTS `support_cfh_categories`;
-CREATE TABLE IF NOT EXISTS `support_cfh_categories` (
+CREATE TABLE `support_cfh_categories` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name_internal` varchar(255) DEFAULT NULL,
   `name_external` varchar(255) DEFAULT NULL,
@@ -30420,7 +30232,6 @@ CREATE TABLE IF NOT EXISTS `support_cfh_categories` (
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.support_cfh_categories: ~6 rows (approximately)
-DELETE FROM `support_cfh_categories`;
 INSERT INTO `support_cfh_categories` (`id`, `name_internal`, `name_external`) VALUES
 	(1, 'cyber', 'Cyber sex'),
 	(2, 'scamming', 'Scamming'),
@@ -30430,8 +30241,7 @@ INSERT INTO `support_cfh_categories` (`id`, `name_internal`, `name_external`) VA
 	(6, 'hacking', 'Hacking');
 
 -- Dumping structure for table habbo.support_cfh_topics
-DROP TABLE IF EXISTS `support_cfh_topics`;
-CREATE TABLE IF NOT EXISTS `support_cfh_topics` (
+CREATE TABLE `support_cfh_topics` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `category_id` int(11) DEFAULT NULL,
   `name_internal` varchar(255) DEFAULT NULL,
@@ -30444,7 +30254,6 @@ CREATE TABLE IF NOT EXISTS `support_cfh_topics` (
 ) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.support_cfh_topics: ~32 rows (approximately)
-DELETE FROM `support_cfh_topics`;
 INSERT INTO `support_cfh_topics` (`id`, `category_id`, `name_internal`, `name_external`, `action`, `ignore_target`, `auto_reply`, `default_sanction`) VALUES
 	(1, 1, 'cyber.sextalk', 'Sexual talk', 'auto_ignore', '0', 'Thank you for reporting someone for sexual talk. We have put this user on ignore for you. This means that you can no longer see what they are saying. To turn ignore off for this person you need to click on them and press \'Listen\'. We will take a look at this.', 0),
 	(2, 1, 'cyber.asking', 'Asking for cyber sex', 'auto_ignore', '0', 'Thank you for reporting someone for sexual talk. We have put this user on ignore for you. This means that you can no longer see what they are saying. To turn ignore off for this person you need to click on them and press \'Listen\'. We will take a look at this.', 0),
@@ -30480,15 +30289,13 @@ INSERT INTO `support_cfh_topics` (`id`, `category_id`, `name_internal`, `name_ex
 	(32, 6, 'hacking.other', 'Other hacking', 'mods', '0', NULL, 0);
 
 -- Dumping structure for table habbo.support_issue_categories
-DROP TABLE IF EXISTS `support_issue_categories`;
-CREATE TABLE IF NOT EXISTS `support_issue_categories` (
+CREATE TABLE `support_issue_categories` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL DEFAULT 'PII',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.support_issue_categories: 2 rows
-DELETE FROM `support_issue_categories`;
 /*!40000 ALTER TABLE `support_issue_categories` DISABLE KEYS */;
 INSERT INTO `support_issue_categories` (`id`, `name`) VALUES
 	(1, 'PII'),
@@ -30496,8 +30303,7 @@ INSERT INTO `support_issue_categories` (`id`, `name`) VALUES
 /*!40000 ALTER TABLE `support_issue_categories` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.support_issue_presets
-DROP TABLE IF EXISTS `support_issue_presets`;
-CREATE TABLE IF NOT EXISTS `support_issue_presets` (
+CREATE TABLE `support_issue_presets` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `category` int(11) NOT NULL DEFAULT 1,
   `name` varchar(100) NOT NULL DEFAULT '',
@@ -30509,7 +30315,6 @@ CREATE TABLE IF NOT EXISTS `support_issue_presets` (
 ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.support_issue_presets: ~11 rows (approximately)
-DELETE FROM `support_issue_presets`;
 INSERT INTO `support_issue_presets` (`id`, `category`, `name`, `message`, `reminder`, `ban_for`, `mute_for`) VALUES
 	(1, 1, '1 hour mute', '1 hour mute', 'Reminder, yeah.. no', 0, 1),
 	(2, 1, '2 hour mute', '2 hour mute', 'Reminder, yeah.. no', 0, 2),
@@ -30524,8 +30329,7 @@ INSERT INTO `support_issue_presets` (`id`, `category`, `name`, `message`, `remin
 	(11, 2, '1 day ban', '1 day ban', 'Reminder, yeah.. no', 24, 0);
 
 -- Dumping structure for table habbo.support_presets
-DROP TABLE IF EXISTS `support_presets`;
-CREATE TABLE IF NOT EXISTS `support_presets` (
+CREATE TABLE `support_presets` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `type` enum('user','room') NOT NULL DEFAULT 'user',
   `preset` varchar(200) NOT NULL,
@@ -30533,7 +30337,6 @@ CREATE TABLE IF NOT EXISTS `support_presets` (
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.support_presets: ~4 rows (approximately)
-DELETE FROM `support_presets`;
 INSERT INTO `support_presets` (`id`, `type`, `preset`) VALUES
 	(1, 'user', 'You\'re banned.'),
 	(2, 'user', 'Other message.'),
@@ -30541,8 +30344,7 @@ INSERT INTO `support_presets` (`id`, `type`, `preset`) VALUES
 	(4, 'room', 'Configurable in support_presets table.');
 
 -- Dumping structure for table habbo.support_tickets
-DROP TABLE IF EXISTS `support_tickets`;
-CREATE TABLE IF NOT EXISTS `support_tickets` (
+CREATE TABLE `support_tickets` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `state` int(11) NOT NULL DEFAULT 0,
   `type` int(11) NOT NULL DEFAULT 1,
@@ -30569,21 +30371,17 @@ CREATE TABLE IF NOT EXISTS `support_tickets` (
 ) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.support_tickets: ~0 rows (approximately)
-DELETE FROM `support_tickets`;
 
 -- Dumping structure for table habbo.trax_playlist
-DROP TABLE IF EXISTS `trax_playlist`;
-CREATE TABLE IF NOT EXISTS `trax_playlist` (
+CREATE TABLE `trax_playlist` (
   `trax_item_id` int(11) NOT NULL,
   `item_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=armscii8 COLLATE=armscii8_general_ci ROW_FORMAT=COMPACT;
 
 -- Dumping data for table habbo.trax_playlist: ~0 rows (approximately)
-DELETE FROM `trax_playlist`;
 
 -- Dumping structure for table habbo.user_custom_badge
-DROP TABLE IF EXISTS `user_custom_badge`;
-CREATE TABLE IF NOT EXISTS `user_custom_badge` (
+CREATE TABLE `user_custom_badge` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `badge_id` varchar(64) NOT NULL,
@@ -30598,11 +30396,9 @@ CREATE TABLE IF NOT EXISTS `user_custom_badge` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.user_custom_badge: ~0 rows (approximately)
-DELETE FROM `user_custom_badge`;
 
 -- Dumping structure for table habbo.user_nick_icons
-DROP TABLE IF EXISTS `user_nick_icons`;
-CREATE TABLE IF NOT EXISTS `user_nick_icons` (
+CREATE TABLE `user_nick_icons` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `icon_key` varchar(50) NOT NULL,
@@ -30614,11 +30410,9 @@ CREATE TABLE IF NOT EXISTS `user_nick_icons` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Dumping data for table habbo.user_nick_icons: ~0 rows (approximately)
-DELETE FROM `user_nick_icons`;
 
 -- Dumping structure for table habbo.user_prefixes
-DROP TABLE IF EXISTS `user_prefixes`;
-CREATE TABLE IF NOT EXISTS `user_prefixes` (
+CREATE TABLE `user_prefixes` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `text` varchar(50) NOT NULL,
@@ -30638,22 +30432,18 @@ CREATE TABLE IF NOT EXISTS `user_prefixes` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Dumping data for table habbo.user_prefixes: ~0 rows (approximately)
-DELETE FROM `user_prefixes`;
 
 -- Dumping structure for table habbo.user_visual_settings
-DROP TABLE IF EXISTS `user_visual_settings`;
-CREATE TABLE IF NOT EXISTS `user_visual_settings` (
+CREATE TABLE `user_visual_settings` (
   `user_id` int(11) NOT NULL,
   `display_order` varchar(50) NOT NULL DEFAULT 'icon-prefix-name',
   PRIMARY KEY (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- Dumping data for table habbo.user_visual_settings: ~0 rows (approximately)
-DELETE FROM `user_visual_settings`;
 
 -- Dumping structure for table habbo.user_window_settings
-DROP TABLE IF EXISTS `user_window_settings`;
-CREATE TABLE IF NOT EXISTS `user_window_settings` (
+CREATE TABLE `user_window_settings` (
   `user_id` int(11) NOT NULL,
   `x` int(11) NOT NULL DEFAULT 100,
   `y` int(11) NOT NULL DEFAULT 100,
@@ -30663,7 +30453,6 @@ CREATE TABLE IF NOT EXISTS `user_window_settings` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.user_window_settings: 3 rows
-DELETE FROM `user_window_settings`;
 /*!40000 ALTER TABLE `user_window_settings` DISABLE KEYS */;
 INSERT INTO `user_window_settings` (`user_id`, `x`, `y`, `width`, `height`, `open_searches`) VALUES
 	(1, 100, 100, 425, 535, '0'),
@@ -30672,8 +30461,7 @@ INSERT INTO `user_window_settings` (`user_id`, `x`, `y`, `width`, `height`, `ope
 /*!40000 ALTER TABLE `user_window_settings` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.users
-DROP TABLE IF EXISTS `users`;
-CREATE TABLE IF NOT EXISTS `users` (
+CREATE TABLE `users` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `username` varchar(25) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
   `real_name` varchar(25) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT 'NORMAL_USER',
@@ -30722,13 +30510,11 @@ CREATE TABLE IF NOT EXISTS `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.users: ~1 rows (approximately)
-DELETE FROM `users`;
 INSERT INTO `users` (`id`, `username`, `real_name`, `password`, `mail`, `mail_verified`, `account_created`, `account_day_of_birth`, `last_login`, `last_online`, `motto`, `look`, `gender`, `rank`, `credits`, `pixels`, `points`, `online`, `auth_ticket`, `remember_token_hash`, `remember_token_expires_at`, `ip_register`, `ip_current`, `machine_id`, `background_id`, `background_stand_id`, `background_overlay_id`, `background_card_id`, `home_room`, `secret_key`, `pincode`, `extra_rank`, `last_username_change`) VALUES
 	(0, '[SYSTEM]', 'KREWS DEV', '!', NULL, '0', 0, 0, 0, 0, 'System sentinel - do not delete', '', 'M', 1, 0, 500, 10, '0', '', '', 0, '127.0.0.1', '127.0.0.1', '', 0, 0, 0, 0, 0, NULL, NULL, NULL, 0);
 
 -- Dumping structure for table habbo.users_achievements
-DROP TABLE IF EXISTS `users_achievements`;
-CREATE TABLE IF NOT EXISTS `users_achievements` (
+CREATE TABLE `users_achievements` (
   `user_id` int(11) NOT NULL,
   `achievement_name` varchar(255) NOT NULL,
   `progress` int(11) NOT NULL DEFAULT 1,
@@ -30738,11 +30524,9 @@ CREATE TABLE IF NOT EXISTS `users_achievements` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.users_achievements: ~0 rows (approximately)
-DELETE FROM `users_achievements`;
 
 -- Dumping structure for table habbo.users_achievements_queue
-DROP TABLE IF EXISTS `users_achievements_queue`;
-CREATE TABLE IF NOT EXISTS `users_achievements_queue` (
+CREATE TABLE `users_achievements_queue` (
   `user_id` int(11) NOT NULL,
   `achievement_id` int(11) NOT NULL,
   `amount` int(11) NOT NULL,
@@ -30751,13 +30535,11 @@ CREATE TABLE IF NOT EXISTS `users_achievements_queue` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.users_achievements_queue: 0 rows
-DELETE FROM `users_achievements_queue`;
 /*!40000 ALTER TABLE `users_achievements_queue` DISABLE KEYS */;
 /*!40000 ALTER TABLE `users_achievements_queue` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.users_badges
-DROP TABLE IF EXISTS `users_badges`;
-CREATE TABLE IF NOT EXISTS `users_badges` (
+CREATE TABLE `users_badges` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL DEFAULT 0,
   `slot_id` int(11) NOT NULL DEFAULT 0,
@@ -30766,24 +30548,20 @@ CREATE TABLE IF NOT EXISTS `users_badges` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.users_badges: ~0 rows (approximately)
-DELETE FROM `users_badges`;
 
 -- Dumping structure for table habbo.users_clothing
-DROP TABLE IF EXISTS `users_clothing`;
-CREATE TABLE IF NOT EXISTS `users_clothing` (
+CREATE TABLE `users_clothing` (
   `user_id` int(11) NOT NULL,
   `clothing_id` int(11) NOT NULL,
   UNIQUE KEY `user_id` (`user_id`,`clothing_id`) USING BTREE
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.users_clothing: 0 rows
-DELETE FROM `users_clothing`;
 /*!40000 ALTER TABLE `users_clothing` DISABLE KEYS */;
 /*!40000 ALTER TABLE `users_clothing` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.users_currency
-DROP TABLE IF EXISTS `users_currency`;
-CREATE TABLE IF NOT EXISTS `users_currency` (
+CREATE TABLE `users_currency` (
   `user_id` int(11) NOT NULL,
   `type` int(11) NOT NULL,
   `amount` int(11) NOT NULL DEFAULT 0,
@@ -30793,13 +30571,11 @@ CREATE TABLE IF NOT EXISTS `users_currency` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.users_currency: 0 rows
-DELETE FROM `users_currency`;
 /*!40000 ALTER TABLE `users_currency` DISABLE KEYS */;
 /*!40000 ALTER TABLE `users_currency` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.users_custom_badge_settings
-DROP TABLE IF EXISTS `users_custom_badge_settings`;
-CREATE TABLE IF NOT EXISTS `users_custom_badge_settings` (
+CREATE TABLE `users_custom_badge_settings` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `badge_path` varchar(255) NOT NULL DEFAULT '/var/www/gamedata/c_images/album1584',
   `badge_url` varchar(255) NOT NULL DEFAULT '/gamedata/c_images/album1584',
@@ -30809,13 +30585,11 @@ CREATE TABLE IF NOT EXISTS `users_custom_badge_settings` (
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.users_custom_badge_settings: ~1 rows (approximately)
-DELETE FROM `users_custom_badge_settings`;
 INSERT INTO `users_custom_badge_settings` (`id`, `badge_path`, `badge_url`, `price_badge`, `currency_type`) VALUES
 	(1, '/var/www/gamedata/c_images/album1584', '/gamedata/c_images/album1584', 50, 5);
 
 -- Dumping structure for table habbo.users_effects
-DROP TABLE IF EXISTS `users_effects`;
-CREATE TABLE IF NOT EXISTS `users_effects` (
+CREATE TABLE `users_effects` (
   `user_id` int(11) NOT NULL,
   `effect` int(11) NOT NULL,
   `duration` int(11) NOT NULL DEFAULT 86400,
@@ -30825,37 +30599,31 @@ CREATE TABLE IF NOT EXISTS `users_effects` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.users_effects: 0 rows
-DELETE FROM `users_effects`;
 /*!40000 ALTER TABLE `users_effects` DISABLE KEYS */;
 /*!40000 ALTER TABLE `users_effects` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.users_favorite_rooms
-DROP TABLE IF EXISTS `users_favorite_rooms`;
-CREATE TABLE IF NOT EXISTS `users_favorite_rooms` (
+CREATE TABLE `users_favorite_rooms` (
   `user_id` int(11) NOT NULL,
   `room_id` int(11) NOT NULL,
   UNIQUE KEY `user_id` (`user_id`,`room_id`) USING BTREE
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.users_favorite_rooms: 0 rows
-DELETE FROM `users_favorite_rooms`;
 /*!40000 ALTER TABLE `users_favorite_rooms` DISABLE KEYS */;
 /*!40000 ALTER TABLE `users_favorite_rooms` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.users_ignored
-DROP TABLE IF EXISTS `users_ignored`;
-CREATE TABLE IF NOT EXISTS `users_ignored` (
+CREATE TABLE `users_ignored` (
   `user_id` int(11) NOT NULL,
   `target_id` int(11) NOT NULL,
   KEY `user_id` (`user_id`,`target_id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.users_ignored: ~0 rows (approximately)
-DELETE FROM `users_ignored`;
 
 -- Dumping structure for table habbo.users_navigator_settings
-DROP TABLE IF EXISTS `users_navigator_settings`;
-CREATE TABLE IF NOT EXISTS `users_navigator_settings` (
+CREATE TABLE `users_navigator_settings` (
   `user_id` int(11) NOT NULL,
   `caption` varchar(128) NOT NULL,
   `list_type` enum('list','thumbnails') NOT NULL DEFAULT 'list',
@@ -30866,13 +30634,11 @@ CREATE TABLE IF NOT EXISTS `users_navigator_settings` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.users_navigator_settings: 0 rows
-DELETE FROM `users_navigator_settings`;
 /*!40000 ALTER TABLE `users_navigator_settings` DISABLE KEYS */;
 /*!40000 ALTER TABLE `users_navigator_settings` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.users_pets
-DROP TABLE IF EXISTS `users_pets`;
-CREATE TABLE IF NOT EXISTS `users_pets` (
+CREATE TABLE `users_pets` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `room_id` int(11) NOT NULL,
@@ -30913,26 +30679,22 @@ CREATE TABLE IF NOT EXISTS `users_pets` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.users_pets: 0 rows
-DELETE FROM `users_pets`;
 /*!40000 ALTER TABLE `users_pets` DISABLE KEYS */;
 /*!40000 ALTER TABLE `users_pets` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.users_recipes
-DROP TABLE IF EXISTS `users_recipes`;
-CREATE TABLE IF NOT EXISTS `users_recipes` (
+CREATE TABLE `users_recipes` (
   `user_id` int(11) NOT NULL,
   `recipe` int(11) NOT NULL,
   UNIQUE KEY `user_id` (`user_id`,`recipe`) USING BTREE
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.users_recipes: 0 rows
-DELETE FROM `users_recipes`;
 /*!40000 ALTER TABLE `users_recipes` DISABLE KEYS */;
 /*!40000 ALTER TABLE `users_recipes` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.users_remember_families
-DROP TABLE IF EXISTS `users_remember_families`;
-CREATE TABLE IF NOT EXISTS `users_remember_families` (
+CREATE TABLE `users_remember_families` (
   `family_id` char(36) NOT NULL,
   `user_id` int(11) NOT NULL,
   `current_version` int(11) NOT NULL DEFAULT 1,
@@ -30947,11 +30709,9 @@ CREATE TABLE IF NOT EXISTS `users_remember_families` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.users_remember_families: ~0 rows (approximately)
-DELETE FROM `users_remember_families`;
 
 -- Dumping structure for table habbo.users_saved_searches
-DROP TABLE IF EXISTS `users_saved_searches`;
-CREATE TABLE IF NOT EXISTS `users_saved_searches` (
+CREATE TABLE `users_saved_searches` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `search_code` varchar(255) NOT NULL,
   `filter` varchar(255) DEFAULT NULL,
@@ -30960,7 +30720,6 @@ CREATE TABLE IF NOT EXISTS `users_saved_searches` (
 ) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.users_saved_searches: ~9 rows (approximately)
-DELETE FROM `users_saved_searches`;
 INSERT INTO `users_saved_searches` (`id`, `search_code`, `filter`, `user_id`) VALUES
 	(1, 'official-root', '', 1),
 	(2, 'my', '', 1),
@@ -30973,8 +30732,7 @@ INSERT INTO `users_saved_searches` (`id`, `search_code`, `filter`, `user_id`) VA
 	(9, 'favorites', '', 3);
 
 -- Dumping structure for table habbo.users_settings
-DROP TABLE IF EXISTS `users_settings`;
-CREATE TABLE IF NOT EXISTS `users_settings` (
+CREATE TABLE `users_settings` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL DEFAULT 0 COMMENT 'WARNING: DONT HAVE YOUR CMS INSERT ANYTHING IN HERE. THE EMULATOR DOES THIS FOR YOU!',
   `credits` int(11) NOT NULL DEFAULT 0,
@@ -31037,11 +30795,9 @@ CREATE TABLE IF NOT EXISTS `users_settings` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.users_settings: ~0 rows (approximately)
-DELETE FROM `users_settings`;
 
 -- Dumping structure for table habbo.users_subscriptions
-DROP TABLE IF EXISTS `users_subscriptions`;
-CREATE TABLE IF NOT EXISTS `users_subscriptions` (
+CREATE TABLE `users_subscriptions` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` int(11) DEFAULT NULL,
   `subscription_type` varchar(255) DEFAULT NULL,
@@ -31056,11 +30812,9 @@ CREATE TABLE IF NOT EXISTS `users_subscriptions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.users_subscriptions: ~0 rows (approximately)
-DELETE FROM `users_subscriptions`;
 
 -- Dumping structure for table habbo.users_target_offer_purchases
-DROP TABLE IF EXISTS `users_target_offer_purchases`;
-CREATE TABLE IF NOT EXISTS `users_target_offer_purchases` (
+CREATE TABLE `users_target_offer_purchases` (
   `user_id` int(11) NOT NULL,
   `offer_id` int(11) NOT NULL,
   `state` int(11) NOT NULL DEFAULT 0,
@@ -31070,13 +30824,11 @@ CREATE TABLE IF NOT EXISTS `users_target_offer_purchases` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.users_target_offer_purchases: ~1 rows (approximately)
-DELETE FROM `users_target_offer_purchases`;
 INSERT INTO `users_target_offer_purchases` (`user_id`, `offer_id`, `state`, `amount`, `last_purchase`) VALUES
 	(1, 1, 0, 0, 0);
 
 -- Dumping structure for table habbo.users_wardrobe
-DROP TABLE IF EXISTS `users_wardrobe`;
-CREATE TABLE IF NOT EXISTS `users_wardrobe` (
+CREATE TABLE `users_wardrobe` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL DEFAULT 0,
   `slot_id` int(11) NOT NULL DEFAULT 0,
@@ -31086,11 +30838,9 @@ CREATE TABLE IF NOT EXISTS `users_wardrobe` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.users_wardrobe: ~0 rows (approximately)
-DELETE FROM `users_wardrobe`;
 
 -- Dumping structure for table habbo.voucher_history
-DROP TABLE IF EXISTS `voucher_history`;
-CREATE TABLE IF NOT EXISTS `voucher_history` (
+CREATE TABLE `voucher_history` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `voucher_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
@@ -31099,11 +30849,9 @@ CREATE TABLE IF NOT EXISTS `voucher_history` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.voucher_history: ~0 rows (approximately)
-DELETE FROM `voucher_history`;
 
 -- Dumping structure for table habbo.vouchers
-DROP TABLE IF EXISTS `vouchers`;
-CREATE TABLE IF NOT EXISTS `vouchers` (
+CREATE TABLE `vouchers` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `code` varchar(10) NOT NULL,
   `credits` int(11) NOT NULL DEFAULT 0,
@@ -31116,13 +30864,11 @@ CREATE TABLE IF NOT EXISTS `vouchers` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.vouchers: 0 rows
-DELETE FROM `vouchers`;
 /*!40000 ALTER TABLE `vouchers` DISABLE KEYS */;
 /*!40000 ALTER TABLE `vouchers` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.wired_emulator_settings
-DROP TABLE IF EXISTS `wired_emulator_settings`;
-CREATE TABLE IF NOT EXISTS `wired_emulator_settings` (
+CREATE TABLE `wired_emulator_settings` (
   `key` varchar(191) NOT NULL,
   `value` text NOT NULL,
   `comment` text NOT NULL,
@@ -31130,7 +30876,6 @@ CREATE TABLE IF NOT EXISTS `wired_emulator_settings` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 -- Dumping data for table habbo.wired_emulator_settings: ~28 rows (approximately)
-DELETE FROM `wired_emulator_settings`;
 INSERT INTO `wired_emulator_settings` (`key`, `value`, `comment`) VALUES
 	('hotel.wired.furni.selection.count', '5', 'Maximum number of furni that a wired box can store or select.'),
 	('hotel.wired.max_delay', '20', 'Maximum delay value accepted by wired effects that support delayed execution.'),
@@ -31162,8 +30907,7 @@ INSERT INTO `wired_emulator_settings` (`key`, `value`, `comment`) VALUES
 	('wired.tick.thread.priority', '6', 'Java thread priority used by the wired tick service.');
 
 -- Dumping structure for table habbo.wired_rewards_given
-DROP TABLE IF EXISTS `wired_rewards_given`;
-CREATE TABLE IF NOT EXISTS `wired_rewards_given` (
+CREATE TABLE `wired_rewards_given` (
   `wired_item` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `reward_id` int(11) NOT NULL,
@@ -31171,13 +30915,11 @@ CREATE TABLE IF NOT EXISTS `wired_rewards_given` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.wired_rewards_given: 0 rows
-DELETE FROM `wired_rewards_given`;
 /*!40000 ALTER TABLE `wired_rewards_given` DISABLE KEYS */;
 /*!40000 ALTER TABLE `wired_rewards_given` ENABLE KEYS */;
 
 -- Dumping structure for table habbo.wordfilter
-DROP TABLE IF EXISTS `wordfilter`;
-CREATE TABLE IF NOT EXISTS `wordfilter` (
+CREATE TABLE `wordfilter` (
   `key` varchar(256) NOT NULL COMMENT 'The word to filter.',
   `replacement` varchar(16) NOT NULL COMMENT 'What the word should be replaced with.',
   `hide` enum('0','1') NOT NULL DEFAULT '0' COMMENT 'Wether the whole message that contains this word should be hidden from being displayed.',
@@ -31187,13 +30929,11 @@ CREATE TABLE IF NOT EXISTS `wordfilter` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table habbo.wordfilter: ~1 rows (approximately)
-DELETE FROM `wordfilter`;
 INSERT INTO `wordfilter` (`key`, `replacement`, `hide`, `report`, `mute`) VALUES
 	('com', 'bobba', '0', '0', 0);
 
 -- Dumping structure for table habbo.youtube_playlists
-DROP TABLE IF EXISTS `youtube_playlists`;
-CREATE TABLE IF NOT EXISTS `youtube_playlists` (
+CREATE TABLE `youtube_playlists` (
   `item_id` int(11) NOT NULL,
   `playlist_id` varchar(255) NOT NULL COMMENT 'YouTube playlist ID',
   `order` int(11) NOT NULL,
@@ -31201,17 +30941,11 @@ CREATE TABLE IF NOT EXISTS `youtube_playlists` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=FIXED;
 
 -- Dumping data for table habbo.youtube_playlists: 0 rows
-DELETE FROM `youtube_playlists`;
 /*!40000 ALTER TABLE `youtube_playlists` DISABLE KEYS */;
 /*!40000 ALTER TABLE `youtube_playlists` ENABLE KEYS */;
 
-/*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
-/*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
-/*!40014 SET FOREIGN_KEY_CHECKS=IFNULL(@OLD_FOREIGN_KEY_CHECKS, 1) */;
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40111 SET SQL_NOTES=IFNULL(@OLD_SQL_NOTES, 1) */;
 -- Persistent messenger conversations and history.
-CREATE TABLE IF NOT EXISTS `messenger_conversations` (
+CREATE TABLE `messenger_conversations` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `type` ENUM('direct','group') NOT NULL,
   `direct_key` VARCHAR(64) NULL,
@@ -31223,7 +30957,7 @@ CREATE TABLE IF NOT EXISTS `messenger_conversations` (
   KEY `idx_messenger_updated` (`updated_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `messenger_members` (
+CREATE TABLE `messenger_members` (
   `conversation_id` BIGINT UNSIGNED NOT NULL,
   `user_id` INT NOT NULL,
   `role` ENUM('member','admin') NOT NULL DEFAULT 'member',
@@ -31238,7 +30972,7 @@ CREATE TABLE IF NOT EXISTS `messenger_members` (
     FOREIGN KEY (`conversation_id`) REFERENCES `messenger_conversations` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `messenger_messages` (
+CREATE TABLE `messenger_messages` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `conversation_id` BIGINT UNSIGNED NOT NULL,
   `sender_id` INT NOT NULL,
@@ -31252,3 +30986,5 @@ CREATE TABLE IF NOT EXISTS `messenger_messages` (
   CONSTRAINT `fk_messenger_message_conversation`
     FOREIGN KEY (`conversation_id`) REFERENCES `messenger_conversations` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+SET FOREIGN_KEY_CHECKS=1;

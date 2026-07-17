@@ -1,16 +1,20 @@
 # Polaris database migrations
 
-Flyway migrations. `V1` is the **Arcturus Morningstar 3.5.5 baseline**; every
-Polaris change is `V2…Vn`. Fresh installs run `V1` then the deltas; Arc and
-existing-Polaris installs are baselined at `V1` (skipped) and run the deltas.
+Flyway migrations use timestamp versions in chronological order. The oldest,
+`V20260518000000__base_database.sql`, is the canonical **Polaris base
+database**. Fresh installs run the complete chain; recognised Arcturus and
+existing-Polaris installs record the base version without importing it, then
+run the compatible additive changes. A schema-only Arcturus 3.5.5 fixture in
+the test resources proves the legacy conversion path.
 
 ## Rules
 
 1. **One logical change per migration.** Never edit a released migration —
    forward-fix with a new version. Flyway records each version on success and
    never re-runs it.
-2. **Versions:** `V1` = Arc baseline. Deltas start at `V2`. Flyway treats `V1`
-   and `V001` as the same version, so do not reuse `1`.
+2. **Versions:** use UTC `VyyyyMMddHHmmss__description.sql`, matching Laravel's
+   timestamp ordering while retaining Flyway's standard `V` marker. Generate a
+   new timestamp for every migration; never reuse or renumber one.
 3. **MariaDB only.** Native `IF [NOT] EXISTS` is allowed (and preferred) for
    additive changes; it is not valid on MySQL 8.
 4. **Guard for adoption.** A migration may meet a database that already has the
@@ -20,8 +24,9 @@ existing-Polaris installs are baselined at `V1` (skipped) and run the deltas.
    large table) document lock/runtime/space/recovery and are separately reviewed.
    MariaDB DDL is not rollback-safe — recovery is forward-fix or restore.
 6. **Java migrations are exceptional.** Use one only where the source schema is
-   genuinely dynamic. `V5` uses Flyway's supported Java-migration API to retain
-   custom legacy permission columns; ordinary schema and data changes remain SQL.
+   genuinely dynamic. The permission-normalization migration uses Flyway's
+   supported Java-migration API to retain custom legacy permission columns;
+   ordinary schema and data changes remain SQL.
 
 ## Patterns
 

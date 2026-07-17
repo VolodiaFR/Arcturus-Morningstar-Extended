@@ -1,4 +1,4 @@
--- V3: columns Polaris adds to tables shared with Arcturus 3.5.5.
+-- Columns Polaris adds to tables shared with Arcturus 3.5.5.
 -- ADD COLUMN IF NOT EXISTS (MariaDB) so an install that already has the column is a no-op.
 -- NOTE: this guards on column NAME. Where a converter might hold a DIFFERENT definition,
 -- a state-aware check (see the authoring guide) should replace the plain guard.

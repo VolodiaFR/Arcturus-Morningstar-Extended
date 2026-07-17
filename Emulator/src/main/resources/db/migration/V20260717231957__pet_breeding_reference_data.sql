@@ -48,17 +48,31 @@ WHERE `pet_type` = 28 AND @legacy_baby_cat_rows = 1;
 INSERT INTO `pet_breeding_races` (`pet_type`, `rarity_level`, `breed`)
 SELECT `pet_type`, `rarity_level`, `breed`
 FROM `polaris_expected_pet_breeds`
-ON DUPLICATE KEY UPDATE `breed` = VALUES(`breed`);
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM `pet_breeding_races` existing
+  WHERE existing.`pet_type` = `polaris_expected_pet_breeds`.`pet_type`
+    AND existing.`rarity_level` = `polaris_expected_pet_breeds`.`rarity_level`
+    AND existing.`breed` = `polaris_expected_pet_breeds`.`breed`
+);
 
 DROP TEMPORARY TABLE `polaris_expected_pet_breeds`;
 
-INSERT INTO `pet_breeding` (`pet_id`, `offspring_id`) VALUES
-  (0, 29),
-  (1, 28),
-  (3, 25),
-  (4, 24),
-  (5, 30)
-ON DUPLICATE KEY UPDATE `offspring_id` = VALUES(`offspring_id`);
+INSERT INTO `pet_breeding` (`pet_id`, `offspring_id`)
+SELECT expected.`pet_id`, expected.`offspring_id`
+FROM (
+  SELECT 0 AS `pet_id`, 29 AS `offspring_id` UNION ALL
+  SELECT 1, 28 UNION ALL
+  SELECT 3, 25 UNION ALL
+  SELECT 4, 24 UNION ALL
+  SELECT 5, 30
+) expected
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM `pet_breeding` existing
+  WHERE existing.`pet_id` = expected.`pet_id`
+    AND existing.`offspring_id` = expected.`offspring_id`
+);
 
 UPDATE `pet_actions` SET `offspring_type` = 29 WHERE `pet_type` = 0;
 UPDATE `pet_actions` SET `offspring_type` = 28 WHERE `pet_type` = 1;

@@ -44,12 +44,12 @@ public final class SchemaPreflight {
     }
 
     public enum State {
-        /** No user tables at all — a brand-new database. Apply V1 then V2..Vn. */
+        /** No user tables at all — a brand-new database. Apply the complete migration chain. */
         EMPTY,
         /** Already has flyway_schema_history — validate and apply pending. */
         MANAGED,
         /** Non-empty, no Flyway history, but has the required invariant tables —
-         *  a recognised Arc/Polaris install to baseline at V1 then migrate. */
+         *  a recognised Arc/Polaris install to record adoption then migrate. */
         RECOGNISED_EXISTING,
         /** Non-empty, no Flyway history, missing required invariants — refuse. */
         UNKNOWN
