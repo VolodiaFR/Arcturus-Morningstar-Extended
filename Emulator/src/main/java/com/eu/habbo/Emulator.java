@@ -6,7 +6,7 @@ import ch.qos.logback.core.ConsoleAppender;
 import com.eu.habbo.core.*;
 import com.eu.habbo.core.consolecommands.ConsoleCommand;
 import com.eu.habbo.database.Database;
-import com.eu.habbo.database.migrations.MigrationOptions;
+import com.eu.habbo.database.migration.MigrationRunner;
 import com.eu.habbo.gui.EmulatorDashboard;
 import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.gameclients.SessionResumeManager;
@@ -131,21 +131,18 @@ public final class Emulator {
 
             Emulator.runtime = Runtime.getRuntime();
             Emulator.config = new ConfigurationManager("config.ini");
-            MigrationOptions migrationOptions = MigrationOptions.resolve(
-                    Emulator.config,
-                    args,
-                    System.getenv());
             Emulator.crypto = new CryptoConfig(
                     Emulator.getConfig().getBoolean("enc.enabled", false),
                     Emulator.getConfig().getValue("enc.e"),
                     Emulator.getConfig().getValue("enc.n"),
                     Emulator.getConfig().getValue("enc.d"));
-            Emulator.database = new Database(Emulator.getConfig(), migrationOptions);
-            if (migrationOptions.migrationsOnly()) {
-                Emulator.database.dispose();
-                Emulator.database = null;
-                Emulator.config = null;
-                return;
+            Emulator.database = new Database(Emulator.getConfig());
+            // Apply schema migrations after the connection is up but BEFORE any
+            // configuration is read from emulator_settings, so migrations that add
+            // or change settings/tables are in place before anything reads them.
+            // Fail-closed: MigrationException aborts startup.
+            if (Emulator.getDatabase() != null && Emulator.getDatabase().getDataSource() != null) {
+                MigrationRunner.runAtStartup(Emulator.getDatabase().getDataSource(), Emulator.getConfig());
             }
             Emulator.databaseLogger = new DatabaseLogger();
             Emulator.config.loaded = true;
