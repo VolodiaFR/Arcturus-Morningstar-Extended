@@ -54,6 +54,9 @@ public final class AccessTokenService {
         long now = Emulator.getIntUnixTimestamp();
         long exp = now + ttlSeconds();
         UserSecurityState securityState = currentSecurityState(conn, userId);
+        if (securityState == null) {
+            throw new SQLException("Cannot issue access token for unknown user " + userId);
+        }
 
         JsonObject header = new JsonObject();
         header.addProperty("alg", "HS256");
@@ -76,6 +79,11 @@ public final class AccessTokenService {
     }
 
     public static int verify(String token) {
+        // Do the cheap, stateless checks (structure, signature, expiry) before
+        // acquiring a database connection, so unsigned or expired garbage cannot
+        // drive a connection checkout per request.
+        if (!passesStatelessChecks(token)) return 0;
+
         try (Connection conn = Emulator.getDatabase().getDataSource().getConnection()) {
             return verify(conn, token);
         } catch (SQLException e) {
@@ -109,6 +117,9 @@ public final class AccessTokenService {
             if (userId <= 0 || version < 0) return 0;
 
             UserSecurityState securityState = currentSecurityState(conn, userId);
+            // A validly-signed token for a since-deleted account is simply invalid,
+            // not a server error; reject it quietly rather than logging per request.
+            if (securityState == null) return 0;
             if (version != securityState.version
                     || !credential.equals(credentialBinding(userId, securityState.passwordHash))) return 0;
             return userId;
@@ -116,6 +127,28 @@ public final class AccessTokenService {
             throw e;
         } catch (Exception e) {
             return 0;
+        }
+    }
+
+    private static boolean passesStatelessChecks(String token) {
+        if (token == null || token.isEmpty() || token.length() > MAX_TOKEN_CHARS) return false;
+
+        String[] parts = token.split("\\.");
+        if (parts.length != 3) return false;
+
+        try {
+            String signingInput = parts[0] + "." + parts[1];
+            byte[] expected = hmacSha256(secret().getBytes(StandardCharsets.UTF_8),
+                    signingInput.getBytes(StandardCharsets.UTF_8));
+            byte[] provided = URL_DEC.decode(parts[2]);
+            if (!constantTimeEquals(expected, provided)) return false;
+
+            byte[] payloadBytes = URL_DEC.decode(parts[1]);
+            JsonObject payload = JsonParser.parseString(new String(payloadBytes, StandardCharsets.UTF_8)).getAsJsonObject();
+            if (!payload.has("typ") || !"access".equals(payload.get("typ").getAsString())) return false;
+            return payload.get("exp").getAsLong() > Emulator.getIntUnixTimestamp();
+        } catch (Exception e) {
+            return false;
         }
     }
 
@@ -135,7 +168,7 @@ public final class AccessTokenService {
             select.setInt(1, userId);
             try (ResultSet result = select.executeQuery()) {
                 if (!result.next()) {
-                    throw new SQLException("Access token user does not exist: " + userId);
+                    return null;
                 }
                 return new UserSecurityState(
                         result.getLong("access_token_version"),
