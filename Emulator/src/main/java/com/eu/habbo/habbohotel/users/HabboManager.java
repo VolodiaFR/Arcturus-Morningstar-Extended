@@ -292,7 +292,12 @@ public class HabboManager {
             habbo.giveCredits(credits);
         } else {
             try {
-                SqlQueries.update("UPDATE users SET credits = credits + ? WHERE id = ? LIMIT 1", credits, userId);
+                // Clamp the offline balance into [0, INT_MAX] in SQL so this path
+                // upholds the same wallet invariant as the in-memory addCredits and
+                // cannot persist a negative or wrapped balance.
+                SqlQueries.update(
+                        "UPDATE users SET credits = LEAST(GREATEST(CAST(credits AS SIGNED) + ?, 0), 2147483647) WHERE id = ? LIMIT 1",
+                        credits, userId);
             } catch (SqlQueries.DataAccessException e) {
                 LOGGER.error("Caught SQL exception", e);
             }

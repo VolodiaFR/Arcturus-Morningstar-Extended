@@ -26,4 +26,24 @@ public final class WalletBalanceMath {
         }
         return balance;
     }
+
+    /**
+     * Clamps {@code currentBalance + delta} into the representable
+     * {@code [0, Integer.MAX_VALUE]} range instead of throwing. Used by the
+     * legacy add/subtract entry points, which are check-then-act call sites not
+     * structured to handle a rejected mutation: clamping keeps the persisted
+     * balance within bounds (never negative, never wrapped) while remaining a
+     * total function. New code that must reject an out-of-range update should
+     * use {@link #checkedBalance(int, int)} instead.
+     */
+    public static int clampedBalance(int currentBalance, int delta) {
+        long updated = (long) Math.max(0, currentBalance) + delta;
+        if (updated < 0) {
+            return 0;
+        }
+        if (updated > Integer.MAX_VALUE) {
+            return Integer.MAX_VALUE;
+        }
+        return (int) updated;
+    }
 }

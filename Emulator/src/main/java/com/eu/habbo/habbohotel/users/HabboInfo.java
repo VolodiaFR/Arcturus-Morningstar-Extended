@@ -287,9 +287,21 @@ public class HabboInfo implements Runnable {
     }
 
     public void addCurrencyAmount(int type, int amount) {
-        if (!this.tryAddCurrencyAmount(type, amount)) {
-            throw new IllegalArgumentException("invalid currency balance update");
+        // Legacy check-then-act entry point: never throw here, because the many
+        // existing callers (staff commands, wired, chests, plugins) are not
+        // structured to recover from a rejected mutation. Clamp into range and
+        // log if a delta would have gone out of bounds. Paths that must reject an
+        // out-of-range update use tryAddCurrencyAmount instead.
+        synchronized (this.currencyLock) {
+            int current = this.currencies.get(type);
+            int updated = WalletBalanceMath.clampedBalance(current, amount);
+            if ((long) Math.max(0, current) + amount != updated) {
+                LOGGER.warn("Clamped out-of-range point balance for user {} (currency type {}): {} + {} -> {}",
+                        this.id, type, current, amount, updated);
+            }
+            this.currencies.put(type, updated);
         }
+        this.run();
     }
 
     public boolean tryAddCurrencyAmount(int type, int amount) {
@@ -454,9 +466,18 @@ public class HabboInfo implements Runnable {
     }
 
     public void addCredits(int credits) {
-        if (!this.tryAddCredits(credits)) {
-            throw new IllegalArgumentException("invalid credit balance update");
+        // Legacy check-then-act entry point: never throw here (see
+        // addCurrencyAmount). Clamp into range and log an out-of-range delta.
+        // Paths that must reject an out-of-range update use tryAddCredits.
+        synchronized (this.currencyLock) {
+            int updated = WalletBalanceMath.clampedBalance(this.credits, credits);
+            if ((long) Math.max(0, this.credits) + credits != updated) {
+                LOGGER.warn("Clamped out-of-range credit balance for user {}: {} + {} -> {}",
+                        this.id, this.credits, credits, updated);
+            }
+            this.credits = updated;
         }
+        this.run();
     }
 
     public boolean tryAddCredits(int credits) {
