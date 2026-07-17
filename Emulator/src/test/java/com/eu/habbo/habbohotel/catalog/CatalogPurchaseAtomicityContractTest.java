@@ -27,6 +27,8 @@ class CatalogPurchaseAtomicityContractTest {
                 "credit debit must reject insufficient concurrent balances");
         assertTrue(transaction.contains("connection.commit()"));
         assertTrue(transaction.contains("connection.rollback()"));
+        assertTrue(manager.contains("limitedConfiguration.restoreNumber(item.getId(), limitedNumber)"),
+                "a failed legacy limited purchase must return its reserved number to the pool");
     }
 
     @Test

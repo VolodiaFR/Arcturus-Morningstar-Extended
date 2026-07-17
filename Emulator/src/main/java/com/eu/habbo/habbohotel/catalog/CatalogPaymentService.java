@@ -4,7 +4,17 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.users.UserCreditsComposer;
 import com.eu.habbo.messages.outgoing.users.UserPointsComposer;
 
-/** Catalog-only facade for one atomic credits-plus-points wallet mutation. */
+/**
+ * Catalog-only facade for one atomic credits-plus-points wallet mutation.
+ *
+ * <p>Note: this deliberately debits (and refunds) directly rather than through
+ * {@code Habbo.giveCredits}/{@code givePoints}, so it does NOT fire
+ * {@code UserCreditsEvent}/{@code UserPointsEvent}. That is intentional: a plugin
+ * cancelling or reducing the debit event previously let a buyer keep the items
+ * without paying. The trade-off is that plugins observing those events no longer
+ * see catalog debits/refunds; catalog spend should be observed via
+ * {@code UserCatalogItemPurchasedEvent} instead.
+ */
 public final class CatalogPaymentService {
     private CatalogPaymentService() {
     }

@@ -1045,6 +1045,8 @@ public class CatalogManager {
         int paidCredits = 0;
         int paidPoints = 0;
         int paidPointsType = 0;
+        CatalogLimitedConfiguration limitedConfiguration = null;
+        int limitedNumber = 0;
 
         try {
             if (item.isClubOnly() && !habbo.getClient().getHabbo().getHabboStats().hasActiveClub()) {
@@ -1058,9 +1060,7 @@ public class CatalogManager {
             }
 
             try {
-                CatalogLimitedConfiguration limitedConfiguration = null;
                 int limitedStack = 0;
-                int limitedNumber = 0;
                 if (item.isLimited()) {
                     amount = 1;
                     if (this.getLimitedConfig(item).available() == 0) {
@@ -1472,6 +1472,12 @@ public class CatalogManager {
                     for (Pet pet : createdPets) {
                         habbo.getInventory().getPetsComponent().removePet(pet);
                         Emulator.getGameEnvironment().getPetManager().deletePet(pet);
+                    }
+                    if (limitedConfiguration != null && limitedNumber > 0) {
+                        // Return the reserved limited number to the pool so a failed
+                        // purchase does not permanently shrink the stock or leave the
+                        // item stranded on the sold-out page.
+                        limitedConfiguration.restoreNumber(item.getId(), limitedNumber);
                     }
                     if (paymentTaken) {
                         CatalogPaymentService.refund(habbo, paidCredits, paidPointsType, paidPoints);
