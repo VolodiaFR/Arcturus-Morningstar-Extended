@@ -500,6 +500,15 @@ public final class Emulator {
         return database;
     }
 
+    /**
+     * Test-only seam: installs a {@link Database} backed by a test datasource so
+     * integration tests can point the code-under-test at a throwaway MariaDB.
+     * Package-private on purpose — this is not part of the plugin API.
+     */
+    static void setDatabaseForTesting(Database database) {
+        Emulator.database = database;
+    }
+
     public static DatabaseLogger getDatabaseLogger() {
         return databaseLogger;
     }
