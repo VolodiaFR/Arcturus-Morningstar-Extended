@@ -30,6 +30,14 @@ jobs:
       - name: Build and test
         run: mvn -B verify
 
+      - name: Upload furni consistency fixture report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: furni-consistency-fixture-report
+          path: Emulator/target/furni-consistency-fixture.json
+          if-no-files-found: error
+
   migration-integration:
     runs-on: ubuntu-latest
     services:
