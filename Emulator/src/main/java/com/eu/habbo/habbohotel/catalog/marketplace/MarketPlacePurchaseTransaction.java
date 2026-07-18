@@ -1,6 +1,8 @@
 package com.eu.habbo.habbohotel.catalog.marketplace;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.economy.EconomyLedger;
+import com.eu.habbo.habbohotel.economy.EconomyOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,11 +30,21 @@ final class MarketPlacePurchaseTransaction {
             connection.setAutoCommit(false);
 
             if (!executeOfferSale(connection, offerId, soldTimestamp)
-                    || !executeItemTransfer(connection, itemId, buyerId)
-                    || !executeCharge(connection, buyerId, currencyType, charge)) {
+                    || !executeItemTransfer(connection, itemId, buyerId)) {
                 connection.rollback();
                 return false;
             }
+
+            EconomyLedger.apply(connection, new EconomyOperation(
+                    "marketplace:offer:" + offerId + ":buyer",
+                    buyerId,
+                    buyerId,
+                    "marketplace_purchase",
+                    "catalog.marketplace.buy",
+                    currencyType < 0 ? EconomyLedger.CREDITS : currencyType,
+                    -charge,
+                    itemId,
+                    "offerId=" + offerId));
 
             connection.commit();
             return true;
@@ -66,22 +78,4 @@ final class MarketPlacePurchaseTransaction {
         }
     }
 
-    private static boolean executeCharge(Connection connection, int buyerId, int currencyType, int charge) throws SQLException {
-        if (currencyType < 0) {
-            try (PreparedStatement statement = connection.prepareStatement(CHARGE_CREDITS)) {
-                statement.setInt(1, charge);
-                statement.setInt(2, buyerId);
-                statement.setInt(3, charge);
-                return statement.executeUpdate() == 1;
-            }
-        }
-
-        try (PreparedStatement statement = connection.prepareStatement(CHARGE_CURRENCY)) {
-            statement.setInt(1, charge);
-            statement.setInt(2, buyerId);
-            statement.setInt(3, currencyType);
-            statement.setInt(4, charge);
-            return statement.executeUpdate() == 1;
-        }
-    }
 }

@@ -1,6 +1,9 @@
 package com.eu.habbo.habbohotel.users;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.economy.EconomyLedger;
+import com.eu.habbo.habbohotel.economy.EconomyOperation;
+import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.database.SqlQueries;
 import com.eu.habbo.habbohotel.modtool.ModToolBan;
 import com.eu.habbo.habbohotel.permissions.Permission;
@@ -289,7 +292,7 @@ public class HabboManager {
     public void giveCredits(int userId, int credits) {
         Habbo habbo = this.getHabbo(userId);
         if (habbo != null) {
-            habbo.giveCredits(credits);
+            habbo.giveCredits(credits, "system.habbo_manager");
         } else {
             try {
                 // Clamp the offline balance into [0, INT_MAX] in SQL so this path
