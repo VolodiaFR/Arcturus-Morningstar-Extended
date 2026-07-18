@@ -9,10 +9,10 @@ import javax.sql.DataSource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -39,7 +39,18 @@ final class RuntimeSchemaValidator {
     private static final Set<String> INTEGER_TYPES =
             Set.of("tinyint", "smallint", "mediumint", "int", "bigint");
 
-    private static final List<TableRequirement> REQUIREMENTS = loadRequirements();
+    /** Loaded lazily so a broken contract surfaces as a {@link MigrationException}
+     *  with its operator guidance, not an {@code ExceptionInInitializerError}. */
+    private static volatile List<TableRequirement> requirements;
+
+    private static List<TableRequirement> requirements() {
+        List<TableRequirement> loaded = requirements;
+        if (loaded == null) {
+            loaded = loadRequirements();
+            requirements = loaded;
+        }
+        return loaded;
+    }
 
     private static List<TableRequirement> loadRequirements() {
         List<TableRequirement> requirements = new ArrayList<>();
@@ -89,7 +100,7 @@ final class RuntimeSchemaValidator {
             SchemaSnapshot schema = SchemaSnapshot.load(connection);
             List<String> violations = new ArrayList<>();
 
-            for (TableRequirement table : REQUIREMENTS) {
+            for (TableRequirement table : requirements()) {
                 Map<String, ColumnDefinition> actualColumns = schema.columns().get(table.name());
                 if (actualColumns == null) {
                     violations.add("missing table " + table.name());
@@ -142,6 +153,10 @@ final class RuntimeSchemaValidator {
             for (int tableIndex = 0; tableIndex < tables.size(); tableIndex++) {
                 String table = tables.get(tableIndex);
                 List<String> columns = schema.columns().get(table).keySet().stream()
+                        // Live pre-Flyway Polaris hotels may lack the auto-increment
+                        // pet_actions.ID, and the runtime reads that table by name
+                        // (`SELECT *`, keyed on pet_type), so the contract must not
+                        // require the column of adopted databases.
                         .filter(column -> !(table.equals("pet_actions") && column.equals("id")))
                         .sorted()
                         .toList();

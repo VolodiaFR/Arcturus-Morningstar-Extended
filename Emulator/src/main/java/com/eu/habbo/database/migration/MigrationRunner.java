@@ -138,6 +138,12 @@ public final class MigrationRunner {
                             .append(migration.getDescription()).append('\n');
                 }
             }
+            // A fully migrated database must also satisfy the runtime contract, so
+            // --migrations=validate detects manual schema drift, not just history drift.
+            if (state == SchemaPreflight.State.MANAGED && pendingCount == 0) {
+                RuntimeSchemaValidator.validate(dataSource);
+                out.append("Runtime schema: compatible\n");
+            }
             return out.toString();
         } catch (MigrationException e) {
             throw e;

@@ -97,7 +97,10 @@ class MigrationRunnerIT {
 
             // Now MANAGED, and a second migrate is a no-op (Flyway history).
             assertEquals(SchemaPreflight.State.MANAGED, SchemaPreflight.detect(ds));
-            assertTrue(MigrationRunner.status(ds).contains("Pending migrations: 0"));
+            String managedStatus = MigrationRunner.status(ds);
+            assertTrue(managedStatus.contains("Pending migrations: 0"));
+            assertTrue(managedStatus.contains("Runtime schema: compatible"),
+                    "a fully migrated status must confirm the runtime contract");
             MigrationRunner.migrate(ds);
         }
     }
