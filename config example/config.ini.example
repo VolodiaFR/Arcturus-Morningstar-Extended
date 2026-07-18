@@ -7,6 +7,13 @@ db.password=root
 db.params=
 # Automatically prepare empty databases and upgrade recognized Arcturus/Polaris hotels.
 db.migrate.on_startup=true
+# Required fail-closed backup before pending migrations are applied.
+db.migrations.backup.enabled=true
+db.migrations.backup.directory=backups/database
+db.migrations.backup.keep=7
+db.migrations.backup.timeout_seconds=900
+# Absolute path is recommended when mariadb-dump is not on PATH.
+db.migrations.backup.executable=mariadb-dump
 db.pool.minsize=25
 db.pool.maxsize=100
 
