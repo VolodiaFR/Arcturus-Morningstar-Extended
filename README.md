@@ -12,16 +12,9 @@ online.
 > to take full responsibility for your actions and to comply with all
 > applicable laws and regulations.
 
-## What's in this repository
-
-| Folder | Contents |
-|---|---|
-| [`Gameserver/`](Gameserver) | The **Polaris** game server — Java 21, Maven. See [`Gameserver/POLARIS.md`](Gameserver/POLARIS.md) for the rename and the legacy plugin bridge. |
-| [`Database/`](Database) | A full starter database plus incremental update scripts. |
-
 ## Requirements
 
-- **Game server:** Java 21 (JDK) and Maven
+- **Emulator:** Java 21 (JDK) and Maven
 - **Database:** MariaDB
 
 ## Quick start
@@ -38,7 +31,7 @@ order, followed by the numbered scripts in `Database/Database Updates/`.
 ### 2. Game server
 
 ```
-cd Gameserver
+cd emulator
 mvn package
 ```
 
@@ -65,7 +58,7 @@ Polaris keeps its promise to existing plugin authors:
   automatically.
 
 How it works, what it covers and how to configure it is documented in
-[`Gameserver/POLARIS.md`](Gameserver/POLARIS.md).
+[`POLARIS.md`](POLARIS.md).
 
 ## Credits
 
@@ -73,3 +66,9 @@ How it works, what it covers and how to configure it is documented in
 - **The Arcturus Morningstar team** ([krews.org](https://krews.org)) — the community fork Polaris grew from
 - **DuckieTM**, **simoleo89**, **Medievalshell**, **Lorenzo (the wired master)**, **Remco**
 - **Puffin** — the MyBoBBa catalogue assets, **xlRaiko** — the clothing pack
+
+## Community
+
+[![Discord](https://img.shields.io/badge/Discord-Join%20our%20community-5865F2?logo=discord&logoColor=white)](https://discord.gg/a2nUFkwqx)
+
+Need help, want to contribute, or just want to chat?
