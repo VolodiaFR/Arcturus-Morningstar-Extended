@@ -310,12 +310,14 @@ public final class EmulatorStatsService {
     }
 
     private static SchedulerMetrics collectSchedulerMetrics() {
+        List<Scheduler.Status> tasks = collectSchedulerStatuses();
+
         if (Emulator.getThreading() == null) {
-            return new SchedulerMetrics(0, 0, 0, 0, false);
+            return new SchedulerMetrics(0, 0, 0, 0, false, tasks);
         }
 
         if (!(Emulator.getThreading().getService() instanceof ScheduledThreadPoolExecutor executor)) {
-            return new SchedulerMetrics(0, 0, 0, 0, false);
+            return new SchedulerMetrics(0, 0, 0, 0, false, tasks);
         }
 
         return new SchedulerMetrics(
@@ -323,7 +325,8 @@ public final class EmulatorStatsService {
                 executor.getActiveCount(),
                 executor.getPoolSize(),
                 executor.getCompletedTaskCount(),
-                !executor.isShutdown()
+                !executor.isShutdown(),
+                tasks
         );
     }
 
@@ -768,13 +771,19 @@ public final class EmulatorStatsService {
         public final int poolSize;
         public final long completedTasks;
         public final boolean running;
+        public final List<Scheduler.Status> tasks;
 
         public SchedulerMetrics(int queuedTasks, int activeThreads, int poolSize, long completedTasks, boolean running) {
+            this(queuedTasks, activeThreads, poolSize, completedTasks, running, List.of());
+        }
+
+        public SchedulerMetrics(int queuedTasks, int activeThreads, int poolSize, long completedTasks, boolean running, List<Scheduler.Status> tasks) {
             this.queuedTasks = queuedTasks;
             this.activeThreads = activeThreads;
             this.poolSize = poolSize;
             this.completedTasks = completedTasks;
             this.running = running;
+            this.tasks = tasks == null ? List.of() : List.copyOf(tasks);
         }
     }
 
