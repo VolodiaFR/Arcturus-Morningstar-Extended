@@ -56,14 +56,20 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ThreadFactory;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 public class Room implements Comparable<Room>, ISerialize, Runnable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(Room.class);
+  private static final ThreadFactory LOAD_THREAD_FACTORY =
+          Thread.ofVirtual().name("room-load-", 0).factory();
+  private static final Executor LOAD_COORDINATOR =
+          task -> LOAD_THREAD_FACTORY.newThread(task).start();
 
   // Manager instances for better separation of concerns
   private RoomTileManager tileManager;
@@ -623,7 +629,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
       try {
         this.loadingFuture = CompletableFuture.runAsync(
                 () -> this.loadDataInternal(generation),
-                Emulator.getThreading().getService()
+                LOAD_COORDINATOR
         );
       } catch (RuntimeException exception) {
         this.failLoadTransitionLocked(generation);
