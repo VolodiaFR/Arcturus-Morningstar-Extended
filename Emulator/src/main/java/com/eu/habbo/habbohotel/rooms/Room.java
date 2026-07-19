@@ -58,6 +58,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 
 public class Room implements Comparable<Room>, ISerialize, Runnable {
 
@@ -136,6 +137,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   public ScheduledFuture<?> roomCycleTask;
   private int id;
   private int ownerId;
+  private volatile BiConsumer<Room, Integer> ownerChangeListener;
   private String ownerName;
   private String name;
   private String description;
@@ -1259,7 +1261,17 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   }
 
   public void setOwnerId(int ownerId) {
+    int previousOwnerId = this.ownerId;
     this.ownerId = ownerId;
+
+    BiConsumer<Room, Integer> listener = this.ownerChangeListener;
+    if (listener != null && previousOwnerId != ownerId) {
+      listener.accept(this, previousOwnerId);
+    }
+  }
+
+  void setOwnerChangeListener(BiConsumer<Room, Integer> ownerChangeListener) {
+    this.ownerChangeListener = ownerChangeListener;
   }
 
   public String getOwnerName() {

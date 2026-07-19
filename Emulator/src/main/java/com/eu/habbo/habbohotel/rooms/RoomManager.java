@@ -57,6 +57,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class RoomManager {
 
@@ -73,6 +74,7 @@ public class RoomManager {
     private final ConcurrentHashMap<String, RoomLayoutData> layoutCache;
     private final ConcurrentHashMap<Integer, Room> activeRooms;
     private final ConcurrentHashMap<Integer, Set<Integer>> roomsByOwner;
+    private final AtomicInteger indexedRoomCount;
     private final ArrayList<Class<? extends Game>> gameTypes;
 
     public RoomManager() {
@@ -86,6 +88,7 @@ public class RoomManager {
         this.layoutCache = new ConcurrentHashMap<>();
         this.activeRooms = new ConcurrentHashMap<>();
         this.roomsByOwner = new ConcurrentHashMap<>();
+        this.indexedRoomCount = new AtomicInteger();
 
         this.gameTypes = new ArrayList<>();
 
@@ -106,22 +109,62 @@ public class RoomManager {
     }
 
     private void trackRoomOwner(Room room) {
-        this.roomsByOwner.computeIfAbsent(room.getOwnerId(), k -> ConcurrentHashMap.newKeySet()).add(room.getId());
+        if (this.roomsByOwner.computeIfAbsent(room.getOwnerId(), k -> ConcurrentHashMap.newKeySet()).add(room.getId())) {
+            this.indexedRoomCount.incrementAndGet();
+        }
     }
 
     private void untrackRoomOwner(Room room) {
-        Set<Integer> rooms = this.roomsByOwner.get(room.getOwnerId());
+        room.setOwnerChangeListener(null);
+        this.removeRoomFromOwner(room.getOwnerId(), room.getId());
+    }
+
+    private void removeRoomFromOwner(int ownerId, int roomId) {
+        Set<Integer> rooms = this.roomsByOwner.get(ownerId);
         if (rooms != null) {
-            rooms.remove(room.getId());
+            if (rooms.remove(roomId)) {
+                this.indexedRoomCount.decrementAndGet();
+            }
             if (rooms.isEmpty()) {
-                this.roomsByOwner.remove(room.getOwnerId());
+                this.roomsByOwner.remove(ownerId, rooms);
             }
         }
     }
 
     void registerActiveRoom(Room room) {
-        this.activeRooms.put(room.getId(), room);
+        Room previousRoom = this.activeRooms.put(room.getId(), room);
+        if (previousRoom != null) {
+            this.untrackRoomOwner(previousRoom);
+        }
+
+        room.setOwnerChangeListener(this::roomOwnerChanged);
         this.trackRoomOwner(room);
+    }
+
+    private void roomOwnerChanged(Room room, int previousOwnerId) {
+        if (this.activeRooms.get(room.getId()) != room) {
+            return;
+        }
+
+        this.removeRoomFromOwner(previousOwnerId, room.getId());
+        this.trackRoomOwner(room);
+    }
+
+    private void reconcileOwnerIndex() {
+        for (Map.Entry<Integer, Set<Integer>> entry : this.roomsByOwner.entrySet()) {
+            int indexedOwnerId = entry.getKey();
+            for (int roomId : new HashSet<>(entry.getValue())) {
+                Room room = this.activeRooms.get(roomId);
+                if (room == null || room.getOwnerId() != indexedOwnerId) {
+                    this.removeRoomFromOwner(indexedOwnerId, roomId);
+                }
+            }
+        }
+
+        for (Room room : this.activeRooms.values()) {
+            room.setOwnerChangeListener(this::roomOwnerChanged);
+            this.trackRoomOwner(room);
+        }
     }
 
     public void loadRoomModels() {
@@ -193,8 +236,7 @@ public class RoomManager {
 
                     if (room == null) {
                         room = new Room(set);
-                        this.activeRooms.put(set.getInt("id"), room);
-                        this.trackRoomOwner(room);
+                        this.registerActiveRoom(room);
                     }
 
                     if (!rooms.containsKey(set.getInt("category"))) {
@@ -353,8 +395,7 @@ public class RoomManager {
             }
 
             if (room != null) {
-                this.activeRooms.put(room.getId(), room);
-                this.trackRoomOwner(room);
+                this.registerActiveRoom(room);
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
@@ -414,12 +455,8 @@ public class RoomManager {
     }
 
     public void unloadRoomsForHabbo(Habbo habbo) {
-        List<Room> roomsToDispose = new ArrayList<>();
-        for (Room room : this.activeRooms.values()) {
-            if (!room.isPublicRoom() && !room.isStaffPromotedRoom() && room.getOwnerId() == habbo.getHabboInfo().getId() && room.getUserCount() == 0 && (this.roomCategories.get(room.getCategory()) == null || !this.roomCategories.get(room.getCategory()).isPublic())) {
-                roomsToDispose.add(room);
-            }
-        }
+        int ownerId = habbo.getHabboInfo().getId();
+        List<Room> roomsToDispose = this.roomsToUnloadForOwner(ownerId);
 
         for (Room room : roomsToDispose) {
             if (Emulator.getPluginManager().fireEvent(new RoomUncachedEvent(room)).isCancelled())
@@ -429,6 +466,35 @@ public class RoomManager {
             this.untrackRoomOwner(room);
             this.activeRooms.remove(room.getId());
         }
+    }
+
+    List<Room> roomsToUnloadForOwner(int ownerId) {
+        if (this.indexedRoomCount.get() != this.activeRooms.size()) {
+            this.reconcileOwnerIndex();
+        }
+
+        List<Room> roomsToDispose = new ArrayList<>();
+        Set<Integer> roomIds = this.roomsByOwner.get(ownerId);
+        if (roomIds == null) {
+            return roomsToDispose;
+        }
+
+        for (int roomId : new HashSet<>(roomIds)) {
+            Room room = this.activeRooms.get(roomId);
+            if (room == null || room.getOwnerId() != ownerId) {
+                this.removeRoomFromOwner(ownerId, roomId);
+                if (room != null) {
+                    this.trackRoomOwner(room);
+                }
+                continue;
+            }
+
+            if (!room.isPublicRoom() && !room.isStaffPromotedRoom() && room.getUserCount() == 0 && (this.roomCategories.get(room.getCategory()) == null || !this.roomCategories.get(room.getCategory()).isPublic())) {
+                roomsToDispose.add(room);
+            }
+        }
+
+        return roomsToDispose;
     }
 
     public void clearInactiveRooms() {
@@ -1219,8 +1285,7 @@ public class RoomManager {
 
                     Room r = new Room(set);
                     rooms.add(r);
-                    this.activeRooms.put(r.getId(), r);
-                    this.trackRoomOwner(r);
+                    this.registerActiveRoom(r);
                 }
             }
         } catch (SQLException e) {
@@ -1280,8 +1345,7 @@ public class RoomManager {
                     Room r = new Room(set);
                     rooms.add(r);
 
-                    this.activeRooms.put(r.getId(), r);
-                    this.trackRoomOwner(r);
+                    this.registerActiveRoom(r);
                 }
             }
         } catch (SQLException e) {
@@ -1344,8 +1408,7 @@ public class RoomManager {
                     if (room == null) {
                         room = new Room(set);
 
-                        this.activeRooms.put(room.getId(), room);
-                        this.trackRoomOwner(room);
+                        this.registerActiveRoom(room);
                     }
 
                     rooms.add(room);
@@ -1581,9 +1644,11 @@ public class RoomManager {
     public synchronized void dispose() {
         for (Room room : this.activeRooms.values()) {
             room.dispose();
+            room.setOwnerChangeListener(null);
         }
 
         this.roomsByOwner.clear();
+        this.indexedRoomCount.set(0);
         this.activeRooms.clear();
 
         LOGGER.info("Room Manager -> Disposed!");
