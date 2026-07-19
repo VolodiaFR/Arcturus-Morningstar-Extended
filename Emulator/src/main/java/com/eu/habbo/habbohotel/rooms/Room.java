@@ -130,6 +130,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   private final Int2ObjectMap<RoomMoodlightData> moodlightData;
   private final RoomDependencies dependencies;
   private final RoomLoader loader;
+  private final RoomPersistence persistence;
   private final RoomRepository repository;
   public volatile double lastCycleCpuMs = 0.0;
   public volatile String lastCycleThread = "N/A";
@@ -255,6 +256,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   Room(int id, int ownerId, RoomDependencies dependencies) {
     this.cache = new HashMap<>();
     this.dependencies = Objects.requireNonNull(dependencies, "dependencies");
+    this.persistence = new RoomPersistence(this.dependencies.database());
     this.repository = new RoomRepository(this.dependencies.database());
     this.id = id;
     this.ownerId = ownerId;
@@ -276,6 +278,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   Room(ResultSet set, RoomDependencies dependencies) throws SQLException {
     this.cache = new HashMap<>(1000);
     this.dependencies = Objects.requireNonNull(dependencies, "dependencies");
+    this.persistence = new RoomPersistence(this.dependencies.database());
     this.repository = new RoomRepository(this.dependencies.database());
     RoomSnapshot.Initial initial = RoomSnapshot.readInitial(set);
     this.id = initial.id();
@@ -1378,68 +1381,61 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
   public void save() {
     if (this.needsUpdate) {
-      try (Connection connection = this.dependencies.database().openConnection();
-           PreparedStatement statement = connection.prepareStatement(
-              "UPDATE rooms SET name = ?, description = ?, password = ?, state = ?, users_max = ?, category = ?, score = ?, paper_floor = ?, paper_wall = ?, paper_landscape = ?, thickness_wall = ?, wall_height = ?, thickness_floor = ?, moodlight_data = ?, tags = ?, allow_other_pets = ?, allow_other_pets_eat = ?, allow_walkthrough = ?, allow_hidewall = ?, chat_mode = ?, chat_weight = ?, chat_speed = ?, chat_hearing_distance = ?, chat_protection =?, who_can_mute = ?, who_can_kick = ?, who_can_ban = ?, poll_id = ?, guild_id = ?, roller_speed = ?, override_model = ?, is_staff_picked = ?, promoted = ?, trade_mode = ?, move_diagonally = ?, owner_id = ?, owner_name = ?, jukebox_active = ?, hidewired = ?, allow_underpass = ?, youtube_enabled = ?, builders_club_trial_locked = ?, builders_club_original_state = ? WHERE id = ?")) {
-        statement.setString(1, this.name);
-        statement.setString(2, this.description);
-        statement.setString(3, this.password);
-        statement.setString(4, this.state.name().toLowerCase());
-        statement.setInt(5, this.usersMax);
-        statement.setInt(6, this.category);
-        statement.setInt(7, this.score);
-        statement.setString(8, this.floorPaint);
-        statement.setString(9, this.wallPaint);
-        statement.setString(10, this.backgroundPaint);
-        statement.setInt(11, this.wallSize);
-        statement.setInt(12, this.wallHeight);
-        statement.setInt(13, this.floorSize);
-        StringBuilder moodLightData = new StringBuilder();
-
-        int id = 1;
-        for (RoomMoodlightData data : this.moodlightData.values()) {
-          data.setId(id);
-          moodLightData.append(data.toString()).append(";");
-          id++;
-        }
-
-        statement.setString(14, moodLightData.toString());
-        statement.setString(15, this.tags);
-        statement.setString(16, this.allowPets ? "1" : "0");
-        statement.setString(17, this.allowPetsEat ? "1" : "0");
-        statement.setString(18, this.allowWalkthrough ? "1" : "0");
-        statement.setString(19, this.hideWall ? "1" : "0");
-        statement.setInt(20, this.chatMode);
-        statement.setInt(21, this.chatWeight);
-        statement.setInt(22, this.chatSpeed);
-        statement.setInt(23, this.chatDistance);
-        statement.setInt(24, this.chatProtection);
-        statement.setInt(25, this.muteOption);
-        statement.setInt(26, this.kickOption);
-        statement.setInt(27, this.banOption);
-        statement.setInt(28, this.pollId);
-        statement.setInt(29, this.guild);
-        statement.setInt(30, this.rollerSpeed);
-        statement.setString(31, this.overrideModel ? "1" : "0");
-        statement.setString(32, this.staffPromotedRoom ? "1" : "0");
-        statement.setString(33, this.promoted ? "1" : "0");
-        statement.setInt(34, this.tradeMode);
-        statement.setString(35, this.moveDiagonally ? "1" : "0");
-        statement.setInt(36, this.ownerId);
-        statement.setString(37, this.ownerName);
-        statement.setString(38, this.jukeboxActive ? "1" : "0");
-        statement.setString(39, this.hideWired ? "1" : "0");
-        statement.setString(40, this.allowUnderpass ? "1" : "0");
-        statement.setString(41, this.youtubeEnabled ? "1" : "0");
-        statement.setString(42, this.buildersClubTrialLocked ? "1" : "0");
-        statement.setString(43, (this.buildersClubOriginalState != null ? this.buildersClubOriginalState : RoomState.OPEN).name().toLowerCase());
-        statement.setInt(44, this.id);
-        statement.executeUpdate();
+      try {
+        this.persistence.save(this.persistenceState());
         this.needsUpdate = false;
       } catch (SQLException e) {
         LOGGER.error("Caught SQL exception", e);
       }
     }
+  }
+
+  private RoomPersistence.State persistenceState() {
+    return new RoomPersistence.State(
+        this.id,
+        this.ownerId,
+        this.ownerName,
+        this.name,
+        this.description,
+        this.password,
+        this.state,
+        this.usersMax,
+        this.category,
+        this.score,
+        this.floorPaint,
+        this.wallPaint,
+        this.backgroundPaint,
+        this.wallSize,
+        this.wallHeight,
+        this.floorSize,
+        List.copyOf(this.moodlightData.values()),
+        this.tags,
+        this.allowPets,
+        this.allowPetsEat,
+        this.allowWalkthrough,
+        this.hideWall,
+        this.chatMode,
+        this.chatWeight,
+        this.chatSpeed,
+        this.chatDistance,
+        this.chatProtection,
+        this.muteOption,
+        this.kickOption,
+        this.banOption,
+        this.pollId,
+        this.guild,
+        this.rollerSpeed,
+        this.overrideModel,
+        this.staffPromotedRoom,
+        this.promoted,
+        this.tradeMode,
+        this.moveDiagonally,
+        this.jukeboxActive,
+        this.hideWired,
+        this.allowUnderpass,
+        this.youtubeEnabled,
+        this.buildersClubTrialLocked,
+        this.buildersClubOriginalState);
   }
 
   /**
