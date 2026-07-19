@@ -171,8 +171,9 @@ class RoomLoaderTest {
         }
 
         @Override
-        public void finish(long generation) {
+        public boolean finish(long generation) {
             this.calls.add("finish:" + generation);
+            return true;
         }
 
         @Override
@@ -180,6 +181,7 @@ class RoomLoaderTest {
             this.calls.add("failure:" + message);
         }
 
+        @Override
         public int roomId() {
             return 41;
         }
