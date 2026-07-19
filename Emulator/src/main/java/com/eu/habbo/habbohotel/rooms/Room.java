@@ -122,6 +122,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   private final Int2ObjectMap<RoomBan> bannedHabbos;
   private final Set<Game> games;
   private final Int2ObjectMap<RoomMoodlightData> moodlightData;
+  private final RoomDependencies dependencies;
   public volatile double lastCycleCpuMs = 0.0;
   public volatile String lastCycleThread = "N/A";
 
@@ -240,7 +241,12 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   }
 
   Room(int id, int ownerId) {
+    this(id, ownerId, RoomDependencies.runtime());
+  }
+
+  Room(int id, int ownerId, RoomDependencies dependencies) {
     this.cache = new HashMap<>();
+    this.dependencies = Objects.requireNonNull(dependencies, "dependencies");
     this.id = id;
     this.ownerId = ownerId;
     this.bannedHabbos = new Int2ObjectOpenHashMap<>();
@@ -254,7 +260,12 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   }
 
   public Room(ResultSet set) throws SQLException {
+    this(set, RoomDependencies.runtime());
+  }
+
+  Room(ResultSet set, RoomDependencies dependencies) throws SQLException {
     this.cache = new HashMap<>(1000);
+    this.dependencies = Objects.requireNonNull(dependencies, "dependencies");
     RoomSnapshot.Initial initial = RoomSnapshot.readInitial(set);
     this.id = initial.id();
     this.ownerId = initial.ownerId();
@@ -302,7 +313,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
     this.bannedHabbos = new Int2ObjectOpenHashMap<>();
 
-    try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+    try (Connection connection = this.dependencies.database().openConnection()) {
       // Load bans eagerly (needed for entry check before loadData)
       this.loadBans(connection);
     } catch (SQLException e) {
