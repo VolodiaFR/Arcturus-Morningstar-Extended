@@ -1,6 +1,8 @@
 package com.eu.habbo.database.migration;
 
 import com.eu.habbo.core.ConfigurationManager;
+import com.eu.habbo.database.backup.MariaDbMigrationBackup;
+import com.eu.habbo.database.backup.MigrationBackup;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.flywaydb.core.Flyway;
@@ -48,15 +50,19 @@ public final class MigrationRunner {
             return;
         }
 
-        migrateAtStartup(runtimeDataSource);
+        migrateAtStartup(runtimeDataSource, config);
     }
 
     /** Applies migrations immediately, regardless of the startup config switch. */
-    public static MigrateResult migrateAtStartup(HikariDataSource runtimeDataSource) {
+    public static MigrateResult migrateAtStartup(
+            HikariDataSource runtimeDataSource,
+            ConfigurationManager config) {
         // The runtime datasource rewrites legacy plugin SQL. Migrations require an
         // unwrapped pool so their DDL cannot be silently translated.
         try (HikariDataSource rawMigrationDataSource = rawMigrationDataSource(runtimeDataSource)) {
-            return migrate(rawMigrationDataSource);
+            return migrate(
+                    rawMigrationDataSource,
+                    MariaDbMigrationBackup.resolve(config, rawMigrationDataSource));
         }
     }
 
@@ -69,11 +75,24 @@ public final class MigrationRunner {
 
     /** Runs the action permitted for the detected schema state. */
     public static MigrateResult migrate(DataSource dataSource) {
+        return migrate(dataSource, MigrationBackup.disabled());
+    }
+
+    static MigrateResult migrate(DataSource dataSource, MigrationBackup migrationBackup) {
         SchemaPreflight.State state = SchemaPreflight.detect(dataSource);
         Flyway flyway = flyway(dataSource);
 
         LOGGER.info("[migrate] Detected schema state: {}", state);
         try {
+            if (state != SchemaPreflight.State.EMPTY && state != SchemaPreflight.State.UNKNOWN) {
+                java.util.List<String> pending = java.util.Arrays.stream(flyway.info().pending())
+                        .filter(migration -> !isBaselineSkippedDuringAdoption(state, migration))
+                        .map(migration -> migration.getVersion() == null
+                                ? migration.getDescription()
+                                : migration.getVersion().getVersion())
+                        .toList();
+                if (!pending.isEmpty()) migrationBackup.beforeMigrations(pending);
+            }
             MigrateResult result = switch (state) {
                 case UNKNOWN -> throw new MigrationException(
                         "Refusing to migrate: the database is non-empty but is not a recognised Arc/Polaris schema. "

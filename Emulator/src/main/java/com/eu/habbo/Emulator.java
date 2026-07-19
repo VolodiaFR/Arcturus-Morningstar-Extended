@@ -150,7 +150,9 @@ public final class Emulator {
 
                 if (migrationOptions.mode() == MigrationOptions.Mode.APPLY
                         || migrationOptions.migrationsOnly()) {
-                    MigrationRunner.migrateAtStartup(Emulator.getDatabase().getDataSource());
+                    MigrationRunner.migrateAtStartup(
+                            Emulator.getDatabase().getDataSource(),
+                            Emulator.getConfig());
                 } else {
                     MigrationRunner.runAtStartup(Emulator.getDatabase().getDataSource(), Emulator.getConfig());
                 }

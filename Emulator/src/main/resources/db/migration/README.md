@@ -25,6 +25,25 @@ table and column, and atomically updates `db/runtime-schema-contract.json`.
 Normal `mvn verify` is check-only and fails if a migration changed the schema
 without a matching contract update.
 
+## Automatic pre-migration backup
+
+Before Flyway changes a recognized existing or managed hotel with pending
+migrations, Polaris creates a fail-closed logical backup using the official
+`mariadb-dump` client. Empty databases do not need a backup. The resulting
+`*.sql.gz` archive, SHA-256 sidecar and JSON manifest are written atomically;
+credentials use a short-lived owner-only option file and never appear in the
+command line or metadata. A dump failure or timeout prevents Flyway from
+baselining or applying anything.
+
+The dump target is derived from the same raw JDBC datasource that Flyway will
+migrate, so embedded/test launchers and plugin wrappers cannot accidentally
+back up a different database through stale or incomplete config keys.
+
+Configure the archive directory, retention, timeout and executable with the
+`db.migrations.backup.*` keys in `config.ini`. The feature is enabled by
+default; disable it only when an independently verified backup system protects
+the same deployment.
+
 ## Rules
 
 1. **One logical change per migration.** Never edit a released migration —
