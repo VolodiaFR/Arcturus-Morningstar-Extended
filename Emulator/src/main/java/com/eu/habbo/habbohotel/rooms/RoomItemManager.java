@@ -42,6 +42,7 @@ public class RoomItemManager {
     private final RoomItemIndex index;
     private final RoomItemOperations operations;
     private final RoomItemOwnershipService ownership;
+    private final RoomItemPlacementService placement;
     private final RoomItemRegistry registry;
 
     // Tile cache for item lookups
@@ -57,6 +58,11 @@ public class RoomItemManager {
                         room,
                         this.index,
                         this.registry);
+        this.placement =
+                new RoomItemPlacementService(
+                        room,
+                        this.index,
+                        this);
         this.tileCache = this.index.tileCache();
     }
 
@@ -624,60 +630,14 @@ public class RoomItemManager {
      * Checks if an item has a certain object type at a position.
      */
     public boolean hasObjectTypeAt(Class<?> type, int x, int y) {
-        Set<HabboItem> items = this.getItemsAt(x, y);
-
-        for (HabboItem item : items) {
-            if (item.getClass() == type) {
-                return true;
-            }
-        }
-
-        return false;
+        return this.placement.hasObjectTypeAt(type, x, y);
     }
 
     /**
      * Checks if furniture can be placed at a position.
      */
     public FurnitureMovementError canPlaceFurnitureAt(HabboItem item, Habbo habbo, RoomTile tile, int rotation) {
-        if (this.itemCount() >= Room.MAXIMUM_FURNI) {
-            return FurnitureMovementError.MAX_ITEMS;
-        }
-
-        if (tile == null || tile.state == RoomTileState.INVALID) {
-            return FurnitureMovementError.INVALID_MOVE;
-        }
-
-        rotation %= 8;
-        if (this.room.hasRights(habbo) || this.room.getGuildRightLevel(habbo)
-                .isEqualOrGreaterThan(RoomRightLevels.GUILD_RIGHTS) || habbo.hasPermission(
-                Permission.ACC_MOVEROTATE) || BuildersClubRoomSupport.canPlaceInRoom(habbo, this.room)) {
-            return FurnitureMovementError.NONE;
-        }
-
-        if (habbo.getHabboStats().isRentingSpace()) {
-            HabboItem rentSpace = this.getHabboItem(habbo.getHabboStats().rentedItemId);
-
-            if (rentSpace != null) {
-                if (!RoomLayout.squareInSquare(RoomLayout.getRectangle(rentSpace.getX(), rentSpace.getY(),
-                                rentSpace.getBaseItem().getWidth(), rentSpace.getBaseItem().getLength(),
-                                rentSpace.getRotation()),
-                        RoomLayout.getRectangle(tile.x, tile.y, item.getBaseItem().getWidth(),
-                                item.getBaseItem().getLength(), rotation))) {
-                    return FurnitureMovementError.NO_RIGHTS;
-                } else {
-                    return FurnitureMovementError.NONE;
-                }
-            }
-        }
-
-        for (HabboItem area : this.room.getRoomSpecialTypes().getItemsOfType(InteractionBuildArea.class)) {
-            if (((InteractionBuildArea) area).inSquare(tile) && ((InteractionBuildArea) area).isBuilder(
-                    habbo.getHabboInfo().getUsername())) {
-                return FurnitureMovementError.NONE;
-            }
-        }
-
-        return FurnitureMovementError.NO_RIGHTS;
+        return this.placement.canPlaceFurnitureAt(item, habbo, tile, rotation);
     }
 
     /**
@@ -691,113 +651,23 @@ public class RoomItemManager {
      * Checks if furniture fits at a location with unit check option.
      */
     private boolean isStackPlacementBypassItem(HabboItem item) {
-        return item instanceof InteractionStackHelper
-                || item instanceof InteractionTileWalkMagic
-                || item instanceof InteractionStackWalkHelper;
+        return this.placement.isStackPlacementBypassItem(item);
     }
 
     private boolean shouldPinStackHelperToFloor(HabboItem item) {
-        return item instanceof InteractionStackHelper || item instanceof InteractionTileWalkMagic;
-    }
-
-    private boolean isStackHeightHelper(HabboItem item) {
-        return item instanceof InteractionStackHelper
-                || item instanceof InteractionTileWalkMagic
-                || item instanceof InteractionStackWalkHelper;
+        return this.placement.shouldPinStackHelperToFloor(item);
     }
 
     private HabboItem findStackHeightHelperAt(RoomTile tile, HabboItem exclude) {
-        if (tile == null) {
-            return null;
-        }
-
-        for (HabboItem helper : this.getItemsAt(tile)) {
-            if (helper != exclude && this.isStackHeightHelper(helper)) {
-                return helper;
-            }
-        }
-
-        return null;
-    }
-
-    private double getMinimumTileHeight(Set<RoomTile> occupiedTiles) {
-        double minimumHeight = 0.0D;
-
-        for (RoomTile occupiedTile : occupiedTiles) {
-            minimumHeight = Math.max(minimumHeight, this.room.getLayout().getHeightAtSquare(occupiedTile.x, occupiedTile.y));
-        }
-
-        return minimumHeight;
-    }
-
-    private double getConfiguredStackWalkHelperHeight(HabboItem item, Set<RoomTile> occupiedTiles) {
-        double height = 0.0D;
-
-        try {
-            if (item.getExtradata() != null && !item.getExtradata().isEmpty()) {
-                height = Double.parseDouble(item.getExtradata()) / 100.0D;
-            }
-        } catch (NumberFormatException ignored) {
-        }
-
-        return Math.max(height, this.getMinimumTileHeight(occupiedTiles));
+        return this.placement.findStackHeightHelperAt(tile, exclude);
     }
 
     private double resolveStackWalkHelperHeight(HabboItem item, RoomTile tile, Set<RoomTile> occupiedTiles) {
-        HabboItem helper = this.findStackHeightHelperAt(tile, item);
-        if (helper != null) {
-            return Math.max(helper.getZ(), this.getMinimumTileHeight(occupiedTiles));
-        }
-
-        return this.getConfiguredStackWalkHelperHeight(item, occupiedTiles);
+        return this.placement.resolveStackWalkHelperHeight(item, tile, occupiedTiles);
     }
 
     public FurnitureMovementError furnitureFitsAt(RoomTile tile, HabboItem item, int rotation, boolean checkForUnits) {
-        RoomLayout layout = this.room.getLayout();
-        if (!layout.fitsOnMap(tile, item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation)) {
-            return FurnitureMovementError.INVALID_MOVE;
-        }
-
-        if (this.isStackPlacementBypassItem(item)) {
-            return FurnitureMovementError.NONE;
-        }
-
-        Set<RoomTile> occupiedTiles = layout.getTilesAt(tile, item.getBaseItem().getWidth(),
-                item.getBaseItem().getLength(), rotation);
-        for (RoomTile t : occupiedTiles) {
-            if (t.state == RoomTileState.INVALID) {
-                return FurnitureMovementError.INVALID_MOVE;
-            }
-            if (!Emulator.getConfig().getBoolean("wired.place.under", false) || (
-                    Emulator.getConfig().getBoolean("wired.place.under", false) && !item.isWalkable()
-                            && !item.getBaseItem().allowSit() && !item.getBaseItem().allowLay())) {
-                if (checkForUnits && this.room.hasHabbosAt(t.x, t.y)) {
-                    return FurnitureMovementError.TILE_HAS_HABBOS;
-                }
-                if (checkForUnits && this.room.hasBotsAt(t.x, t.y)) {
-                    return FurnitureMovementError.TILE_HAS_BOTS;
-                }
-                if (checkForUnits && this.room.hasPetsAt(t.x, t.y)) {
-                    return FurnitureMovementError.TILE_HAS_PETS;
-                }
-            }
-        }
-
-        java.util.List<Pair<RoomTile, Set<HabboItem>>> tileFurniList = new java.util.ArrayList<>();
-        for (RoomTile t : occupiedTiles) {
-            tileFurniList.add(Pair.create(t, this.getItemsAt(t)));
-
-            HabboItem topItem = this.getTopItemAt(t.x, t.y, item);
-            if (topItem != null && !topItem.getBaseItem().allowStack() && !t.getAllowStack()) {
-                return FurnitureMovementError.CANT_STACK;
-            }
-        }
-
-        if (!item.canStackAt(this.room, tileFurniList)) {
-            return FurnitureMovementError.CANT_STACK;
-        }
-
-        return FurnitureMovementError.NONE;
+        return this.placement.furnitureFitsAt(tile, item, rotation, checkForUnits);
     }
 
     public FurnitureMovementError furnitureFitsAtWithPhysics(RoomTile tile, HabboItem item, int rotation, boolean checkForUnits, WiredMovementPhysics physics) {
@@ -854,130 +724,14 @@ public class RoomItemManager {
      * Places a floor furniture item at a position.
      */
     public FurnitureMovementError placeFloorFurniAt(HabboItem item, RoomTile tile, int rotation, Habbo owner) {
-        RoomSpecialTypes specialTypes = this.room.getRoomSpecialTypes();
-        if (specialTypes != null) {
-            if (item instanceof WiredEffectSendSignal && specialTypes.isSignalSenderLimitReached()) {
-                return FurnitureMovementError.MAX_SIGNAL_SENDERS;
-            }
-            if (item instanceof WiredTriggerReceiveSignal && specialTypes.isSignalReceiverLimitReached()) {
-                return FurnitureMovementError.MAX_SIGNAL_RECEIVERS;
-            }
-        }
-
-        boolean pluginHelper = false;
-        if (Emulator.getPluginManager().isRegistered(FurniturePlacedEvent.class, true)) {
-            FurniturePlacedEvent event = Emulator.getPluginManager()
-                    .fireEvent(new FurniturePlacedEvent(item, owner, tile));
-
-            if (event.isCancelled()) {
-                return FurnitureMovementError.CANCEL_PLUGIN_PLACE;
-            }
-
-            pluginHelper = event.hasPluginHelper();
-        }
-
-        RoomLayout layout = this.room.getLayout();
-        Set<RoomTile> occupiedTiles = layout.getTilesAt(tile, item.getBaseItem().getWidth(),
-                item.getBaseItem().getLength(), rotation);
-
-        FurnitureMovementError fits = furnitureFitsAt(tile, item, rotation);
-
-        if (!fits.equals(FurnitureMovementError.NONE) && !pluginHelper) {
-            return fits;
-        }
-
-        double height = tile.getStackHeight();
-
-        for (RoomTile tile2 : occupiedTiles) {
-            double sHeight = tile2.getStackHeight();
-            if (sHeight > height) {
-                height = sHeight;
-            }
-        }
-
-        if (Emulator.getPluginManager().isRegistered(FurnitureBuildheightEvent.class, true)) {
-            FurnitureBuildheightEvent event = Emulator.getPluginManager()
-                    .fireEvent(new FurnitureBuildheightEvent(item, owner, 0.00, height));
-            if (event.hasChangedHeight()) {
-                height = layout.getHeightAtSquare(tile.x, tile.y) + event.getUpdatedHeight();
-            }
-        }
-
-        item.setZ(height);
-        item.setX(tile.x);
-        item.setY(tile.y);
-        item.setRotation(rotation);
-        if (!this.index.ownerNames().containsKey(item.getUserId()) && owner != null) {
-            this.index.ownerNames().put(item.getUserId(), this.resolveOwnerName(item, owner));
-        }
-
-        item.needsUpdate(true);
-        this.addHabboItem(item);
-        item.setRoomId(this.room.getId());
-        item.onPlace(this.room);
-        this.room.updateTiles(occupiedTiles);
-        this.room.sendComposer(
-                new AddFloorItemComposer(item, this.getFurniOwnerName(item.getUserId())).compose());
-
-        if (RoomConfInvisSupport.isControllerItem(item) || RoomConfInvisSupport.isTarget(item)) {
-            RoomConfInvisSupport.sendState(this.room);
-        }
-
-        if (RoomAreaHideSupport.isControllerItem(item)) {
-            RoomAreaHideSupport.sendState(this.room, item);
-        }
-
-        if (RoomHanditemBlockSupport.isControllerItem(item)) {
-            RoomHanditemBlockSupport.sendState(this.room);
-        }
-
-        for (RoomTile t : occupiedTiles) {
-            this.room.updateHabbosAt(t.x, t.y);
-            this.room.updateBotsAt(t.x, t.y);
-        }
-
-        Emulator.getThreading().run(item);
-        return FurnitureMovementError.NONE;
+        return this.placement.placeFloorFurniture(item, tile, rotation, owner);
     }
 
     /**
      * Places a wall furniture item at a position.
      */
     public FurnitureMovementError placeWallFurniAt(HabboItem item, String wallPosition, Habbo owner) {
-        if (!(this.room.hasRights(owner) || this.room.getGuildRightLevel(owner)
-                .isEqualOrGreaterThan(RoomRightLevels.GUILD_RIGHTS) || BuildersClubRoomSupport.canPlaceInRoom(owner, this.room))) {
-            return FurnitureMovementError.NO_RIGHTS;
-        }
-
-        if (Emulator.getPluginManager().isRegistered(FurniturePlacedEvent.class, true)) {
-            Event furniturePlacedEvent = new FurniturePlacedEvent(item, owner, null);
-            Emulator.getPluginManager().fireEvent(furniturePlacedEvent);
-
-            if (furniturePlacedEvent.isCancelled()) {
-                return FurnitureMovementError.CANCEL_PLUGIN_PLACE;
-            }
-        }
-
-        item.setWallPosition(wallPosition);
-        if (!this.index.ownerNames().containsKey(item.getUserId()) && owner != null) {
-            this.index.ownerNames().put(item.getUserId(), this.resolveOwnerName(item, owner));
-        }
-        this.room.sendComposer(
-                new AddWallItemComposer(item, this.getFurniOwnerName(item.getUserId())).compose());
-        item.needsUpdate(true);
-        this.addHabboItem(item);
-        item.setRoomId(this.room.getId());
-        item.onPlace(this.room);
-        Emulator.getThreading().run(item);
-        return FurnitureMovementError.NONE;
-    }
-
-    private String resolveOwnerName(HabboItem item, Habbo owner) {
-        if (item != null && item.getUserId() == BuildersClubRoomSupport.VIRTUAL_OWNER_ID) {
-            return BuildersClubRoomSupport.DISPLAY_OWNER_NAME;
-        }
-
-        return (owner != null) ? owner.getHabboInfo().getUsername() : "";
+        return this.placement.placeWallFurniture(item, wallPosition, owner);
     }
 
     /**
