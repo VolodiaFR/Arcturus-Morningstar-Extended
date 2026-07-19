@@ -60,7 +60,8 @@ public final class Emulator {
     public final static String PREVIEW = "";
 
     // Tied to the Maven project version: read from the jar manifest
-    // (Implementation-Version = ${project.version}, see pom assembly plugin).
+    // (Implementation-Version = ${project.version}, see the shade plugin's
+    // ManifestResourceTransformer in the pom).
     private static String resolveVersionNumber() {
         String implementation = Emulator.class.getPackage().getImplementationVersion();
         if (implementation != null && !implementation.isEmpty()) return implementation;
