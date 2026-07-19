@@ -57,7 +57,7 @@ public class RoomMessagingManager {
                 continue;
             }
 
-            habbo.getClient().sendResponses(new ArrayList<>(responses));
+            habbo.getClient().sendResponses(responses);
         }
     }
 

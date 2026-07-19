@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -59,6 +60,28 @@ class RoomMessagingManagerBatchTest {
         messaging.sendComposers(List.of());
 
         verify(room, never()).getHabbos();
+    }
+
+    @Test
+    void reusesTheFilteredBatchAcrossRecipients() {
+        Room room = mock(Room.class);
+        Habbo firstHabbo = mock(Habbo.class);
+        Habbo secondHabbo = mock(Habbo.class);
+        GameClient firstClient = mock(GameClient.class);
+        GameClient secondClient = mock(GameClient.class);
+        when(firstHabbo.getClient()).thenReturn(firstClient);
+        when(secondHabbo.getClient()).thenReturn(secondClient);
+        when(room.getHabbos()).thenReturn(
+                List.of(firstHabbo, secondHabbo));
+        RoomMessagingManager messaging =
+                new RoomMessagingManager(room);
+
+        messaging.sendComposers(
+                List.of(new ServerMessage(100)));
+
+        assertSame(
+                capturedBatch(firstClient),
+                capturedBatch(secondClient));
     }
 
     private static ArrayList<ServerMessage> capturedBatch(
