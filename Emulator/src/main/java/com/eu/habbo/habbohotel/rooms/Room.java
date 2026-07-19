@@ -721,6 +721,11 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   private final class RoomLoadOperations implements RoomLoader.Operations {
 
     @Override
+    public int roomId() {
+      return Room.this.id;
+    }
+
+    @Override
     public boolean prepare(long generation) {
       synchronized (Room.this.loadLock) {
         if (generation != Room.this.lifecycleGeneration
@@ -816,7 +821,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     }
 
     @Override
-    public void finish(long generation) {
+    public boolean finish(long generation) {
       Room.this.traxManager = new TraxManager(Room.this);
 
       if (Room.this.jukeboxActive) {
@@ -846,12 +851,14 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
                                   TimeUnit.MILLISECONDS))) {
             Emulator.getPluginManager()
                     .fireEvent(new RoomLoadedEvent(Room.this));
+            return true;
           }
         } catch (Exception exception) {
           Room.this.failLoadTransition(generation);
           LOGGER.error("Caught exception publishing room load", exception);
         }
       }
+      return false;
     }
 
     @Override
