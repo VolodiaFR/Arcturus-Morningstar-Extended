@@ -8,6 +8,8 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
+import com.eu.habbo.messages.outgoing.inventory.RemoveHabboItemComposer;
+import com.eu.habbo.threading.runnables.QueryDeleteHabboItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,14 +22,10 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
-
 public class TraxEditorManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TraxEditorManager.class);
-
-    /** New songs start as four channels of one empty unit (2 seconds). */
     public static final String EMPTY_SONG_DATA = "1:0,1:2:0,1:3:0,1:4:0,1:";
-
     public static final int ERROR_DISABLED = 1;
     public static final int ERROR_LIMIT_REACHED = 2;
     public static final int ERROR_NOT_ENOUGH_CURRENCY = 3;
@@ -50,7 +48,6 @@ public class TraxEditorManager {
         return Emulator.getConfig().getInt("trax.editor.song.cost.amount", 25);
     }
 
-    /** The owner's songs, resolved through the shared in-memory soundtrack cache. */
     public List<SoundTrack> getSongs(int userId) {
         List<SoundTrack> songs = new ArrayList<>();
 
@@ -194,7 +191,29 @@ public class TraxEditorManager {
             Emulator.getGameEnvironment().getItemManager().removeSoundTrack(track.getCode());
         }
 
+        this.removeOwnedDiscs(habbo, soundTrackId);
+
         return 0;
+    }
+
+    private void removeOwnedDiscs(Habbo habbo, int soundTrackId) {
+        List<HabboItem> discs = new ArrayList<>();
+
+        for (HabboItem item : habbo.getInventory().getItemsComponent().getItemsAsValueCollection()) {
+            if (item instanceof InteractionMusicDisc && ((InteractionMusicDisc) item).getSongId() == soundTrackId && item.getRoomId() == 0) {
+                discs.add(item);
+            }
+        }
+
+        if (discs.isEmpty()) return;
+
+        for (HabboItem disc : discs) {
+            habbo.getInventory().getItemsComponent().removeHabboItem(disc);
+            habbo.getClient().sendResponse(new RemoveHabboItemComposer(disc.getId()));
+            Emulator.getThreading().run(new QueryDeleteHabboItem(disc.getId()));
+        }
+
+        habbo.getClient().sendResponse(new InventoryRefreshComposer());
     }
 
     private boolean chargeSong(Habbo habbo) {
@@ -313,7 +332,6 @@ public class TraxEditorManager {
         return Emulator.getGameEnvironment().getItemManager().getFirstItemByInteraction(InteractionMusicDisc.class);
     }
 
-    /** Same shape CatalogManager writes for bought song disks: user, date, length, name, song id. */
     private static String createDiscExtraData(Habbo habbo, SoundTrack track) {
         Calendar calendar = Calendar.getInstance();
         return habbo.getHabboInfo().getUsername() + "\n"
