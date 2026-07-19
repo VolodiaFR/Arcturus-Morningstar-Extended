@@ -1675,16 +1675,6 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   }
 
   public int getGuildId() {
-    if (this.guild > 0) {
-      return this.guild;
-    }
-
-    try {
-      this.guild = this.repository.findGuildId(this.id);
-    } catch (SQLException e) {
-      LOGGER.error("Caught SQL exception resolving room guild", e);
-    }
-
     return this.guild;
   }
 

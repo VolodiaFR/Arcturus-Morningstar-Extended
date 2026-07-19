@@ -8,8 +8,6 @@ import java.util.Objects;
 
 final class RoomRepository {
 
-    private static final String FIND_GUILD_ID_SQL =
-            "SELECT guild_id FROM rooms WHERE id = ? LIMIT 1";
     private static final String FIND_WIRED_SETTINGS_SQL =
             "SELECT inspect_mask, modify_mask FROM room_wired_settings "
                     + "WHERE room_id = ? LIMIT 1";
@@ -20,18 +18,6 @@ final class RoomRepository {
 
     RoomRepository(RoomDependencies.ConnectionProvider database) {
         this.database = Objects.requireNonNull(database, "database");
-    }
-
-    int findGuildId(int roomId) throws SQLException {
-        try (Connection connection = this.database.openConnection();
-             PreparedStatement statement =
-                     connection.prepareStatement(FIND_GUILD_ID_SQL)) {
-            statement.setInt(1, roomId);
-
-            try (ResultSet resultSet = statement.executeQuery()) {
-                return resultSet.next() ? resultSet.getInt("guild_id") : 0;
-            }
-        }
     }
 
     WiredSettings findWiredSettings(int roomId) throws SQLException {

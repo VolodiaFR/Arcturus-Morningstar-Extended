@@ -10,14 +10,28 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class RoomPersistenceBehaviorTest {
 
     @Test
-    void hiddenGuildAndWiredReadsUseTheEstablishedQueriesAndCacheResults()
+    void guildGetterReturnsLoadedStateWithoutQueryingPersistence()
+            throws Exception {
+        RoomJdbcTestSupport.RecordingDataSource dataSource =
+                new RoomJdbcTestSupport.RecordingDataSource();
+        dataSource.rows(sql -> List.of(Map.of("guild_id", 23)));
+        Room room = new Room(
+                41,
+                7,
+                new RoomDependencies(dataSource::getConnection));
+
+        assertEquals(0, room.getGuildId());
+        assertEquals(0, room.getGuildId());
+        assertEquals(0, dataSource.connectionCount());
+        assertEquals(List.of(), dataSource.calls());
+    }
+
+    @Test
+    void wiredReadsUseTheEstablishedQueryAndCacheResults()
             throws Exception {
         RoomJdbcTestSupport.RecordingDataSource dataSource =
                 new RoomJdbcTestSupport.RecordingDataSource();
         dataSource.rows(sql -> {
-            if (sql.startsWith("SELECT guild_id FROM rooms")) {
-                return List.of(Map.of("guild_id", 23));
-            }
             if (sql.startsWith(
                     "SELECT inspect_mask, modify_mask FROM room_wired_settings")) {
                 return List.of(Map.of(
@@ -32,23 +46,17 @@ class RoomPersistenceBehaviorTest {
                 7,
                 new RoomDependencies(dataSource::getConnection));
 
-        assertEquals(23, room.getGuildId());
-        assertEquals(23, room.getGuildId());
         assertEquals(13, room.getWiredInspectMask());
         assertEquals(12, room.getWiredModifyMask());
         assertEquals(13, room.getWiredInspectMask());
         assertEquals(12, room.getWiredModifyMask());
 
-        assertEquals(2, dataSource.calls().size());
-        assertEquals(
-                "SELECT guild_id FROM rooms WHERE id = ? LIMIT 1",
-                dataSource.calls().get(0).sql());
-        assertEquals(Map.of(1, 41), dataSource.calls().get(0).parameters());
+        assertEquals(1, dataSource.calls().size());
         assertEquals(
                 "SELECT inspect_mask, modify_mask FROM room_wired_settings "
                         + "WHERE room_id = ? LIMIT 1",
-                dataSource.calls().get(1).sql());
-        assertEquals(Map.of(1, 41), dataSource.calls().get(1).parameters());
+                dataSource.calls().get(0).sql());
+        assertEquals(Map.of(1, 41), dataSource.calls().get(0).parameters());
     }
 
     @Test
