@@ -112,6 +112,89 @@ class PolarisRuntimeTest {
         }
     }
 
+    @Test
+    void synchronizationMirrorsEveryInstalledServiceIntoLegacyFields()
+            throws Exception {
+        PolarisRuntime runtime = new PolarisRuntime(() -> {
+        });
+        Map<String, LegacyService<?>> services = new LinkedHashMap<>();
+        services.put(
+                "config",
+                legacyService(
+                        ConfigurationManager.class,
+                        runtime::installConfiguration));
+        services.put(
+                "crypto",
+                legacyService(CryptoConfig.class, runtime::installCrypto));
+        services.put(
+                "texts",
+                legacyService(TextsManager.class, runtime::installTexts));
+        services.put(
+                "database",
+                legacyService(Database.class, runtime::installDatabase));
+        services.put(
+                "databaseLogger",
+                legacyService(
+                        DatabaseLogger.class,
+                        runtime::installDatabaseLogger));
+        services.put(
+                "gameServer",
+                legacyService(GameServer.class, runtime::installGameServer));
+        services.put(
+                "rconServer",
+                legacyService(RCONServer.class, runtime::installRconServer));
+        services.put(
+                "logging",
+                legacyService(Logging.class, runtime::installLogging));
+        services.put(
+                "threading",
+                legacyService(ThreadPooling.class, runtime::installThreading));
+        services.put(
+                "gameEnvironment",
+                legacyService(
+                        GameEnvironment.class,
+                        runtime::installGameEnvironment));
+        services.put(
+                "pluginManager",
+                legacyService(
+                        PluginManager.class,
+                        runtime::installPluginManager));
+        services.put(
+                "badgeImager",
+                legacyService(
+                        BadgeImager.class,
+                        runtime::installBadgeImager));
+
+        Map<Field, Object> originalValues = new LinkedHashMap<>();
+        Map<Field, Object> installedValues = new LinkedHashMap<>();
+        try {
+            for (Map.Entry<String, LegacyService<?>> entry
+                    : services.entrySet()) {
+                Field field = Emulator.class.getDeclaredField(entry.getKey());
+                field.setAccessible(true);
+                originalValues.put(field, field.get(null));
+                installedValues.put(
+                        field,
+                        installMock(entry.getValue()));
+            }
+
+            Emulator.synchronizeLegacyFacade(runtime);
+
+            for (Map.Entry<Field, Object> entry
+                    : installedValues.entrySet()) {
+                assertSame(
+                        entry.getValue(),
+                        entry.getKey().get(null),
+                        entry.getKey().getName());
+            }
+        } finally {
+            for (Map.Entry<Field, Object> entry
+                    : originalValues.entrySet()) {
+                entry.getKey().set(null, entry.getValue());
+            }
+        }
+    }
+
     private static <T> RuntimeService<T> service(
             Consumer<T> installer,
             Supplier<T> facadeGetter) {
@@ -129,8 +212,28 @@ class PolarisRuntimeTest {
         assertSame(installed, service.facadeGetter().get(), type.getName());
     }
 
+    private static <T> LegacyService<T> legacyService(
+            Class<T> type,
+            Consumer<T> installer) {
+        return new LegacyService<>(type, installer);
+    }
+
+    private static <T> Object installMock(
+            LegacyService<?> untypedService) {
+        @SuppressWarnings("unchecked")
+        LegacyService<T> service = (LegacyService<T>) untypedService;
+        T installed = mock(service.type());
+        service.installer().accept(installed);
+        return installed;
+    }
+
     private record RuntimeService<T>(
             Consumer<T> installer,
             Supplier<T> facadeGetter) {
+    }
+
+    private record LegacyService<T>(
+            Class<T> type,
+            Consumer<T> installer) {
     }
 }

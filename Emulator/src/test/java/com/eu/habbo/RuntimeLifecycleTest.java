@@ -19,6 +19,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class RuntimeLifecycleTest {
@@ -30,6 +32,7 @@ class RuntimeLifecycleTest {
                 new PolarisRuntime(() -> calls.add("sessions.dispose"));
         ConfigurationManager configuration =
                 mock(ConfigurationManager.class);
+        configuration.loaded = true;
         Database database = mock(Database.class);
         HikariDataSource dataSource = mock(HikariDataSource.class);
         GameServer gameServer = mock(GameServer.class);
@@ -123,5 +126,24 @@ class RuntimeLifecycleTest {
         runtime.shutdown();
 
         assertEquals(List.of("database.dispose"), calls);
+    }
+
+    @Test
+    void shutdownDoesNotPersistConfigurationBeforeDatabaseLoadingCompletes() {
+        PolarisRuntime runtime = new PolarisRuntime(() -> {
+        });
+        ConfigurationManager configuration =
+                mock(ConfigurationManager.class);
+        Database database = mock(Database.class);
+        HikariDataSource dataSource = mock(HikariDataSource.class);
+        when(database.getDataSource()).thenReturn(dataSource);
+        when(dataSource.isClosed()).thenReturn(false);
+        runtime.installConfiguration(configuration);
+        runtime.installDatabase(database);
+
+        runtime.shutdown();
+
+        verify(configuration, never()).saveToDatabase();
+        verify(database).dispose();
     }
 }

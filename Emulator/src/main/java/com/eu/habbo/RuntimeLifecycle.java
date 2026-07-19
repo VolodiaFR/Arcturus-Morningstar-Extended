@@ -105,6 +105,7 @@ final class RuntimeLifecycle {
     private boolean canPersistConfiguration() {
         Database database = services.database();
         return services.configuration() != null
+                && services.configuration().loaded
                 && database != null
                 && database.getDataSource() != null
                 && !database.getDataSource().isClosed();

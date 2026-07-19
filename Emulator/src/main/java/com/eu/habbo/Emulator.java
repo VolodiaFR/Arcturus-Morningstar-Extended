@@ -133,100 +133,22 @@ public final class Emulator {
             Emulator.polarisRuntime = new PolarisRuntime(
                     () -> SessionResumeManager.getInstance().disposeAll());
             ConsoleCommand.load();
-            Emulator.logging = new Logging();
-            Emulator.polarisRuntime.installLogging(Emulator.logging);
+            PolarisBootstrap bootstrap = new PolarisBootstrap(
+                    Emulator.polarisRuntime,
+                    Emulator::registerStartupConfigDefaults);
+            bootstrap.initializeLogging();
 
             System.out.println(startupHero(styledConsole));
 
             long startTime = System.nanoTime();
 
             Emulator.runtime = Runtime.getRuntime();
-            Emulator.config = new ConfigurationManager("config.ini");
-            Emulator.polarisRuntime.installConfiguration(Emulator.config);
-            Emulator.crypto = new CryptoConfig(
-                    Emulator.getConfig().getBoolean("enc.enabled", false),
-                    Emulator.getConfig().getValue("enc.e"),
-                    Emulator.getConfig().getValue("enc.n"),
-                    Emulator.getConfig().getValue("enc.d"));
-            Emulator.polarisRuntime.installCrypto(Emulator.crypto);
-            Emulator.database = new Database(Emulator.getConfig());
-            Emulator.polarisRuntime.installDatabase(Emulator.database);
-            // Migrate before loading database-backed configuration.
-            if (Emulator.getDatabase() != null && Emulator.getDatabase().getDataSource() != null) {
-                if (migrationOptions.mode() == MigrationOptions.Mode.VALIDATE) {
-                    System.out.print(MigrationRunner.statusAtStartup(Emulator.getDatabase().getDataSource()));
-                    DatabaseIntegrityAudit.auditAtStartup(
-                            Emulator.getDatabase().getDataSource(),
-                            Emulator.getConfig(),
-                            integrityAuditOptions);
-                    Emulator.database.dispose();
-                    return;
-                }
-
-                if (migrationOptions.mode() == MigrationOptions.Mode.APPLY
-                        || migrationOptions.migrationsOnly()) {
-                    MigrationRunner.migrateAtStartup(
-                            Emulator.getDatabase().getDataSource(),
-                            Emulator.getConfig());
-                } else {
-                    MigrationRunner.runAtStartup(Emulator.getDatabase().getDataSource(), Emulator.getConfig());
-                }
-
-                DatabaseIntegrityAudit.auditAtStartup(
-                        Emulator.getDatabase().getDataSource(),
-                        Emulator.getConfig(),
-                        integrityAuditOptions);
-
-                if (migrationOptions.migrationsOnly()) {
-                    LOGGER.info("[migrate] Database migration completed; --migrations-only requested, so the emulator will not start.");
-                    Emulator.database.dispose();
-                    return;
-                }
+            if (!bootstrap.start(
+                    migrationOptions,
+                    integrityAuditOptions)) {
+                Emulator.polarisRuntime.shutdown();
+                return;
             }
-            com.eu.habbo.database.indexing.DatabaseIndexAuditor.auditAtStartup(
-                    Emulator.getDatabase().getDataSource());
-            Emulator.databaseLogger = new DatabaseLogger();
-            Emulator.polarisRuntime.installDatabaseLogger(Emulator.databaseLogger);
-            Emulator.config.loaded = true;
-            Emulator.config.loadFromDatabase();
-            Emulator.threading = new ThreadPooling(Emulator.getConfig().getInt("runtime.threads"));
-            Emulator.polarisRuntime.installThreading(Emulator.threading);
-            Emulator.getDatabase().getDataSource().setMaximumPoolSize(Emulator.getConfig().getInt("runtime.threads") * 2);
-            Emulator.getDatabase().getDataSource().setMinimumIdle(10);
-            registerStartupConfigDefaults();
-            Emulator.pluginManager = new PluginManager();
-            Emulator.polarisRuntime.installPluginManager(Emulator.pluginManager);
-            Emulator.pluginManager.reload();
-            Emulator.getPluginManager().fireEvent(new EmulatorConfigUpdatedEvent());
-            Emulator.texts = new TextsManager();
-            Emulator.polarisRuntime.installTexts(Emulator.texts);
-
-            String hotelTimezoneId = Emulator.getConfig().getValue("hotel.timezone", java.time.ZoneId.systemDefault().getId());
-            System.out.println(startupCard(hotelTimezoneId));
-            Emulator.texts.register("camera.permission", "You don't have permission to use the camera!");
-            Emulator.texts.register("camera.wait", "Please wait %seconds% seconds before making another picture.");
-            Emulator.texts.register("camera.error.creation", "Failed to create your picture. *sadpanda*");
-
-            File thumbnailDir = new File(Emulator.config.getValue("imager.location.output.thumbnail"));
-            if (!thumbnailDir.exists()) {
-                thumbnailDir.mkdirs();
-            }
-
-            new CleanerThread();
-            Emulator.gameServer = new GameServer(getConfig().getValue("game.host", "127.0.0.1"), getConfig().getInt("game.port", 30000));
-            Emulator.polarisRuntime.installGameServer(Emulator.gameServer);
-            Emulator.rconServer = new RCONServer(getConfig().getValue("rcon.host", "127.0.0.1"), getConfig().getInt("rcon.port", 30001));
-            Emulator.polarisRuntime.installRconServer(Emulator.rconServer);
-            Emulator.gameEnvironment = new GameEnvironment();
-            Emulator.polarisRuntime.installGameEnvironment(Emulator.gameEnvironment);
-            Emulator.gameEnvironment.load();
-            Emulator.gameServer.initializePipeline();
-            Emulator.gameServer.connect();
-            Emulator.getGameServer().getGameClientManager().CFKeepAlive();
-            Emulator.rconServer.initializePipeline();
-            Emulator.rconServer.connect();
-            Emulator.badgeImager = new BadgeImager();
-            Emulator.polarisRuntime.installBadgeImager(Emulator.badgeImager);
 
             LOGGER.info("Polaris has successfully loaded.");
             LOGGER.info("System launched in: {}ms. Using {} threads!", (System.nanoTime() - startTime) / 1e6, Runtime.getRuntime().availableProcessors() * 2);
@@ -589,6 +511,49 @@ public final class Emulator {
         Emulator.database = database;
         if (Emulator.polarisRuntime != null && database != null) {
             Emulator.polarisRuntime.installDatabase(database);
+        }
+    }
+
+    /**
+     * Keeps the private legacy backing fields aligned with the runtime owner.
+     * Public compatibility getters still prefer the runtime-owned instances.
+     */
+    static void synchronizeLegacyFacade(PolarisRuntime services) {
+        if (services.configuration() != null) {
+            Emulator.config = services.configuration();
+        }
+        if (services.crypto() != null) {
+            Emulator.crypto = services.crypto();
+        }
+        if (services.texts() != null) {
+            Emulator.texts = services.texts();
+        }
+        if (services.database() != null) {
+            Emulator.database = services.database();
+        }
+        if (services.databaseLogger() != null) {
+            Emulator.databaseLogger = services.databaseLogger();
+        }
+        if (services.gameServer() != null) {
+            Emulator.gameServer = services.gameServer();
+        }
+        if (services.rconServer() != null) {
+            Emulator.rconServer = services.rconServer();
+        }
+        if (services.logging() != null) {
+            Emulator.logging = services.logging();
+        }
+        if (services.threading() != null) {
+            Emulator.threading = services.threading();
+        }
+        if (services.gameEnvironment() != null) {
+            Emulator.gameEnvironment = services.gameEnvironment();
+        }
+        if (services.pluginManager() != null) {
+            Emulator.pluginManager = services.pluginManager();
+        }
+        if (services.badgeImager() != null) {
+            Emulator.badgeImager = services.badgeImager();
         }
     }
 

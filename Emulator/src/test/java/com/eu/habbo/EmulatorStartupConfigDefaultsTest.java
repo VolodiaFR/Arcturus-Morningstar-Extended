@@ -11,13 +11,14 @@ class EmulatorStartupConfigDefaultsTest {
 
     @Test
     void registersStartupConfigDefaultsBeforePluginConfigEvent() throws Exception {
-        String source = Files.readString(Path.of("src/main/java/com/eu/habbo/Emulator.java"));
+        String source = Files.readString(Path.of(
+                "src/main/java/com/eu/habbo/PolarisBootstrap.java"));
 
-        int defaults = source.indexOf("registerStartupConfigDefaults();");
-        int plugins = source.indexOf("Emulator.pluginManager = new PluginManager();");
+        int defaults = source.indexOf("registerConfigurationDefaults.run()");
+        int plugins = source.indexOf("new PluginManager()");
 
-        assertTrue(defaults > 0, "Emulator must register startup config defaults explicitly");
-        assertTrue(plugins > 0, "Emulator must initialize the plugin manager explicitly");
+        assertTrue(defaults > 0, "bootstrap must register startup config defaults explicitly");
+        assertTrue(plugins > 0, "bootstrap must initialize the plugin manager explicitly");
         assertTrue(defaults < plugins, "startup config defaults must exist before plugin reload/config events");
     }
 
