@@ -2,32 +2,17 @@ package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.FurnitureType;
-import com.eu.habbo.habbohotel.items.ICycleable;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.*;
-import com.eu.habbo.habbohotel.items.interactions.games.InteractionGameGate;
-import com.eu.habbo.habbohotel.items.interactions.games.InteractionGameScoreboard;
-import com.eu.habbo.habbohotel.items.interactions.games.InteractionGameTimer;
-import com.eu.habbo.habbohotel.items.interactions.games.battlebanzai.InteractionBattleBanzaiSphere;
-import com.eu.habbo.habbohotel.items.interactions.games.battlebanzai.InteractionBattleBanzaiTeleporter;
-import com.eu.habbo.habbohotel.items.interactions.games.freeze.InteractionFreezeExitTile;
-import com.eu.habbo.habbohotel.items.interactions.games.tag.InteractionTagField;
-import com.eu.habbo.habbohotel.items.interactions.games.tag.InteractionTagPole;
 import com.eu.habbo.habbohotel.items.interactions.pets.*;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSendSignal;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.*;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerReceiveSignal;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.Habbo;
-import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.HabboItem;
-import com.eu.habbo.habbohotel.users.HabboManager;
-import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredMovementPhysics;
-import com.eu.habbo.habbohotel.wired.tick.WiredTickable;
-import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
-import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.*;
 import com.eu.habbo.plugin.Event;
 import com.eu.habbo.plugin.events.furniture.*;
@@ -41,10 +26,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -58,6 +41,7 @@ public class RoomItemManager {
     private final Room room;
     private final RoomItemIndex index;
     private final RoomItemOperations operations;
+    private final RoomItemOwnershipService ownership;
     private final RoomItemRegistry registry;
 
     // Tile cache for item lookups
@@ -68,6 +52,11 @@ public class RoomItemManager {
         this.index = new RoomItemIndex(room);
         this.operations = new RoomItemOperations(room);
         this.registry = new RoomItemRegistry(room);
+        this.ownership =
+                new RoomItemOwnershipService(
+                        room,
+                        this.index,
+                        this.registry);
         this.tileCache = this.index.tileCache();
     }
 
@@ -439,48 +428,8 @@ public class RoomItemManager {
      * Adds an item to the room.
      */
     public void addHabboItem(HabboItem item) {
-        if (item == null) {
-            return;
-        }
-
-        synchronized (this.index.items()) {
-            try {
-                this.index.items().put(item.getId(), item);
-            } catch (Exception e) {
-                // Ignore
-            }
-        }
-
-        if (BuildersClubRoomSupport.isTrackedItem(item.getId()) && item.getUserId() != BuildersClubRoomSupport.VIRTUAL_OWNER_ID) {
-            item.setVirtualUserId(BuildersClubRoomSupport.VIRTUAL_OWNER_ID);
-            item.needsUpdate(true);
-        }
-
-        synchronized (this.index.ownerCounts()) {
-            this.index.ownerCounts().put(item.getUserId(), this.index.ownerCounts().get(item.getUserId()) + 1);
-        }
-
-        synchronized (this.index.ownerNames()) {
-            if (!this.index.ownerNames().containsKey(item.getUserId())) {
-                if (item.getUserId() == BuildersClubRoomSupport.VIRTUAL_OWNER_ID && BuildersClubRoomSupport.isTrackedItem(item.getId())) {
-                    this.index.ownerNames().put(item.getUserId(), BuildersClubRoomSupport.DISPLAY_OWNER_NAME);
-                } else {
-                    HabboInfo habbo = HabboManager.getOfflineHabboInfo(item.getUserId());
-
-                    if (habbo != null) {
-                        this.index.ownerNames().put(item.getUserId(), habbo.getUsername());
-                    } else {
-                        LOGGER.error("Failed to find username for item (ID: {}, UserID: {})",
-                                item.getId(), item.getUserId());
-                    }
-                }
-            }
-        }
-
-        // Register with special types
-        this.registry.register(item);
+        this.ownership.add(item);
     }
-
 
     /**
      * Removes an item by ID.
@@ -493,47 +442,8 @@ public class RoomItemManager {
      * Removes an item from the room.
      */
     public void removeHabboItem(HabboItem item) {
-        if (item == null) {
-            return;
-        }
-
-        boolean trackedBuildersClubItem = BuildersClubRoomSupport.isTrackedItem(item.getId());
-        int trackedUserId = trackedBuildersClubItem ? BuildersClubRoomSupport.getTrackedUserId(item.getId()) : item.getUserId();
-
-        HabboItem i;
-        synchronized (this.index.items()) {
-            i = this.index.items().remove(item.getId());
-        }
-
-        if (i != null) {
-            synchronized (this.index.ownerCounts()) {
-                synchronized (this.index.ownerNames()) {
-                    int count = this.index.ownerCounts().get(i.getUserId());
-
-                    if (count > 1) {
-                        this.index.ownerCounts().put(i.getUserId(), count - 1);
-                    } else {
-                        this.index.ownerCounts().remove(i.getUserId());
-                        this.index.ownerNames().remove(i.getUserId());
-                    }
-                }
-            }
-
-            // Unregister from special types
-            this.registry.unregister(item);
-        }
-
-        if (trackedBuildersClubItem) {
-            BuildersClubRoomSupport.deleteTrackedItem(item.getId());
-
-            if (BuildersClubRoomSupport.syncRoom(this.room) == BuildersClubRoomSupport.SyncResult.UNLOCKED) {
-                BuildersClubRoomSupport.sendRoomUnlockedBubble(this.room.getOwnerId());
-            }
-
-            BuildersClubRoomSupport.sendPlacementStatusForPool(this.room, trackedUserId);
-        }
+        this.ownership.remove(item);
     }
-
 
     // ==================== ITEM UPDATES ====================
 
@@ -585,17 +495,7 @@ public class RoomItemManager {
      * Gets the unique furniture count for a user.
      */
     public int getUserUniqueFurniCount(int userId) {
-        Set<Item> items = new HashSet<>();
-
-        synchronized (this.index.items()) {
-            for (HabboItem item : this.index.items().values()) {
-                if (!items.contains(item.getBaseItem()) && item.getUserId() == userId) {
-                    items.add(item.getBaseItem());
-                }
-            }
-        }
-
-        return items.size();
+        return this.ownership.uniqueItemCount(userId);
     }
 
     // ==================== PICKUP AND EJECT ====================
@@ -604,48 +504,21 @@ public class RoomItemManager {
      * Picks up an item from the room.
      */
     public void pickUpItem(HabboItem item, Habbo picker) {
-        this.operations.pickUpItem(item, picker);
+        this.ownership.pickUp(item, picker);
     }
 
     /**
      * Ejects all furniture belonging to a user.
      */
     public void ejectUserFurni(int userId) {
-        Set<HabboItem> items = new HashSet<>();
-        Set<HabboItem> inventoryItems = new HashSet<>();
-
-        synchronized (this.index.items()) {
-            for (HabboItem item : this.index.items().values()) {
-                if (item.getUserId() == userId) {
-                    items.add(item);
-
-                    if (!BuildersClubRoomSupport.isTrackedItem(item.getId())) {
-                        inventoryItems.add(item);
-                    }
-
-                    item.setRoomId(0);
-                }
-            }
-        }
-
-        Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
-
-        if (habbo != null && !inventoryItems.isEmpty()) {
-            habbo.getInventory().getItemsComponent().addItems(inventoryItems);
-            habbo.getClient().sendResponse(new AddHabboItemComposer(inventoryItems));
-            habbo.getClient().sendResponse(new InventoryRefreshComposer());
-        }
-
-        for (HabboItem i : items) {
-            this.pickUpItem(i, null);
-        }
+        this.ownership.ejectUserFurniture(userId);
     }
 
     /**
      * Ejects a single user item.
      */
     public void ejectUserItem(HabboItem item) {
-        this.pickUpItem(item, null);
+        this.ownership.pickUp(item, null);
     }
 
     /**
@@ -659,43 +532,7 @@ public class RoomItemManager {
      * Ejects all items from the room except those belonging to the specified Habbo.
      */
     public void ejectAll(Habbo habbo) {
-        Map<Integer, Set<HabboItem>> userItemsMap = new HashMap<>();
-
-        synchronized (this.index.items()) {
-            for (HabboItem item : this.index.items().values()) {
-                if (habbo != null && item.getUserId() == habbo.getHabboInfo().getId()) {
-                    continue;
-                }
-
-                if (item instanceof InteractionPostIt) {
-                    continue;
-                }
-
-                userItemsMap.computeIfAbsent(item.getUserId(), k -> new HashSet<>()).add(item);
-            }
-        }
-
-        for (Map.Entry<Integer, Set<HabboItem>> entrySet : userItemsMap.entrySet()) {
-            Set<HabboItem> inventoryItems = new HashSet<>();
-
-            for (HabboItem item : entrySet.getValue()) {
-                if (!BuildersClubRoomSupport.isTrackedItem(item.getId())) {
-                    inventoryItems.add(item);
-                }
-            }
-
-            for (HabboItem i : entrySet.getValue()) {
-                this.pickUpItem(i, null);
-            }
-
-            Habbo user = Emulator.getGameEnvironment().getHabboManager().getHabbo(entrySet.getKey());
-
-            if (user != null && !inventoryItems.isEmpty()) {
-                user.getInventory().getItemsComponent().addItems(inventoryItems);
-                user.getClient().sendResponse(new AddHabboItemComposer(inventoryItems));
-                user.getClient().sendResponse(new InventoryRefreshComposer());
-            }
-        }
+        this.ownership.ejectAll(habbo);
     }
 
     // ==================== LOCKED TILES ====================

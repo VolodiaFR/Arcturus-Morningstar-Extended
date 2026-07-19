@@ -1,6 +1,9 @@
 package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.interactions.InteractionPostIt;
+import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import org.junit.jupiter.api.Test;
 
@@ -10,6 +13,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class RoomItemOwnershipBehaviorTest {
 
@@ -83,6 +88,29 @@ class RoomItemOwnershipBehaviorTest {
         assertTrue(ownerNames.isEmpty());
         assertTrue(ownerCounts.isEmpty());
         assertTrue(tileCache.isEmpty());
+    }
+
+    @Test
+    void ejectAllPreservesPostItsAndTheExemptOwnersItems() {
+        Room room = new Room(41, 7);
+        RoomItemManager manager = room.getItemManager();
+        InteractionPostIt postIt = mock(InteractionPostIt.class);
+        when(postIt.getId()).thenReturn(1001);
+        when(postIt.getUserId()).thenReturn(8);
+        HabboItem exemptItem = mock(HabboItem.class);
+        when(exemptItem.getId()).thenReturn(1002);
+        when(exemptItem.getUserId()).thenReturn(7);
+        manager.getRoomItems().put(1001, postIt);
+        manager.getRoomItems().put(1002, exemptItem);
+        Habbo exemptOwner = mock(Habbo.class);
+        HabboInfo exemptInfo = mock(HabboInfo.class);
+        when(exemptOwner.getHabboInfo()).thenReturn(exemptInfo);
+        when(exemptInfo.getId()).thenReturn(7);
+
+        manager.ejectAll(exemptOwner);
+
+        assertSame(postIt, manager.getRoomItems().get(1001));
+        assertSame(exemptItem, manager.getRoomItems().get(1002));
     }
 
     private static final class TestItem extends HabboItem {
