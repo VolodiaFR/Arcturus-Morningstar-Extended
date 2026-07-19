@@ -130,6 +130,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   private final Int2ObjectMap<RoomMoodlightData> moodlightData;
   private final RoomDependencies dependencies;
   private final RoomLoader loader;
+  private final RoomRepository repository;
   public volatile double lastCycleCpuMs = 0.0;
   public volatile String lastCycleThread = "N/A";
 
@@ -254,6 +255,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   Room(int id, int ownerId, RoomDependencies dependencies) {
     this.cache = new HashMap<>();
     this.dependencies = Objects.requireNonNull(dependencies, "dependencies");
+    this.repository = new RoomRepository(this.dependencies.database());
     this.id = id;
     this.ownerId = ownerId;
     this.bannedHabbos = new Int2ObjectOpenHashMap<>();
@@ -274,6 +276,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   Room(ResultSet set, RoomDependencies dependencies) throws SQLException {
     this.cache = new HashMap<>(1000);
     this.dependencies = Objects.requireNonNull(dependencies, "dependencies");
+    this.repository = new RoomRepository(this.dependencies.database());
     RoomSnapshot.Initial initial = RoomSnapshot.readInitial(set);
     this.id = initial.id();
     this.ownerId = initial.ownerId();
@@ -1444,12 +1447,8 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
    * Made public for access by RoomUnitManager.
    */
   public void updateDatabaseUserCount() {
-    try (Connection connection = Emulator.getDatabase().getDataSource()
-            .getConnection(); PreparedStatement statement = connection.prepareStatement(
-            "UPDATE rooms SET users = ? WHERE id = ? LIMIT 1")) {
-      statement.setInt(1, this.getUserCount());
-      statement.setInt(2, this.id);
-      statement.executeUpdate();
+    try {
+      this.repository.updateUserCount(this.id, this.getUserCount());
     } catch (SQLException e) {
       LOGGER.error("Caught SQL exception", e);
     }
@@ -1676,15 +1675,8 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
       return this.guild;
     }
 
-    try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-         PreparedStatement statement = connection.prepareStatement("SELECT guild_id FROM rooms WHERE id = ? LIMIT 1")) {
-      statement.setInt(1, this.id);
-
-      try (ResultSet set = statement.executeQuery()) {
-        if (set.next()) {
-          this.guild = set.getInt("guild_id");
-        }
-      }
+    try {
+      this.guild = this.repository.findGuildId(this.id);
     } catch (SQLException e) {
       LOGGER.error("Caught SQL exception resolving room guild", e);
     }
@@ -2631,17 +2623,13 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
       this.wiredInspectMask = WIRED_ACCESS_DEFAULT_INSPECT_MASK;
       this.wiredModifyMask = WIRED_ACCESS_DEFAULT_MODIFY_MASK;
 
-      try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-           PreparedStatement statement = connection.prepareStatement(
-                   "SELECT inspect_mask, modify_mask FROM room_wired_settings WHERE room_id = ? LIMIT 1")) {
-        statement.setInt(1, this.id);
-
-        try (ResultSet set = statement.executeQuery()) {
-          if (set.next()) {
-            this.wiredInspectMask = sanitizeWiredInspectMask(set.getInt("inspect_mask"));
-            this.wiredModifyMask = sanitizeWiredModifyMask(set.getInt("modify_mask"));
-          }
-        }
+      try {
+        RoomRepository.WiredSettings settings =
+            this.repository.findWiredSettings(this.id);
+        this.wiredInspectMask =
+            sanitizeWiredInspectMask(settings.inspectMask());
+        this.wiredModifyMask =
+            sanitizeWiredModifyMask(settings.modifyMask());
       } catch (SQLException e) {
         LOGGER.error("Caught SQL exception while loading wired room settings", e);
       }

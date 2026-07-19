@@ -27,28 +27,28 @@ class RoomPersistenceBehaviorTest {
             return List.of();
         });
 
-        try (RoomJdbcTestSupport.InstalledDatabase ignored =
-                     RoomJdbcTestSupport.install(dataSource)) {
-            Room room = new Room(41, 7);
+        Room room = new Room(
+                41,
+                7,
+                new RoomDependencies(dataSource::getConnection));
 
-            assertEquals(23, room.getGuildId());
-            assertEquals(23, room.getGuildId());
-            assertEquals(13, room.getWiredInspectMask());
-            assertEquals(12, room.getWiredModifyMask());
-            assertEquals(13, room.getWiredInspectMask());
-            assertEquals(12, room.getWiredModifyMask());
+        assertEquals(23, room.getGuildId());
+        assertEquals(23, room.getGuildId());
+        assertEquals(13, room.getWiredInspectMask());
+        assertEquals(12, room.getWiredModifyMask());
+        assertEquals(13, room.getWiredInspectMask());
+        assertEquals(12, room.getWiredModifyMask());
 
-            assertEquals(2, dataSource.calls().size());
-            assertEquals(
-                    "SELECT guild_id FROM rooms WHERE id = ? LIMIT 1",
-                    dataSource.calls().get(0).sql());
-            assertEquals(Map.of(1, 41), dataSource.calls().get(0).parameters());
-            assertEquals(
-                    "SELECT inspect_mask, modify_mask FROM room_wired_settings "
-                            + "WHERE room_id = ? LIMIT 1",
-                    dataSource.calls().get(1).sql());
-            assertEquals(Map.of(1, 41), dataSource.calls().get(1).parameters());
-        }
+        assertEquals(2, dataSource.calls().size());
+        assertEquals(
+                "SELECT guild_id FROM rooms WHERE id = ? LIMIT 1",
+                dataSource.calls().get(0).sql());
+        assertEquals(Map.of(1, 41), dataSource.calls().get(0).parameters());
+        assertEquals(
+                "SELECT inspect_mask, modify_mask FROM room_wired_settings "
+                        + "WHERE room_id = ? LIMIT 1",
+                dataSource.calls().get(1).sql());
+        assertEquals(Map.of(1, 41), dataSource.calls().get(1).parameters());
     }
 
     @Test
@@ -56,19 +56,19 @@ class RoomPersistenceBehaviorTest {
         RoomJdbcTestSupport.RecordingDataSource dataSource =
                 new RoomJdbcTestSupport.RecordingDataSource();
 
-        try (RoomJdbcTestSupport.InstalledDatabase ignored =
-                     RoomJdbcTestSupport.install(dataSource)) {
-            Room room = new Room(41, 7);
+        Room room = new Room(
+                41,
+                7,
+                new RoomDependencies(dataSource::getConnection));
 
-            room.updateDatabaseUserCount();
+        room.updateDatabaseUserCount();
 
-            assertEquals(1, dataSource.calls().size());
-            RoomJdbcTestSupport.SqlCall call = dataSource.calls().getFirst();
-            assertEquals(
-                    "UPDATE rooms SET users = ? WHERE id = ? LIMIT 1",
-                    call.sql());
-            assertEquals(Map.of(1, 0, 2, 41), call.parameters());
-            assertEquals("update", call.operation());
-        }
+        assertEquals(1, dataSource.calls().size());
+        RoomJdbcTestSupport.SqlCall call = dataSource.calls().getFirst();
+        assertEquals(
+                "UPDATE rooms SET users = ? WHERE id = ? LIMIT 1",
+                call.sql());
+        assertEquals(Map.of(1, 0, 2, 41), call.parameters());
+        assertEquals("update", call.operation());
     }
 }
