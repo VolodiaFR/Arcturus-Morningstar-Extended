@@ -65,7 +65,7 @@ public final class PackagedJarProbe {
 
     private static void verifyLegacyPlugin() throws Exception {
         PluginManager manager = new PluginManager();
-        manager.loadPlugins();
+        manager.reload();
         require(manager.getPlugins().size() == 1, "Expected one legacy plugin fixture");
         HabboPlugin plugin = manager.getPlugins().iterator().next();
 

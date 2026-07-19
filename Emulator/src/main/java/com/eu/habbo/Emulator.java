@@ -448,6 +448,7 @@ public final class Emulator {
         Emulator.config.register("polaris.legacy.bridge.enabled", "1", "Rewrite legacy plugin SQL (pre-Polaris table names) to the new schema on the fly.");
         Emulator.config.register("polaris.legacy.bridge.log", "1", "Log every distinct legacy SQL statement the bridge translates.");
         Emulator.config.register("polaris.legacy.bridge.table_renames", "", "Extra legacy table renames, format old:new;old2:new2");
+        Emulator.config.register("polaris.events.honor_priority", "0", "Opt in to priority-ordered, cancellation-aware plugin event dispatch.");
         Emulator.config.register("gui.enabled", "0");
         Emulator.config.register("gui.autostart.enabled", "0");
         Emulator.config.register("rcon.rate_limit.enabled", "1");
