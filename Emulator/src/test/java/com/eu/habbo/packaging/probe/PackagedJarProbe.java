@@ -1,12 +1,12 @@
 package com.eu.habbo.packaging.probe;
 
 import com.eu.habbo.Emulator;
-import org.flywaydb.core.Flyway;
-import org.flywaydb.core.internal.database.DatabaseTypeRegister;
+import org.flywaydb.core.extensibility.Plugin;
 
 import java.io.InputStream;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.ServiceLoader;
 
 public final class PackagedJarProbe {
 
@@ -29,10 +29,11 @@ public final class PackagedJarProbe {
                 Objects.equals(project.getProperty("artifactId"), emulatorPackage.getImplementationTitle()),
                 "Implementation-Title does not match the Maven artifact name");
 
-        String databaseType = DatabaseTypeRegister
-                .getDatabaseTypeForUrl("jdbc:mariadb://localhost/polaris", Flyway.configure())
-                .getName();
-        require("MariaDB".equals(databaseType), "Flyway MariaDB service provider was not discovered");
+        boolean mariaDbProviderDiscovered = ServiceLoader.load(Plugin.class).stream()
+                .map(ServiceLoader.Provider::type)
+                .map(Class::getName)
+                .anyMatch("org.flywaydb.database.mysql.mariadb.MariaDBDatabaseType"::equals);
+        require(mariaDbProviderDiscovered, "Flyway MariaDB service provider was not discovered");
 
         System.out.println("Packaged JAR contract verified");
     }
