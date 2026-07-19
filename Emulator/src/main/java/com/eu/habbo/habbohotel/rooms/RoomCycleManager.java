@@ -64,7 +64,7 @@ public class RoomCycleManager {
             processDecoHosting();
 
             if (!this.room.getCurrentHabbos().isEmpty()) {
-                this.idleCycles = 0;
+                this.advanceIdleUnload(false);
 
                 Set<RoomUnit> updatedUnit = new HashSet<>();
                 ArrayList<Habbo> toKick = new ArrayList<>();
@@ -115,17 +115,27 @@ public class RoomCycleManager {
                 if (this.room.getTraxManager() != null) {
                     this.room.getTraxManager().cycle();
                 }
-            } else {
-                if (this.idleCycles < 60) {
-                    this.idleCycles++;
-                } else {
-                    this.room.dispose();
-                }
+            } else if (this.advanceIdleUnload(true)) {
+                this.room.dispose();
             }
         }
 
         processHabboQueue(foundRightHolder[0]);
         processScheduledComposers();
+    }
+
+    boolean advanceIdleUnload(boolean empty) {
+        if (!empty) {
+            this.idleCycles = 0;
+            return false;
+        }
+
+        if (this.idleCycles < 60) {
+            this.idleCycles++;
+            return false;
+        }
+
+        return true;
     }
 
     private void processScheduledTasks() {
