@@ -158,6 +158,7 @@ public class GameServer extends Server {
             this.gameClientManager.forceDisposeClient(client);
         }
 
+        BlockingHttpExecutionGroup.shutdown();
         GamePacketExecutionGroup.shutdown();
 
         super.stop();
