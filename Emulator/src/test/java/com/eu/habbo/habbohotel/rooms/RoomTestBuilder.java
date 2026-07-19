@@ -10,8 +10,22 @@ final class RoomTestBuilder {
         this.room = new Room(id, ownerId);
     }
 
+    private RoomTestBuilder(
+            int id,
+            int ownerId,
+            RoomDependencies dependencies) {
+        this.room = new Room(id, ownerId, dependencies);
+    }
+
     static RoomTestBuilder room(int id, int ownerId) {
         return new RoomTestBuilder(id, ownerId);
+    }
+
+    static RoomTestBuilder room(
+            int id,
+            int ownerId,
+            RoomDependencies dependencies) {
+        return new RoomTestBuilder(id, ownerId, dependencies);
     }
 
     RoomTestBuilder field(String name, Object value) {

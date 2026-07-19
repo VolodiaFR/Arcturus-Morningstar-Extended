@@ -54,8 +54,31 @@ class RoomSaveBehaviorTest {
         }
     }
 
+    @Test
+    void saveUsesTheExplicitRoomDatabaseDependency() throws Exception {
+        RoomJdbcTestSupport.RecordingDataSource expectedDataSource =
+                new RoomJdbcTestSupport.RecordingDataSource();
+        RoomJdbcTestSupport.RecordingDataSource legacyGlobalDataSource =
+                new RoomJdbcTestSupport.RecordingDataSource();
+        try (RoomJdbcTestSupport.InstalledDatabase ignored =
+                     RoomJdbcTestSupport.install(legacyGlobalDataSource)) {
+            Room room = persistedRoom(new RoomDependencies(
+                    expectedDataSource::getConnection));
+            room.setNeedsUpdate(true);
+
+            room.save();
+
+            assertEquals(1, expectedDataSource.calls().size());
+            assertTrue(legacyGlobalDataSource.calls().isEmpty());
+        }
+    }
+
     private static Room persistedRoom() {
-        return RoomTestBuilder.room(41, 7)
+        return persistedRoom(RoomDependencies.runtime());
+    }
+
+    private static Room persistedRoom(RoomDependencies dependencies) {
+        return RoomTestBuilder.room(41, 7, dependencies)
                 .field("ownerName", "owner")
                 .field("name", "Saved room")
                 .field("description", "Persistence characterization")
