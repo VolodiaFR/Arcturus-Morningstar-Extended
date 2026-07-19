@@ -35,18 +35,38 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
     // Netty event loop stalls every client on the same worker. A SEPARATE pool
     // (not the shared game ThreadPooling) also keeps it from starving room cycles.
     private static final int AUTH_POOL_MAX = authPoolMax();
-    private static final ThreadPoolExecutor AUTH_EXECUTOR = new ThreadPoolExecutor(
-            Math.min(4, AUTH_POOL_MAX), AUTH_POOL_MAX, 60L, TimeUnit.SECONDS,
-            new LinkedBlockingQueue<>(512),
-            new java.util.concurrent.ThreadFactory() {
-                private final AtomicInteger counter = new AtomicInteger(1);
-                @Override
-                public Thread newThread(Runnable r) {
-                    Thread t = new Thread(r, "auth-http-worker-" + counter.getAndIncrement());
-                    t.setDaemon(true);
-                    return t;
-                }
-            });
+    private static final ThreadPoolExecutor AUTH_EXECUTOR =
+            createAuthExecutor(AUTH_POOL_MAX);
+
+    static ThreadPoolExecutor createAuthExecutor(int width) {
+        if (width <= 0) {
+            throw new IllegalArgumentException(
+                    "Auth executor width must be positive");
+        }
+
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(
+                width,
+                width,
+                60L,
+                TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>(512),
+                new java.util.concurrent.ThreadFactory() {
+                    private final AtomicInteger counter =
+                            new AtomicInteger(1);
+
+                    @Override
+                    public Thread newThread(Runnable runnable) {
+                        Thread thread = new Thread(
+                                runnable,
+                                "auth-http-worker-"
+                                        + this.counter.getAndIncrement());
+                        thread.setDaemon(true);
+                        return thread;
+                    }
+                });
+        executor.allowCoreThreadTimeOut(true);
+        return executor;
+    }
 
     // Max threads for the auth pool. Defaults to 16; set the optional
     // `auth.http.pool.size` config key to override.
