@@ -41,6 +41,7 @@
         <maven-surefire-plugin.version>3.5.6</maven-surefire-plugin.version>
         <maven-failsafe-plugin.version>3.5.6</maven-failsafe-plugin.version>
         <jacoco-plugin.version>0.8.12</jacoco-plugin.version>
+        <japicmp.version>0.23.1</japicmp.version>
     </properties>
 
     <build>
@@ -127,6 +128,7 @@
                     </execution>
                 </executions>
             </plugin>
+
         </plugins>
     </build>
 
@@ -352,6 +354,15 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- japicmp — test-only plugin ABI gate vs the Arcturus Morningstar 3.5.5
+             baseline (see abi-baseline/README.md and PluginAbiCompatibilityTest) -->
+        <dependency>
+            <groupId>com.github.siom79.japicmp</groupId>
+            <artifactId>japicmp</artifactId>
+            <version>${japicmp.version}</version>
             <scope>test</scope>
         </dependency>
 
