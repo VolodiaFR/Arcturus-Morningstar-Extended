@@ -131,6 +131,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   private final RoomDependencies dependencies;
   private final RoomLifecycle lifecycle;
   private final RoomLoader loader;
+  private final RoomItemPersistence itemPersistence;
   private final RoomPersistence persistence;
   private final RoomRepository repository;
   public volatile double lastCycleCpuMs = 0.0;
@@ -243,6 +244,8 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     this.cache = new HashMap<>();
     this.dependencies = Objects.requireNonNull(dependencies, "dependencies");
     this.lifecycle = new RoomLifecycle(new RoomCycleTaskSlot());
+    this.itemPersistence =
+        new RoomItemPersistence(this.dependencies.database());
     this.persistence = new RoomPersistence(this.dependencies.database());
     this.repository = new RoomRepository(this.dependencies.database());
     this.id = id;
@@ -266,6 +269,8 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     this.cache = new HashMap<>(1000);
     this.dependencies = Objects.requireNonNull(dependencies, "dependencies");
     this.lifecycle = new RoomLifecycle(new RoomCycleTaskSlot());
+    this.itemPersistence =
+        new RoomItemPersistence(this.dependencies.database());
     this.persistence = new RoomPersistence(this.dependencies.database());
     this.repository = new RoomRepository(this.dependencies.database());
     RoomSnapshot.Initial initial = RoomSnapshot.readInitial(set);
@@ -1247,7 +1252,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
   void savePendingItems(List<HabboItem> items) {
     try {
-      this.persistence.saveItems(items);
+      this.itemPersistence.save(items);
     } catch (SQLException exception) {
       LOGGER.error("Caught SQL exception saving room items", exception);
     }
