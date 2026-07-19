@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.MessageComposer;
+import com.eu.habbo.plugin.PluginManager;
 import com.eu.habbo.plugin.events.emulator.OutgoingPacketEvent;
 import io.netty.channel.Channel;
 import org.slf4j.Logger;
@@ -113,15 +114,15 @@ public class GameClient {
                 return;
             }
 
-            OutgoingPacketEvent event = new OutgoingPacketEvent(this.habbo, response.getComposer(), response);
-            Emulator.getPluginManager().fireEvent(event);
-
-            if (event.isCancelled()) {
+            PluginManager plugins = Emulator.getPluginManager();
+            response = this.applyOutgoingPacketEvent(
+                    response,
+                    plugins,
+                    plugins.isRegistered(
+                            OutgoingPacketEvent.class,
+                            false));
+            if (response == null) {
                 return;
-            }
-
-            if (event.hasCustomMessage()) {
-                response = event.getCustomMessage();
             }
 
             this.channel.write(response, this.channel.voidPromise());
@@ -131,20 +132,21 @@ public class GameClient {
 
     public void sendResponses(ArrayList<ServerMessage> responses) {
         if (this.channel.isOpen()) {
+            PluginManager plugins = Emulator.getPluginManager();
+            boolean eventsRegistered = plugins.isRegistered(
+                    OutgoingPacketEvent.class,
+                    false);
             for (ServerMessage response : responses) {
                 if (response == null || response.getHeader() <= 0) {
                     return;
                 }
 
-                OutgoingPacketEvent event = new OutgoingPacketEvent(this.habbo, response.getComposer(), response);
-                Emulator.getPluginManager().fireEvent(event);
-
-                if (event.isCancelled()) {
+                response = this.applyOutgoingPacketEvent(
+                        response,
+                        plugins,
+                        eventsRegistered);
+                if (response == null) {
                     continue;
-                }
-
-                if (event.hasCustomMessage()) {
-                    response = event.getCustomMessage();
                 }
 
                 this.channel.write(response);
@@ -152,6 +154,27 @@ public class GameClient {
 
             this.channel.flush();
         }
+    }
+
+    private ServerMessage applyOutgoingPacketEvent(
+            ServerMessage response,
+            PluginManager plugins,
+            boolean eventsRegistered) {
+        if (!eventsRegistered) {
+            return response;
+        }
+
+        OutgoingPacketEvent event = new OutgoingPacketEvent(
+                this.habbo,
+                response.getComposer(),
+                response);
+        plugins.fireEvent(event);
+        if (event.isCancelled()) {
+            return null;
+        }
+        return event.hasCustomMessage()
+                ? event.getCustomMessage()
+                : response;
     }
 	
 	public void sendKeepAlive() {

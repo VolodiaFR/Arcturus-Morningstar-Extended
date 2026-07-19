@@ -136,6 +136,24 @@ class GameClientOutgoingPacketCompatibilityTest {
         assertSame(response, this.channel.readOutbound());
     }
 
+    @Test
+    void noSubscriberBatchChecksRegistrationOnceAndWritesEveryResponse() {
+        ServerMessage first = new ServerMessage(100);
+        ServerMessage second = new ServerMessage(101);
+
+        this.client.sendResponses(new ArrayList<>(
+                java.util.List.of(first, second)));
+
+        verify(this.pluginManager).isRegistered(
+                OutgoingPacketEvent.class,
+                false);
+        verify(this.pluginManager, never()).fireEvent(
+                any(OutgoingPacketEvent.class));
+        assertSame(first, this.channel.readOutbound());
+        assertSame(second, this.channel.readOutbound());
+        assertNull(this.channel.readOutbound());
+    }
+
     private static Field field(String name) throws Exception {
         Field field = Emulator.class.getDeclaredField(name);
         field.setAccessible(true);
