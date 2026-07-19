@@ -55,6 +55,13 @@ public class GameServer extends Server {
                 }
                 ch.pipeline().addLast("idleEventHandler", new IdleTimeoutHandler(30, 60));
                 ch.pipeline().addLast(new GameMessageRateLimit());
+                ch.pipeline().addLast(
+                        "packetDispatchMarker",
+                        new PacketDispatchMarker());
+                ch.pipeline().addLast(
+                        GamePacketExecutionGroup.get(),
+                        "packetDispatchLatency",
+                        new PacketDispatchLatencyHandler());
                 ch.pipeline().addLast(GamePacketExecutionGroup.get(), "gameMessageHandler", new GameMessageHandler());
 
                 // Encoders.
