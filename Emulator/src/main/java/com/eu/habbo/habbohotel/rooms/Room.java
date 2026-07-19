@@ -228,6 +228,18 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
   public final Map<String, Object> cache;
 
+  Room(int id, int ownerId) {
+    this.cache = new HashMap<>();
+    this.id = id;
+    this.ownerId = ownerId;
+    this.bannedHabbos = new Int2ObjectOpenHashMap<>();
+    this.moodlightData = new Int2ObjectOpenHashMap<>(defaultMoodData);
+    this.mutedHabbos = new Int2IntOpenHashMap();
+    this.games = ConcurrentHashMap.newKeySet();
+    this.rights = new IntArrayList();
+    this.userVotes = new ArrayList<>();
+  }
+
   public Room(ResultSet set) throws SQLException {
     this.cache = new HashMap<>(1000);
     this.id = set.getInt("id");

@@ -3,8 +3,10 @@ package com.eu.habbo.habbohotel.rooms;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.ResultSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -14,22 +16,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Answers.CALLS_REAL_METHODS;
-import static org.mockito.Mockito.clearInvocations;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 class RoomOwnerIndexTest {
 
     @Test
     void firstPartyRegistrationCachesTheSameRoomAndTracksItsOwner() throws Exception {
         RoomManager manager = new RoomManager(false);
-        Room room = mock(Room.class);
-        when(room.getId()).thenReturn(41);
-        when(room.getOwnerId()).thenReturn(7);
+        Room room = eligibleRoom(41, 7);
 
         manager.registerActiveRoom(room);
 
@@ -40,15 +33,16 @@ class RoomOwnerIndexTest {
     @Test
     void unloadCandidatesUseTheOwnerIndexAndExcludeOtherOwners() {
         RoomManager manager = new RoomManager(false);
-        Room ownedRoom = eligibleRoom(41, 7);
-        Room otherRoom = eligibleRoom(42, 8);
+        TestRoom ownedRoom = eligibleRoom(41, 7);
+        TestRoom otherRoom = eligibleRoom(42, 8);
         manager.registerActiveRoom(ownedRoom);
         manager.registerActiveRoom(otherRoom);
-        clearInvocations(ownedRoom, otherRoom);
+        ownedRoom.resetEligibilityChecks();
+        otherRoom.resetEligibilityChecks();
 
         assertEquals(Set.of(ownedRoom), new HashSet<>(manager.roomsToUnloadForOwner(7)));
-        verify(ownedRoom).isPublicRoom();
-        verify(otherRoom, never()).isPublicRoom();
+        assertEquals(1, ownedRoom.eligibilityChecks());
+        assertEquals(0, otherRoom.eligibilityChecks());
     }
 
     @Test
@@ -81,18 +75,15 @@ class RoomOwnerIndexTest {
     @Test
     void unloadCandidatesPreserveAllLegacyEligibilityGuards() throws Exception {
         RoomManager manager = new RoomManager(false);
-        Room publicRoom = eligibleRoom(41, 7);
-        Room promotedRoom = eligibleRoom(42, 7);
-        Room occupiedRoom = eligibleRoom(43, 7);
-        Room publicCategoryRoom = eligibleRoom(44, 7);
-        doReturn(true).when(publicRoom).isPublicRoom();
-        doReturn(true).when(promotedRoom).isStaffPromotedRoom();
-        doReturn(1).when(occupiedRoom).getUserCount();
-        doReturn(9).when(publicCategoryRoom).getCategory();
-
-        RoomCategory publicCategory = mock(RoomCategory.class);
-        when(publicCategory.isPublic()).thenReturn(true);
-        roomCategories(manager).put(9, publicCategory);
+        TestRoom publicRoom = eligibleRoom(41, 7);
+        TestRoom promotedRoom = eligibleRoom(42, 7);
+        TestRoom occupiedRoom = eligibleRoom(43, 7);
+        TestRoom publicCategoryRoom = eligibleRoom(44, 7);
+        publicRoom.setPublicRoom(true);
+        promotedRoom.setStaffPromotedRoom(true);
+        occupiedRoom.setUserCount(1);
+        publicCategoryRoom.setCategory(9);
+        roomCategories(manager).put(9, publicCategory());
 
         manager.registerActiveRoom(publicRoom);
         manager.registerActiveRoom(promotedRoom);
@@ -120,15 +111,22 @@ class RoomOwnerIndexTest {
         assertTrue(untrack < removal);
     }
 
-    private static Room eligibleRoom(int id, int ownerId) {
-        Room room = mock(Room.class, CALLS_REAL_METHODS);
-        doReturn(id).when(room).getId();
-        room.setOwnerId(ownerId);
-        doReturn(false).when(room).isPublicRoom();
-        doReturn(false).when(room).isStaffPromotedRoom();
-        doReturn(0).when(room).getUserCount();
-        doReturn(0).when(room).getCategory();
-        return room;
+    private static TestRoom eligibleRoom(int id, int ownerId) {
+        return new TestRoom(id, ownerId);
+    }
+
+    private static RoomCategory publicCategory() throws Exception {
+        ResultSet row = (ResultSet) Proxy.newProxyInstance(
+                ResultSet.class.getClassLoader(),
+                new Class<?>[]{ResultSet.class},
+                (proxy, method, arguments) -> switch (method.getName()) {
+                    case "getInt" -> 0;
+                    case "getBoolean" -> false;
+                    case "getString" -> "public".equals(arguments[0]) ? "1" : "";
+                    case "toString" -> "public room category row";
+                    default -> throw new UnsupportedOperationException(method.getName());
+                });
+        return new RoomCategory(row);
     }
 
     @SuppressWarnings("unchecked")
@@ -150,5 +148,37 @@ class RoomOwnerIndexTest {
         Field field = RoomManager.class.getDeclaredField("roomsByOwner");
         field.setAccessible(true);
         return (Map<Integer, Set<Integer>>) field.get(manager);
+    }
+
+    private static final class TestRoom extends Room {
+        private int userCount;
+        private int eligibilityChecks;
+
+        private TestRoom(int id, int ownerId) {
+            super(id, ownerId);
+        }
+
+        @Override
+        public boolean isPublicRoom() {
+            this.eligibilityChecks++;
+            return super.isPublicRoom();
+        }
+
+        @Override
+        public int getUserCount() {
+            return this.userCount;
+        }
+
+        private void setUserCount(int userCount) {
+            this.userCount = userCount;
+        }
+
+        private int eligibilityChecks() {
+            return this.eligibilityChecks;
+        }
+
+        private void resetEligibilityChecks() {
+            this.eligibilityChecks = 0;
+        }
     }
 }
