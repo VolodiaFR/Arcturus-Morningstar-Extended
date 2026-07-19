@@ -60,6 +60,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -73,6 +74,16 @@ public class PluginManager {
 
     private final Set<HabboPlugin> plugins = new HashSet<>();
     private final Set<Method> methods = new HashSet<>();
+    private final BooleanSupplier honorPriority;
+
+    public PluginManager() {
+        this(() -> Emulator.getConfig() != null
+                && Emulator.getConfig().getBoolean("polaris.events.honor_priority", false));
+    }
+
+    PluginManager(BooleanSupplier honorPriority) {
+        this.honorPriority = Objects.requireNonNull(honorPriority);
+    }
 
     @EventHandler
     public static void globalOnConfigurationUpdated(EmulatorConfigUpdatedEvent event) {
