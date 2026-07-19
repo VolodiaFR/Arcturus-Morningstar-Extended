@@ -27,6 +27,17 @@ class RoomPickupOwnershipContractTest {
 
     @Test
     void pickupReturnsItemToThePickerWhenThePickerOwnsIt() throws Exception {
+        assertPickupReturnsItemToOwner(false);
+    }
+
+    @Test
+    void managerPickupMatchesTheCanonicalOwnerReturnBehavior()
+            throws Exception {
+        assertPickupReturnsItemToOwner(true);
+    }
+
+    private static void assertPickupReturnsItemToOwner(
+            boolean throughManager) throws Exception {
         RecordingRoom room = new RecordingRoom();
         RoomLayout layout = mock(RoomLayout.class);
         setField(room, "layout", layout);
@@ -61,7 +72,11 @@ class RoomPickupOwnershipContractTest {
                     BuildersClubRoomSupport.isTrackedItem(1001))
                     .thenReturn(false);
 
-            room.pickUpItem(item, picker);
+            if (throughManager) {
+                room.getItemManager().pickUpItem(item, picker);
+            } else {
+                room.pickUpItem(item, picker);
+            }
         }
 
         assertEquals(1001, room.removedItemId);

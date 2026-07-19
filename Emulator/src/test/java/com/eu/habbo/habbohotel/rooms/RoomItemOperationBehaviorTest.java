@@ -37,6 +37,21 @@ class RoomItemOperationBehaviorTest {
     }
 
     @Test
+    void managerItemUpdateMatchesTheCanonicalAreaHideBehavior()
+            throws Exception {
+        RecordingRoom room = roomWithLayout();
+        HabboItem controller = item("wf_conf_area_hide", null);
+
+        room.getItemManager().updateItem(controller);
+
+        assertEquals(
+                List.of(
+                        Outgoing.FloorItemUpdateComposer,
+                        Outgoing.AreaHideComposer),
+                room.messageHeaders());
+    }
+
+    @Test
     void roomItemStateUpdatePublishesInvisibilityState() throws Exception {
         RecordingRoom room = roomWithLayout();
         HabboItem controller = item("wf_conf_invis_control", null);
@@ -54,6 +69,24 @@ class RoomItemOperationBehaviorTest {
     }
 
     @Test
+    void managerItemStateUpdateMatchesCanonicalInvisibilityBehavior()
+            throws Exception {
+        RecordingRoom room = roomWithLayout();
+        HabboItem controller = item("wf_conf_invis_control", null);
+        when(controller.getExtradata()).thenReturn("1");
+        HabboItem target = item("default", "is_invisible");
+        room.floorItems = Set.of(controller, target);
+
+        room.getItemManager().updateItemState(target);
+
+        assertEquals(
+                List.of(
+                        Outgoing.ItemStateComposer,
+                        Outgoing.ConfInvisStateComposer),
+                room.messageHeaders());
+    }
+
+    @Test
     void roomItemStateUpdatePublishesHanditemBlockState()
             throws Exception {
         RecordingRoom room = roomWithLayout();
@@ -62,6 +95,23 @@ class RoomItemOperationBehaviorTest {
         room.floorItems = Set.of(controller);
 
         room.updateItemState(controller);
+
+        assertEquals(
+                List.of(
+                        Outgoing.ItemStateComposer,
+                        Outgoing.HanditemBlockStateComposer),
+                room.messageHeaders());
+    }
+
+    @Test
+    void managerItemStateUpdateMatchesCanonicalHanditemBehavior()
+            throws Exception {
+        RecordingRoom room = roomWithLayout();
+        HabboItem controller = item("wf_conf_handitem_block", null);
+        when(controller.getExtradata()).thenReturn("1");
+        room.floorItems = Set.of(controller);
+
+        room.getItemManager().updateItemState(controller);
 
         assertEquals(
                 List.of(

@@ -60,6 +60,7 @@ public class RoomItemManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomItemManager.class);
 
     private final Room room;
+    private final RoomItemOperations operations;
 
     // Item storage
     private final Int2ObjectMap<HabboItem> roomItems;
@@ -73,6 +74,7 @@ public class RoomItemManager {
 
     public RoomItemManager(Room room) {
         this.room = room;
+        this.operations = new RoomItemOperations(room);
         this.roomItems = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
         this.furniOwnerNames = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
         this.furniOwnerCount = Int2IntMaps.synchronize(new Int2IntOpenHashMap(0));
@@ -859,47 +861,14 @@ public class RoomItemManager {
      * Updates an item's display.
      */
     public void updateItem(HabboItem item) {
-        if (this.room.isLoaded()) {
-            if (item != null && item.getRoomId() == this.room.getId()) {
-                if (item.getBaseItem() != null) {
-                    if (item.getBaseItem().getType() == FurnitureType.FLOOR) {
-                        this.room.sendComposer(new FloorItemUpdateComposer(item).compose());
-                        this.room.updateTiles(this.room.getLayout()
-                                .getTilesAt(this.room.getLayout().getTile(item.getX(), item.getY()),
-                                        item.getBaseItem().getWidth(), item.getBaseItem().getLength(),
-                                        item.getRotation()));
-                    } else if (item.getBaseItem().getType() == FurnitureType.WALL) {
-                        this.room.sendComposer(new WallItemUpdateComposer(item).compose());
-                    }
-                }
-            }
-        }
+        this.operations.updateItem(item);
     }
 
     /**
      * Updates an item's state.
      */
     public void updateItemState(HabboItem item) {
-        if (!item.isLimited()) {
-            this.room.sendComposer(new ItemStateComposer(item).compose());
-        } else {
-            this.room.sendComposer(new FloorItemUpdateComposer(item).compose());
-        }
-
-        if (item.getBaseItem().getType() == FurnitureType.FLOOR) {
-            if (this.room.getLayout() == null) {
-                return;
-            }
-
-            this.room.updateTiles(this.room.getLayout()
-                    .getTilesAt(this.room.getLayout().getTile(item.getX(), item.getY()),
-                            item.getBaseItem().getWidth(), item.getBaseItem().getLength(),
-                            item.getRotation()));
-
-            if (item instanceof InteractionMultiHeight) {
-                ((InteractionMultiHeight) item).updateUnitsOnItem(this.room);
-            }
-        }
+        this.operations.updateItemState(item);
     }
 
     // ==================== FURNITURE OWNER MANAGEMENT ====================
@@ -955,62 +924,7 @@ public class RoomItemManager {
      * Picks up an item from the room.
      */
     public void pickUpItem(HabboItem item, Habbo picker) {
-        if (item == null) {
-            return;
-        }
-
-        boolean trackedBuildersClubItem = BuildersClubRoomSupport.isTrackedItem(item.getId());
-
-        if (Emulator.getPluginManager().isRegistered(FurniturePickedUpEvent.class, true)) {
-            FurniturePickedUpEvent event = Emulator.getPluginManager()
-                    .fireEvent(new FurniturePickedUpEvent(item, picker));
-
-            if (event.isCancelled()) {
-                return;
-            }
-        }
-
-        this.removeHabboItem(item);
-        item.onPickUp(this.room);
-        item.setRoomId(0);
-        item.needsUpdate(true);
-
-        if (item.getBaseItem().getType() == FurnitureType.FLOOR) {
-            this.room.sendComposer(new RemoveFloorItemComposer(item).compose());
-
-            if (RoomConfInvisSupport.isControllerItem(item) || RoomConfInvisSupport.isTarget(item)) {
-                RoomConfInvisSupport.sendState(this.room);
-            }
-
-            if (RoomAreaHideSupport.isControllerItem(item)) {
-                RoomAreaHideSupport.sendState(this.room, item);
-            }
-
-            if (RoomHanditemBlockSupport.isControllerItem(item)) {
-                RoomHanditemBlockSupport.sendState(this.room);
-            }
-
-            Set<RoomTile> updatedTiles = this.room.getLayout().getTilesAt(
-                    this.room.getLayout().getTile(item.getX(), item.getY()),
-                    item.getBaseItem().getWidth(),
-                    item.getBaseItem().getLength(),
-                    item.getRotation());
-            this.room.updateTiles(updatedTiles);
-
-            for (RoomTile tile : updatedTiles) {
-                this.room.updateHabbosAt(tile.x, tile.y);
-                this.room.updateBotsAt(tile.x, tile.y);
-            }
-        } else if (item.getBaseItem().getType() == FurnitureType.WALL) {
-            this.room.sendComposer(new RemoveWallItemComposer(item).compose());
-        }
-
-        if (trackedBuildersClubItem) {
-            Emulator.getGameEnvironment().getItemManager().deleteItem(item);
-            return;
-        }
-
-        Emulator.getThreading().run(item);
+        this.operations.pickUpItem(item, picker);
     }
 
     /**
