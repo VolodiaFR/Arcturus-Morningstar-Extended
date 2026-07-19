@@ -710,7 +710,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     }
 
     // Perform loading WITHOUT holding the lock to avoid deadlocks
-    try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+    try {
       synchronized (this.roomUnitLock) {
         this.unitManager.clear();
       }
@@ -724,20 +724,13 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         LOGGER.error("Caught exception loading layout", e);
       }
 
+      CompletableFuture<Void> promotionFuture = CompletableFuture.completedFuture(null);
       if (this.promoted) {
-        CompletableFuture.runAsync(() -> {
-          try (Connection promoConnection = Emulator.getDatabase().getDataSource().getConnection();
-               PreparedStatement stmt = promoConnection.prepareStatement(
-                       "SELECT * FROM room_promotions WHERE room_id = ? AND end_timestamp > ? LIMIT 1")) {
-            stmt.setInt(1, this.id);
-            stmt.setInt(2, Emulator.getIntUnixTimestamp());
-            try (ResultSet promoSet = stmt.executeQuery()) {
-              this.promoted = false;
-              if (promoSet.next()) {
-                this.promoted = true;
-                this.promotion = new RoomPromotion(this, promoSet);
-              }
-            }
+        promotionFuture = CompletableFuture.runAsync(() -> {
+          try (Connection promoConnection = Emulator.getDatabase().getDataSource().getConnection()) {
+            this.promotionManager.loadPromotion(true, promoConnection);
+            this.promotion = this.promotionManager.getPromotion();
+            this.promoted = this.promotionManager.getPromotedFlag();
           } catch (Exception e) {
             LOGGER.error("Caught exception loading promotion", e);
           }
@@ -811,7 +804,8 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
       // Wait for all remaining operations
       try {
-        CompletableFuture.allOf(rightsFuture, wordFilterFuture, botsFuture, petsFuture, heightmapFuture, wiredFuture).join();
+        CompletableFuture.allOf(promotionFuture, rightsFuture, wordFilterFuture,
+                botsFuture, petsFuture, heightmapFuture, wiredFuture).join();
       } catch (Exception e) {
         LOGGER.error("Error waiting for parallel room data loading", e);
       }
