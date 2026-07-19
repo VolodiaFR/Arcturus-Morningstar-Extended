@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -119,6 +120,20 @@ class GameClientOutgoingPacketCompatibilityTest {
                 any(OutgoingPacketEvent.class));
         assertSame(replacement, this.channel.readOutbound());
         assertNull(this.channel.readOutbound());
+    }
+
+    @Test
+    void noSubscriberSkipsEventDispatchAndWritesTheResponse() {
+        ServerMessage response = new ServerMessage(100);
+
+        this.client.sendResponse(response);
+
+        verify(this.pluginManager).isRegistered(
+                OutgoingPacketEvent.class,
+                false);
+        verify(this.pluginManager, never()).fireEvent(
+                any(OutgoingPacketEvent.class));
+        assertSame(response, this.channel.readOutbound());
     }
 
     private static Field field(String name) throws Exception {
