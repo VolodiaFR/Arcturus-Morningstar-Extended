@@ -170,6 +170,10 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
         return this.userId;
     }
 
+    public int getDatabaseUserId() {
+        return this.databaseUserId;
+    }
+
     public void setUserId(int userId) {
         this.userId = userId;
         this.databaseUserId = userId;

@@ -47,6 +47,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -1162,13 +1163,14 @@ public class RoomItemManager {
      * Saves all items that need updates to the database.
      */
     public void saveAllPendingItems() {
+        List<HabboItem> pendingItems;
         synchronized (this.roomItems) {
-            for (HabboItem item : this.roomItems.values()) {
-                if (item.needsUpdate()) {
-                    item.run();
-                }
-            }
+            pendingItems = this.roomItems.values().stream()
+                    .filter(HabboItem::needsUpdate)
+                    .toList();
         }
+
+        this.room.savePendingItems(pendingItems);
     }
 
     /**
@@ -2483,4 +2485,3 @@ public class RoomItemManager {
         return height;
     }
 }
-

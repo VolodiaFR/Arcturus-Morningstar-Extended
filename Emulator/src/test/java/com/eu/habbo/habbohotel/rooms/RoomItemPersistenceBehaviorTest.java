@@ -7,11 +7,40 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class RoomItemPersistenceBehaviorTest {
+
+    @Test
+    void pendingItemsShareOneConnectionAndReleaseTheRegistryBeforeJdbc()
+            throws Exception {
+        RoomJdbcTestSupport.RecordingDataSource dataSource =
+                new RoomJdbcTestSupport.RecordingDataSource();
+        RoomItemManager manager = new RoomItemManager(new Room(41, 7));
+        Int2ObjectMap<HabboItem> items = items(manager);
+        TestItem first = item(1001, "first");
+        TestItem second = item(1002, "second");
+        first.needsUpdate(true);
+        second.needsUpdate(true);
+        items.put(first.getId(), first);
+        items.put(second.getId(), second);
+        AtomicBoolean registryHeldDuringJdbc = new AtomicBoolean();
+        dataSource.beforeExecution(ignored ->
+                registryHeldDuringJdbc.compareAndSet(
+                        false,
+                        Thread.holdsLock(items)));
+
+        try (RoomJdbcTestSupport.InstalledDatabase ignored =
+                     RoomJdbcTestSupport.install(dataSource)) {
+            manager.saveAllPendingItems();
+        }
+
+        assertEquals(1, dataSource.connectionCount());
+        assertFalse(registryHeldDuringJdbc.get());
+    }
 
     @Test
     void pendingItemSaveRetainsUpdateDeleteAndDirtyStateContracts()

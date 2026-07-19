@@ -1438,6 +1438,14 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         this.buildersClubOriginalState);
   }
 
+  void savePendingItems(List<HabboItem> items) {
+    try {
+      this.persistence.saveItems(items);
+    } catch (SQLException exception) {
+      LOGGER.error("Caught SQL exception saving room items", exception);
+    }
+  }
+
   /**
    * Updates the user count in the database.
    * Made public for access by RoomUnitManager.
