@@ -48,7 +48,8 @@ final class RoomJdbcTestSupport {
         private final List<SqlCall> calls = new CopyOnWriteArrayList<>();
         private Function<String, List<Map<String, Object>>> rows =
                 ignored -> List.of();
-        private boolean failUpdates;
+        private volatile boolean failQueries;
+        private volatile boolean failUpdates;
 
         List<SqlCall> calls() {
             return List.copyOf(this.calls);
@@ -60,6 +61,10 @@ final class RoomJdbcTestSupport {
 
         void failUpdates(boolean failUpdates) {
             this.failUpdates = failUpdates;
+        }
+
+        void failQueries(boolean failQueries) {
+            this.failQueries = failQueries;
         }
 
         @Override
@@ -88,6 +93,9 @@ final class RoomJdbcTestSupport {
                                 sql,
                                 Map.copyOf(parameters),
                                 "query"));
+                        if (this.failQueries) {
+                            throw new SQLException("fixture query failure");
+                        }
                         yield resultSet(this.rows.apply(sql));
                     }
                     case "executeUpdate" -> {
