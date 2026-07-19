@@ -25,12 +25,17 @@ class RoomLoaderConcurrencyTest {
     private PluginManager originalPluginManager;
     private ThreadPooling threading;
     private RoomJdbcTestSupport.InstalledDatabase database;
-    private RoomJdbcTestSupport.RecordingDataSource dataSource;
+    private RoomJdbcTestSupport.RecordingDataSource injectedDataSource;
+    private RoomJdbcTestSupport.RecordingDataSource legacyGlobalDataSource;
 
     @BeforeEach
     void installRuntimeBoundaries() throws Exception {
-        this.dataSource = new RoomJdbcTestSupport.RecordingDataSource();
-        this.database = RoomJdbcTestSupport.install(this.dataSource);
+        this.injectedDataSource =
+                new RoomJdbcTestSupport.RecordingDataSource();
+        this.legacyGlobalDataSource =
+                new RoomJdbcTestSupport.RecordingDataSource();
+        this.database = RoomJdbcTestSupport.install(
+                this.legacyGlobalDataSource);
         this.originalThreading = (ThreadPooling) setEmulatorField(
                 "threading",
                 this.threading = new ThreadPooling(1));
@@ -59,6 +64,8 @@ class RoomLoaderConcurrencyTest {
             assertTrue(
                     await(room::isLoaded, Duration.ofSeconds(1)),
                     "room load starved while its only worker waited for child tasks");
+            assertFalse(this.injectedDataSource.calls().isEmpty());
+            assertTrue(this.legacyGlobalDataSource.calls().isEmpty());
         } finally {
             ((ScheduledThreadPoolExecutor) this.threading.getService())
                     .setCorePoolSize(8);
@@ -72,7 +79,7 @@ class RoomLoaderConcurrencyTest {
             throws Exception {
         CountDownLatch promotionQueryReached = new CountDownLatch(1);
         CountDownLatch allowPromotionQuery = new CountDownLatch(1);
-        this.dataSource.rows(sql -> {
+        this.injectedDataSource.rows(sql -> {
             if (sql.contains("FROM room_promotions")) {
                 promotionQueryReached.countDown();
                 try {
@@ -106,7 +113,7 @@ class RoomLoaderConcurrencyTest {
 
     @Test
     void childQueryFailuresStillCompleteTheLegacyLoadAttempt() throws Exception {
-        this.dataSource.failQueries(true);
+        this.injectedDataSource.failQueries(true);
         Room room = loadableRoom();
 
         room.startBackgroundLoad();
@@ -119,7 +126,11 @@ class RoomLoaderConcurrencyTest {
     }
 
     private Room loadableRoom() throws Exception {
-        Room room = new Room(41, 7);
+        Room room = new Room(
+                41,
+                7,
+                new RoomDependencies(
+                        this.injectedDataSource::getConnection));
         setRoomField(room, "preLoaded", true);
         return room;
     }
