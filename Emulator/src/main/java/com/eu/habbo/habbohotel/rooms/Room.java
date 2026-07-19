@@ -249,6 +249,8 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     this.games = ConcurrentHashMap.newKeySet();
     this.rights = new IntArrayList();
     this.userVotes = new ArrayList<>();
+    this.initializeManagers(
+        new RoomChatManager(this, RoomChatManager.DEFAULT_MUTE_TIME_SECONDS));
   }
 
   public Room(ResultSet set) throws SQLException {
@@ -345,6 +347,10 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
    * Initializes all manager instances for this room.
    */
   private void initializeManagers() {
+    this.initializeManagers(new RoomChatManager(this));
+  }
+
+  private void initializeManagers(RoomChatManager chatManager) {
     this.tileManager = new RoomTileManager(this);
     this.gameManager = new RoomGameManager(this);
     this.tradeManager = new RoomTradeManager(this);
@@ -353,7 +359,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     this.rightsManager = new RoomRightsManager(this);
     this.unitManager = new RoomUnitManager(this);
     this.itemManager = new RoomItemManager(this);
-    this.chatManager = new RoomChatManager(this);
+    this.chatManager = chatManager;
     this.rollerManager = new RoomRollerManager(this);
     this.messagingManager = new RoomMessagingManager(this);
     this.cycleManager = new RoomCycleManager(this);
