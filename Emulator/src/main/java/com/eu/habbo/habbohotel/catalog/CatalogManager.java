@@ -276,6 +276,10 @@ public class CatalogManager {
     private volatile byte[] rareValuesPayloadCache;
 
     public CatalogManager() {
+        this(true);
+    }
+
+    CatalogManager(boolean initialize) {
         long millis = System.currentTimeMillis();
         this.catalogPages = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>());
         this.buildersClubCatalogPages = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>());
@@ -293,11 +297,13 @@ public class CatalogManager {
         this.limitedNumbers = new HashMap<>();
         this.furnitureValues = new Int2ObjectOpenHashMap<>();
 
-        this.initialize();
-
-        this.ecotronItem = Emulator.getGameEnvironment().getItemManager().getItem("ecotron_box");
-
-        LOGGER.info("Catalog Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
+        if (initialize) {
+            this.initialize();
+            this.ecotronItem = Emulator.getGameEnvironment().getItemManager().getItem("ecotron_box");
+            LOGGER.info("Catalog Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
+        } else {
+            this.ecotronItem = null;
+        }
     }
 
     public synchronized void initialize() {
