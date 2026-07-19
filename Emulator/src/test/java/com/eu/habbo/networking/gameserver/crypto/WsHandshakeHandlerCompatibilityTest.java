@@ -5,6 +5,8 @@ import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.networking.gameserver.GameServerAttributes;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.http.EmptyHttpHeaders;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
@@ -15,6 +17,8 @@ import org.junit.jupiter.api.Test;
 import java.lang.reflect.Field;
 import java.security.KeyPair;
 import java.security.PublicKey;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -63,8 +67,7 @@ class WsHandshakeHandlerCompatibilityTest {
         try {
             fireHandshakeComplete(channel);
 
-            ByteBuf hello = channel.readOutbound();
-            assertNotNull(hello);
+            ByteBuf hello = awaitOutbound(channel);
             assertEquals(
                     WsSessionCrypto.HANDSHAKE_MAGIC,
                     hello.readInt());
@@ -91,7 +94,7 @@ class WsHandshakeHandlerCompatibilityTest {
         EmbeddedChannel channel = handshakeChannel();
         try {
             fireHandshakeComplete(channel);
-            ByteBuf hello = channel.readOutbound();
+            ByteBuf hello = awaitOutbound(channel);
             hello.skipBytes(5);
             int serverKeyLength = hello.readUnsignedShort();
             byte[] serverSpki = new byte[serverKeyLength];
@@ -122,6 +125,11 @@ class WsHandshakeHandlerCompatibilityTest {
 
             assertFalse(channel.writeInbound(clientHello));
             assertEquals(0, clientHello.refCnt());
+            awaitCondition(
+                    channel,
+                    () -> channel.attr(
+                                    GameServerAttributes.WS_AES_KEY)
+                            .get() != null);
             assertArrayEquals(
                     expectedSessionKey,
                     channel.attr(
@@ -131,6 +139,42 @@ class WsHandshakeHandlerCompatibilityTest {
                             WsHandshakeHandler.HANDLER_NAME));
             assertNotNull(channel.pipeline().get("wsAesDecoder"));
             assertNotNull(channel.pipeline().get("wsAesEncoder"));
+        } finally {
+            channel.finishAndReleaseAll();
+        }
+    }
+
+    @Test
+    void serverHelloIsQueuedBeforeHandshakeNotificationContinues()
+            throws Exception {
+        EmbeddedChannel channel = handshakeChannel();
+        AtomicBoolean eventObserved = new AtomicBoolean();
+        AtomicBoolean helloWasQueued = new AtomicBoolean();
+        channel.pipeline().addLast(
+                "handshakeObserver",
+                new ChannelInboundHandlerAdapter() {
+                    @Override
+                    public void userEventTriggered(
+                            ChannelHandlerContext context,
+                            Object event) {
+                        if (event instanceof
+                                WebSocketServerProtocolHandler
+                                        .HandshakeComplete) {
+                            helloWasQueued.set(
+                                    !channel.outboundMessages()
+                                            .isEmpty());
+                            eventObserved.set(true);
+                        }
+                        context.fireUserEventTriggered(event);
+                    }
+                });
+        try {
+            fireHandshakeComplete(channel);
+            awaitCondition(channel, eventObserved::get);
+
+            assertTrue(helloWasQueued.get());
+            ByteBuf hello = awaitOutbound(channel);
+            hello.release();
         } finally {
             channel.finishAndReleaseAll();
         }
@@ -170,5 +214,35 @@ class WsHandshakeHandlerCompatibilityTest {
                 WsHandshakeHandler.HANDLER_NAME,
                 new WsHandshakeHandler());
         return channel;
+    }
+
+    private static ByteBuf awaitOutbound(
+            EmbeddedChannel channel) throws Exception {
+        long deadline = System.nanoTime()
+                + java.util.concurrent.TimeUnit.SECONDS.toNanos(1);
+        while (System.nanoTime() < deadline) {
+            channel.runPendingTasks();
+            ByteBuf message = channel.readOutbound();
+            if (message != null) {
+                return message;
+            }
+            Thread.sleep(1);
+        }
+        throw new AssertionError("Timed out waiting for server hello");
+    }
+
+    private static void awaitCondition(
+            EmbeddedChannel channel,
+            BooleanSupplier condition) throws Exception {
+        long deadline = System.nanoTime()
+                + java.util.concurrent.TimeUnit.SECONDS.toNanos(1);
+        while (System.nanoTime() < deadline) {
+            channel.runPendingTasks();
+            if (condition.getAsBoolean()) {
+                return;
+            }
+            Thread.sleep(1);
+        }
+        throw new AssertionError("Timed out waiting for handshake state");
     }
 }
