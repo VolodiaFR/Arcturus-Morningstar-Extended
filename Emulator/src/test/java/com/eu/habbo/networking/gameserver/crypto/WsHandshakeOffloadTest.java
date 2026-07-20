@@ -9,9 +9,11 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import org.junit.jupiter.api.Test;
 
 import java.security.KeyPair;
+import java.security.PublicKey;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -126,45 +128,115 @@ class WsHandshakeOffloadTest {
                 WsHandshakeHandler.HANDLER_NAME,
                 handler);
         try {
-            channel.pipeline().fireUserEventTriggered(
-                    new WebSocketServerProtocolHandler
-                            .HandshakeComplete(
-                            "/",
-                            EmptyHttpHeaders.INSTANCE,
-                            null));
-            runCryptoTask(cryptoTasks);
-            channel.runPendingTasks();
-            channel.readOutbound();
-
-            KeyPair clientKeyPair =
-                    WsSessionCrypto.generateEphemeralKeyPair();
-            byte[] clientSpki =
-                    WsSessionCrypto.encodePublicKeySpki(
-                            clientKeyPair.getPublic());
-            ByteBuf clientHello =
-                    Unpooled.buffer(7 + clientSpki.length)
-                            .writeInt(
-                                    WsSessionCrypto
-                                            .HANDSHAKE_MAGIC)
-                            .writeByte(
-                                    WsSessionCrypto
-                                            .TYPE_CLIENT_HELLO)
-                            .writeShort(clientSpki.length)
-                            .writeBytes(clientSpki);
-            assertFalse(channel.writeInbound(clientHello));
-            assertEquals(1, cryptoTasks.size());
+            byte[] sessionKey = beginAgreement(channel, cryptoTasks);
 
             // The client derives the key locally and can send an AES frame before
             // the decoder is installed. It must be queued, not parsed as handshake.
-            ByteBuf earlyFrame = Unpooled.wrappedBuffer(
-                    new byte[]{0, 1, 2, 3, 4, 5, 6, 7});
+            byte[] plaintext = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
+            byte[] nonce = WsSessionCrypto.randomNonce();
+            byte[] ciphertext =
+                    WsSessionCrypto.aesGcmEncrypt(
+                            sessionKey,
+                            nonce,
+                            plaintext);
+            ByteBuf earlyFrame = Unpooled.buffer(
+                            nonce.length + ciphertext.length)
+                    .writeBytes(nonce)
+                    .writeBytes(ciphertext);
             channel.writeInbound(earlyFrame);
 
             assertTrue(channel.isActive());
             assertEquals(1, cryptoTasks.size());
+
+            runCryptoTask(cryptoTasks);
+            channel.runPendingTasks();
+
+            ByteBuf replayed = channel.readInbound();
+            byte[] actual = new byte[replayed.readableBytes()];
+            replayed.readBytes(actual);
+            replayed.release();
+            assertArrayEquals(plaintext, actual);
+            assertEquals(0, earlyFrame.refCnt());
         } finally {
             channel.finishAndReleaseAll();
         }
+    }
+
+    @Test
+    void pendingFramesAreBoundedByBytesAndReleasedOnClose()
+            throws Exception {
+        LinkedBlockingQueue<Runnable> cryptoTasks =
+                new LinkedBlockingQueue<>();
+        EmbeddedChannel channel = new EmbeddedChannel();
+        channel.pipeline().addLast(
+                WsHandshakeHandler.HANDLER_NAME,
+                new WsHandshakeHandler(
+                        cryptoTasks::add,
+                        false));
+        ByteBuf first = Unpooled.buffer(500_000).writeZero(500_000);
+        ByteBuf second = Unpooled.buffer(500_000).writeZero(500_000);
+        ByteBuf overflow = Unpooled.buffer(500_000).writeZero(500_000);
+        try {
+            beginAgreement(channel, cryptoTasks);
+
+            channel.writeInbound(first);
+            channel.writeInbound(second);
+            channel.writeInbound(overflow);
+
+            assertFalse(channel.isOpen());
+            assertEquals(0, overflow.refCnt());
+        } finally {
+            channel.finishAndReleaseAll();
+        }
+        assertEquals(0, first.refCnt());
+        assertEquals(0, second.refCnt());
+    }
+
+    private static byte[] beginAgreement(
+            EmbeddedChannel channel,
+            LinkedBlockingQueue<Runnable> cryptoTasks)
+            throws Exception {
+        channel.pipeline().fireUserEventTriggered(
+                new WebSocketServerProtocolHandler
+                        .HandshakeComplete(
+                        "/",
+                        EmptyHttpHeaders.INSTANCE,
+                        null));
+        runCryptoTask(cryptoTasks);
+        channel.runPendingTasks();
+
+        ByteBuf serverHello = channel.readOutbound();
+        serverHello.skipBytes(5);
+        int serverKeyLength = serverHello.readUnsignedShort();
+        byte[] serverSpki = new byte[serverKeyLength];
+        serverHello.readBytes(serverSpki);
+        serverHello.release();
+
+        KeyPair clientKeyPair =
+                WsSessionCrypto.generateEphemeralKeyPair();
+        PublicKey serverPublic =
+                WsSessionCrypto.decodePublicKeySpki(serverSpki);
+        byte[] sessionKey =
+                WsSessionCrypto.deriveAesKey(
+                        WsSessionCrypto.deriveSharedSecret(
+                                clientKeyPair.getPrivate(),
+                                serverPublic));
+        byte[] clientSpki =
+                WsSessionCrypto.encodePublicKeySpki(
+                        clientKeyPair.getPublic());
+        ByteBuf clientHello =
+                Unpooled.buffer(7 + clientSpki.length)
+                        .writeInt(
+                                WsSessionCrypto
+                                        .HANDSHAKE_MAGIC)
+                        .writeByte(
+                                WsSessionCrypto
+                                        .TYPE_CLIENT_HELLO)
+                        .writeShort(clientSpki.length)
+                        .writeBytes(clientSpki);
+        assertFalse(channel.writeInbound(clientHello));
+        assertEquals(1, cryptoTasks.size());
+        return sessionKey;
     }
 
     private static void runCryptoTask(
