@@ -11,6 +11,7 @@ class AtomicCatalogPurchaseContractTest {
     void coordinatorCommitsAssetsAndConditionalChargesTogether() throws Exception {
         String source = Files.readString(
                 Path.of("src/main/java/com/eu/habbo/habbohotel/catalog/CatalogPurchaseTransaction.java"));
+        String compactSource = source.replaceAll("\\s+", "");
 
         int begin = source.indexOf("connection.setAutoCommit(false)");
         int persist = source.indexOf("work.persist(connection)", begin);
@@ -23,7 +24,7 @@ class AtomicCatalogPurchaseContractTest {
         assertTrue(credit > persist);
         assertTrue(points > credit);
         assertTrue(commit > points);
-        assertTrue(source.contains("EconomyLedger.apply(connection"));
+        assertTrue(compactSource.contains("EconomyLedger.apply(connection"));
         assertTrue(source.contains("\"catalog.purchase\""));
         assertTrue(source.contains("operationId + \":credits\""));
         assertTrue(source.contains("operationId + \":points\""));

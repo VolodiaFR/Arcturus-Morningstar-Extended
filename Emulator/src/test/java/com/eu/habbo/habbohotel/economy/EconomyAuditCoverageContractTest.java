@@ -41,7 +41,7 @@ class EconomyAuditCoverageContractTest {
                 "com/eu/habbo/habbohotel/rooms/RoomTradeTransaction.java",
                 "com/eu/habbo/messages/incoming/rooms/items/RedeemItemTransaction.java")) {
             String source = Files.readString(SOURCES.resolve(relative));
-            assertTrue(source.contains("EconomyLedger.apply(connection"), relative);
+            assertTrue(source.replaceAll("\\s+", "").contains("EconomyLedger.apply(connection"), relative);
         }
     }
 

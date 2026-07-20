@@ -35,10 +35,11 @@ class AtomicRedeemItemContractTest {
     @Test
     void itemDeleteAndBalanceUpdateShareOneDatabaseTransaction() throws Exception {
         String source = read("src/main/java/com/eu/habbo/messages/incoming/rooms/items/RedeemItemTransaction.java");
+        String compactSource = source.replaceAll("\\s+", "");
 
         assertTrue(source.contains("setAutoCommit(false)"));
         assertTrue(source.contains("DELETE FROM items WHERE id = ? AND user_id = ? LIMIT 1"));
-        assertTrue(source.contains("EconomyLedger.apply(connection"));
+        assertTrue(compactSource.contains("EconomyLedger.apply(connection"));
         assertTrue(source.contains("\"furniture-redeem:\" + itemId"));
         assertTrue(source.contains("\"furniture.redeem\""));
         assertTrue(source.contains("connection.commit()"));

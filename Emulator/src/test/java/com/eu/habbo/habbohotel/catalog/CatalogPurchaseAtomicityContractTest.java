@@ -28,7 +28,7 @@ class CatalogPurchaseAtomicityContractTest {
                 "normal catalog assets and payment must use the transaction coordinator");
         assertTrue(transaction.contains("connection.setAutoCommit(false)"));
         assertTrue(
-                transaction.contains("EconomyLedger.apply(connection"),
+                withoutWhitespace(transaction).contains("EconomyLedger.apply(connection"),
                 "credit debit must use the locked, audited economy ledger");
         String ledger = source("com/eu/habbo/habbohotel/economy/EconomyLedger.java");
         assertTrue(
