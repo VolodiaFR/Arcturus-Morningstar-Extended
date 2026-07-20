@@ -33,9 +33,9 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1570,7 +1570,7 @@ public final class WiredEngine {
     }
 
     static int selectRandomIndex(int bound) {
-        return new Random().nextInt(bound);
+        return ThreadLocalRandom.current().nextInt(bound);
     }
 
     private WiredExtraUnseen getUnseenExtra(Room room, WiredStack stack) {
