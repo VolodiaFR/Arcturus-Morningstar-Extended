@@ -128,7 +128,9 @@ public final class DatabaseIntegrityAudit {
             StringBuilder values = new StringBuilder();
             sample.values().forEach((column, value) -> {
                 if (!values.isEmpty()) values.append(' ');
-                values.append(column).append('=').append(value);
+                values.append(singleLine(column))
+                        .append('=')
+                        .append(singleLine(value));
             });
             distinct.merge(values.toString(), sample.occurrences(), Long::max);
         }
@@ -145,6 +147,15 @@ public final class DatabaseIntegrityAudit {
             shown++;
         }
         return out.toString();
+    }
+
+    private static String singleLine(String value) {
+        if (value == null) {
+            return "null";
+        }
+        return value.replace("\\", "\\\\")
+                .replace("\r", "\\r")
+                .replace("\n", "\\n");
     }
 
     static boolean writeReport(IntegrityAuditReport report, Path path) {
@@ -194,7 +205,7 @@ public final class DatabaseIntegrityAudit {
     static void clearReport(Path path) {
         try {
             Files.deleteIfExists(path);
-        } catch (IOException error) {
+        } catch (IOException | RuntimeException error) {
             LOGGER.debug("Unable to remove the previous database integrity report", error);
         }
     }

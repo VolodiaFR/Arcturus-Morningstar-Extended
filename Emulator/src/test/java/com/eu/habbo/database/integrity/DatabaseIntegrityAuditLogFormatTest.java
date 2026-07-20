@@ -62,6 +62,7 @@ class DatabaseIntegrityAuditLogFormatTest {
         String compact = DatabaseIntegrityAudit.compactSamples(List.of(
                 sample(Map.of("username", "first\r\nforged warning"), 1)));
 
+        assertEquals("username=first\\r\\nforged warning", compact);
         assertFalse(compact.contains("\r"));
         assertFalse(compact.contains("\n"));
     }
