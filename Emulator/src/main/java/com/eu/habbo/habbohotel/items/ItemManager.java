@@ -391,12 +391,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -421,7 +418,7 @@ public class ItemManager {
 
     private final Int2ObjectMap<Item> items;
     private final Int2ObjectMap<CrackableReward> crackableRewards;
-    private final Set<ItemInteraction> interactionsList;
+    private final ItemInteractionRegistry interactionsList;
     private final Map<String, SoundTrack> soundTracks;
     private final YoutubeManager youtubeManager;
     private final WiredHighscoreManager highscoreManager;
@@ -430,7 +427,7 @@ public class ItemManager {
     public ItemManager() {
         this.items = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>());
         this.crackableRewards = new Int2ObjectOpenHashMap<>();
-        this.interactionsList = new HashSet<>();
+        this.interactionsList = new ItemInteractionRegistry();
         this.soundTracks = new HashMap<>();
         this.youtubeManager = new YoutubeManager();
         this.highscoreManager = new WiredHighscoreManager();
@@ -1052,20 +1049,13 @@ public class ItemManager {
     }
 
     public void addItemInteraction(ItemInteraction itemInteraction) {
-        for (ItemInteraction interaction : this.interactionsList) {
-            if (interaction.getType() == itemInteraction.getType()
-                    || interaction.getName().equalsIgnoreCase(itemInteraction.getName()))
-                throw new RuntimeException("Interaction Types must be unique. An class with type: "
-                        + interaction.getClass().getName() + " was already added OR the key: " + interaction.getName()
-                        + " is already in use.");
-        }
-
-        this.interactionsList.add(itemInteraction);
+        this.interactionsList.addChecked(itemInteraction);
     }
 
     public ItemInteraction getItemInteraction(Class<? extends HabboItem> type) {
-        for (ItemInteraction interaction : this.interactionsList) {
-            if (interaction.getType() == type) return interaction;
+        ItemInteraction interaction = this.interactionsList.find(type);
+        if (interaction != null) {
+            return interaction;
         }
 
         LOGGER.debug("Can't find interaction class: {}", type.getName());
@@ -1073,8 +1063,9 @@ public class ItemManager {
     }
 
     public ItemInteraction getItemInteraction(String type) {
-        for (ItemInteraction interaction : this.interactionsList) {
-            if (interaction.getName().equalsIgnoreCase(type)) return interaction;
+        ItemInteraction interaction = this.interactionsList.find(type);
+        if (interaction != null) {
+            return interaction;
         }
 
         return this.getItemInteraction(InteractionDefault.class);
@@ -1593,13 +1584,6 @@ public class ItemManager {
     }
 
     public List<String> getInteractionList() {
-        List<String> interactions = new ArrayList<>();
-
-        for (ItemInteraction interaction : this.interactionsList) {
-            interactions.add(interaction.getName());
-        }
-
-        Collections.sort(interactions);
-        return interactions;
+        return this.interactionsList.sortedNames();
     }
 }
