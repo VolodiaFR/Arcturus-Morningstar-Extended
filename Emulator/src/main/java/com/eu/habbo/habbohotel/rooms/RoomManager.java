@@ -149,6 +149,7 @@ public class RoomManager {
     private final RoomDirectory roomDirectory;
     private final RoomSearchService roomSearchService;
     private final RoomModerationService roomModerationService;
+    private final RoomLifecycleService roomLifecycleService;
     private final ConcurrentHashMap<Integer, Room> activeRooms;
     private final ConcurrentHashMap<Integer, Set<Integer>> roomsByOwner;
     private final AtomicInteger indexedRoomCount;
@@ -179,6 +180,14 @@ public class RoomManager {
         this.roomsByOwner = this.roomDirectory.roomsByOwner();
         this.indexedRoomCount = this.roomDirectory.indexedRoomCount();
         this.roomSearchService = new RoomSearchService(this.activeRooms::values, Duration.ofSeconds(1));
+        this.roomLifecycleService = new RoomLifecycleService(
+                this.roomDirectory,
+                this.roomCategories,
+                ownerId -> Emulator.getGameServer().getGameClientManager().containsHabbo(ownerId),
+                room -> !Emulator.getPluginManager()
+                        .fireEvent(new RoomUncachedEvent(room))
+                        .isCancelled(),
+                this.roomSearchService::invalidate);
         this.roomModerationService = new RoomModerationService(
                 this::getRoom,
                 userId -> Emulator.getGameEnvironment().getHabboManager().getHabbo(userId),
@@ -204,10 +213,6 @@ public class RoomManager {
         }
     }
 
-    private void trackRoomOwner(Room room) {
-        this.roomDirectory.track(room);
-    }
-
     private RoomDependencies roomDependencies() {
         return new RoomDependencies(this::openConnection, this.persistenceExecutor::execute);
     }
@@ -216,22 +221,9 @@ public class RoomManager {
         return Emulator.getDatabase().getDataSource().getConnection();
     }
 
-    private void untrackRoomOwner(Room room) {
-        this.roomDirectory.untrack(room);
-        this.roomSearchService.invalidate();
-    }
-
-    private void removeRoomFromOwner(int ownerId, int roomId) {
-        this.roomDirectory.removeFromOwner(ownerId, roomId);
-    }
-
     void registerActiveRoom(Room room) {
         this.roomDirectory.register(room);
         this.roomSearchService.invalidate();
-    }
-
-    private void reconcileOwnerIndex() {
-        this.roomDirectory.reconcileOwnerIndex();
     }
 
     public void loadRoomModels() {
@@ -533,74 +525,15 @@ public class RoomManager {
     }
 
     public void unloadRoomsForHabbo(Habbo habbo) {
-        int ownerId = habbo.getHabboInfo().getId();
-        List<Room> roomsToDispose = this.roomsToUnloadForOwner(ownerId);
-
-        for (Room room : roomsToDispose) {
-            if (Emulator.getPluginManager()
-                    .fireEvent(new RoomUncachedEvent(room))
-                    .isCancelled()) continue;
-
-            room.dispose();
-            this.untrackRoomOwner(room);
-            this.activeRooms.remove(room.getId());
-        }
+        this.roomLifecycleService.unloadRoomsFor(habbo);
     }
 
     List<Room> roomsToUnloadForOwner(int ownerId) {
-        if (this.indexedRoomCount.get() != this.activeRooms.size()) {
-            this.reconcileOwnerIndex();
-        }
-
-        List<Room> roomsToDispose = new ArrayList<>();
-        Set<Integer> roomIds = this.roomsByOwner.get(ownerId);
-        if (roomIds == null) {
-            return roomsToDispose;
-        }
-
-        for (int roomId : new HashSet<>(roomIds)) {
-            Room room = this.activeRooms.get(roomId);
-            if (room == null || room.getOwnerId() != ownerId) {
-                this.removeRoomFromOwner(ownerId, roomId);
-                if (room != null) {
-                    this.trackRoomOwner(room);
-                }
-                continue;
-            }
-
-            if (!room.isPublicRoom()
-                    && !room.isStaffPromotedRoom()
-                    && room.getUserCount() == 0
-                    && (this.roomCategories.get(room.getCategory()) == null
-                            || !this.roomCategories.get(room.getCategory()).isPublic())) {
-                roomsToDispose.add(room);
-            }
-        }
-
-        return roomsToDispose;
+        return this.roomLifecycleService.roomsToUnloadForOwner(ownerId);
     }
 
     public void clearInactiveRooms() {
-        Set<Room> roomsToDispose = new HashSet<>();
-        for (Map.Entry<Integer, Set<Integer>> entry : this.roomsByOwner.entrySet()) {
-            int ownerId = entry.getKey();
-            if (!Emulator.getGameServer().getGameClientManager().containsHabbo(ownerId)) {
-                for (int roomId : entry.getValue()) {
-                    Room room = this.activeRooms.get(roomId);
-                    if (room != null && !room.isPublicRoom() && !room.isStaffPromotedRoom() && room.isPreLoaded()) {
-                        roomsToDispose.add(room);
-                    }
-                }
-            }
-        }
-
-        for (Room room : roomsToDispose) {
-            room.dispose();
-            if (room.getUserCount() == 0) {
-                this.untrackRoomOwner(room);
-                this.activeRooms.remove(room.getId());
-            }
-        }
+        this.roomLifecycleService.clearInactiveRooms();
     }
 
     public boolean layoutExists(String name) {
@@ -612,12 +545,11 @@ public class RoomManager {
     }
 
     public void unloadRoom(Room room) {
-        room.dispose();
+        this.roomLifecycleService.unload(room);
     }
 
     public void uncacheRoom(Room room) {
-        this.untrackRoomOwner(room);
-        this.activeRooms.remove(room.getId());
+        this.roomLifecycleService.uncache(room);
     }
 
     public void voteForRoom(Habbo habbo, Room room) {
@@ -1731,22 +1663,12 @@ public class RoomManager {
     }
 
     public synchronized void dispose() {
-        this.quiesceRoomCycles();
-
-        for (Room room : this.activeRooms.values()) {
-            room.dispose();
-            room.setOwnerChangeListener(null);
-        }
-
-        this.roomDirectory.clear();
-
+        this.roomLifecycleService.dispose();
         LOGGER.info("Room Manager -> Disposed!");
     }
 
     public void quiesceRoomCycles() {
-        for (Room room : this.activeRooms.values()) {
-            room.quiesceCycleTask();
-        }
+        this.roomLifecycleService.quiesceRoomCycles();
     }
 
     public CustomRoomLayout insertCustomLayout(Room room, String map, int doorX, int doorY, int doorDirection) {

@@ -62,9 +62,7 @@ class RoomLifecycleBehaviorTest {
         RoomManager manager = new RoomManager(false);
         TrackingRoom room = new TrackingRoom(41, 7);
         manager.registerActiveRoom(room);
-        doAnswer(invocation -> invocation.getArgument(0))
-                .when(this.plugins)
-                .fireEvent(any());
+        doAnswer(invocation -> invocation.getArgument(0)).when(this.plugins).fireEvent(any());
 
         manager.unloadRoomsForHabbo(owner(7));
 
