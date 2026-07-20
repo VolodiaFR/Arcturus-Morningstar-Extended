@@ -2,27 +2,24 @@ package com.eu.habbo.messages.incoming.furnieditor;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.FurnidataEntry;
+import com.eu.habbo.habbohotel.items.FurnidataEntryBuilder;
 import com.eu.habbo.habbohotel.items.FurnidataLock;
 import com.eu.habbo.habbohotel.items.FurnidataWriter;
 import com.eu.habbo.habbohotel.items.FurnitureTextProvider;
 import com.eu.habbo.habbohotel.items.Item;
-import com.eu.habbo.habbohotel.items.FurnidataEntryBuilder;
+import com.eu.habbo.habbohotel.items.editor.FurniEditorRepository;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
-import com.eu.habbo.messages.outgoing.furniture.FurnitureDataReloadComposer;
 import com.eu.habbo.messages.outgoing.furnieditor.FurniEditorResultComposer;
+import com.eu.habbo.messages.outgoing.furniture.FurnitureDataReloadComposer;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Incoming handler 10046 — admin saves a furni name/description in the editor.
@@ -76,7 +73,7 @@ public class FurniEditorUpdateFurnidataEvent extends MessageHandler {
             return;
         }
 
-        String name        = json.has("name")        ? json.get("name").getAsString()        : null;
+        String name = json.has("name") ? json.get("name").getAsString() : null;
         String description = json.has("description") ? json.get("description").getAsString() : null;
 
         if (name == null && description == null) {
@@ -92,8 +89,7 @@ public class FurniEditorUpdateFurnidataEvent extends MessageHandler {
         }
 
         // 5. Write + reindex + broadcast under the shared lock
-        FurnitureTextProvider provider =
-            Emulator.getGameEnvironment().getFurnitureTextProvider();
+        FurnitureTextProvider provider = Emulator.getGameEnvironment().getFurnitureTextProvider();
 
         if (provider == null || provider.getSource() == null) {
             this.client.sendResponse(new FurniEditorResultComposer(false, "Furnidata source not configured"));
@@ -107,7 +103,7 @@ public class FurniEditorUpdateFurnidataEvent extends MessageHandler {
 
         // FurnidataWriter.write() calls FurnitureTextProvider.sanitize() internally;
         // pass the raw values here and use them also for the audit log.
-        String safeName = (name        != null) ? name        : "";
+        String safeName = (name != null) ? name : "";
         String safeDesc = (description != null) ? description : "";
 
         boolean written;
@@ -117,11 +113,7 @@ public class FurniEditorUpdateFurnidataEvent extends MessageHandler {
         FurnidataLock.LOCK.lock();
         try {
             FurnidataWriter writer = new FurnidataWriter(
-                provider.getSource(),
-                provider.isSourceDirectory(),
-                provider.getMaxBytes(),
-                3 /* backupKeep */
-            );
+                    provider.getSource(), provider.isSourceDirectory(), provider.getMaxBytes(), 3 /* backupKeep */);
             written = writer.write(classname, safeName, safeDesc);
             if (!written) {
                 // Upsert: no furnidata entry for this classname yet → create a
@@ -133,11 +125,9 @@ public class FurniEditorUpdateFurnidataEvent extends MessageHandler {
                 }
                 String createTier = Emulator.getConfig().getValue("items.furnidata.create_tier", "custom");
                 String entry = FurnidataEntryBuilder.build(
-                    item,
-                    FurnitureTextProvider.sanitize(safeName),
-                    FurnitureTextProvider.sanitize(safeDesc));
+                        item, FurnitureTextProvider.sanitize(safeName), FurnitureTextProvider.sanitize(safeDesc));
                 FurnidataWriter.CreateResult cr =
-                    writer.create(item.getName(), item.getSpriteId(), item.getType(), entry, createTier);
+                        writer.create(item.getName(), item.getSpriteId(), item.getType(), entry, createTier);
                 switch (cr) {
                     case CREATED:
                         created = true;
@@ -149,10 +139,12 @@ public class FurniEditorUpdateFurnidataEvent extends MessageHandler {
                         written = true;
                         break;
                     case ID_COLLISION:
-                        this.client.sendResponse(new FurniEditorResultComposer(false, "Sprite id already used by another classname"));
+                        this.client.sendResponse(
+                                new FurniEditorResultComposer(false, "Sprite id already used by another classname"));
                         return;
                     default:
-                        this.client.sendResponse(new FurniEditorResultComposer(false, "Failed to create furnidata entry"));
+                        this.client.sendResponse(
+                                new FurniEditorResultComposer(false, "Failed to create furnidata entry"));
                         return;
                 }
             }
@@ -160,11 +152,10 @@ public class FurniEditorUpdateFurnidataEvent extends MessageHandler {
             delta = provider.reindexFromSource();
 
             if (!delta.isEmpty()) {
-                int deltaCap = Integer.parseInt(
-                    Emulator.getConfig().getValue("items.furnidata.delta.cap", "500"));
+                int deltaCap = Integer.parseInt(Emulator.getConfig().getValue("items.furnidata.delta.cap", "500"));
                 FurnitureDataReloadComposer composer = (delta.size() > deltaCap)
-                    ? new FurnitureDataReloadComposer(FurnitureDataReloadComposer.MODE_RELOAD_HINT, List.of())
-                    : new FurnitureDataReloadComposer(FurnitureDataReloadComposer.MODE_DELTA, delta);
+                        ? new FurnitureDataReloadComposer(FurnitureDataReloadComposer.MODE_RELOAD_HINT, List.of())
+                        : new FurnitureDataReloadComposer(FurnitureDataReloadComposer.MODE_DELTA, delta);
                 broadcastToAll(composer);
             }
         } finally {
@@ -177,11 +168,9 @@ public class FurniEditorUpdateFurnidataEvent extends MessageHandler {
         //     name was actually supplied (description-only edits must not blank it).
         //     Kept outside FurnidataLock (independent DB write, like the audit log).
         if (name != null) {
-            try (Connection c = Emulator.getDatabase().getDataSource().getConnection();
-                 PreparedStatement st = c.prepareStatement("UPDATE items_base SET public_name = ? WHERE id = ?")) {
-                st.setString(1, FurnitureTextProvider.sanitize(safeName));
-                st.setInt(2, itemId);
-                st.executeUpdate();
+            try {
+                new FurniEditorRepository(Emulator.getDatabase().getDataSource())
+                        .updatePublicName(itemId, FurnitureTextProvider.sanitize(safeName));
                 // Refresh the in-memory Item cache (Item.fullName) in place — no restart needed.
                 Emulator.getGameEnvironment().getItemManager().loadItems();
             } catch (Exception e) {
@@ -191,19 +180,21 @@ public class FurniEditorUpdateFurnidataEvent extends MessageHandler {
 
         // 6. Audit log (outside lock — DB write, not latency-sensitive)
         FurnidataAuditLog.record(
-            adminId,
-            classname,
-            created ? "create" : "edit",
-            oldName != null ? oldName : "",
-            FurnitureTextProvider.sanitize(safeName),
-            oldDesc,
-            FurnitureTextProvider.sanitize(safeDesc)
-        );
+                adminId,
+                classname,
+                created ? "create" : "edit",
+                oldName != null ? oldName : "",
+                FurnitureTextProvider.sanitize(safeName),
+                oldDesc,
+                FurnitureTextProvider.sanitize(safeDesc));
 
         // 7. Respond success
         this.client.sendResponse(new FurniEditorResultComposer(true, "Furnidata updated", itemId));
-        LOGGER.info("FurniEditorUpdateFurnidataEvent: admin {} updated furnidata for classname '{}' (item {})",
-            adminId, classname, itemId);
+        LOGGER.info(
+                "FurniEditorUpdateFurnidataEvent: admin {} updated furnidata for classname '{}' (item {})",
+                adminId,
+                classname,
+                itemId);
     }
 
     /**
@@ -213,12 +204,10 @@ public class FurniEditorUpdateFurnidataEvent extends MessageHandler {
      * @return the classname string, or {@code null} if not found or on error.
      */
     public static String classnameForItem(int itemId) {
-        try (Connection c = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement st = c.prepareStatement("SELECT item_name FROM items_base WHERE id = ?")) {
-            st.setInt(1, itemId);
-            try (ResultSet rs = st.executeQuery()) {
-                if (rs.next()) return rs.getString("item_name");
-            }
+        try {
+            return new FurniEditorRepository(Emulator.getDatabase().getDataSource())
+                    .findClassname(itemId)
+                    .orElse(null);
         } catch (Exception e) {
             LOGGER.warn("classnameForItem: failed to query items_base for id {}", itemId, e);
         }
@@ -226,7 +215,10 @@ public class FurniEditorUpdateFurnidataEvent extends MessageHandler {
     }
 
     private static void broadcastToAll(FurnitureDataReloadComposer composer) {
-        for (Habbo habbo : Emulator.getGameEnvironment().getHabboManager().getOnlineHabbos().values()) {
+        for (Habbo habbo : Emulator.getGameEnvironment()
+                .getHabboManager()
+                .getOnlineHabbos()
+                .values()) {
             if (habbo.getClient() != null) {
                 habbo.getClient().sendResponse(composer);
             }

@@ -2189,14 +2189,6 @@ D|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSavePageIconEv
 D|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSavePageImagesEvent.java|1
 D|com/eu/habbo/messages/incoming/friends/AcceptFriendRequestEvent.java|1
 D|com/eu/habbo/messages/incoming/friends/FriendRequestEvent.java|1
-D|com/eu/habbo/messages/incoming/furnieditor/FurniEditorBySpriteEvent.java|1
-D|com/eu/habbo/messages/incoming/furnieditor/FurniEditorDeleteEvent.java|1
-D|com/eu/habbo/messages/incoming/furnieditor/FurniEditorDetailEvent.java|1
-D|com/eu/habbo/messages/incoming/furnieditor/FurniEditorInteractionsEvent.java|1
-D|com/eu/habbo/messages/incoming/furnieditor/FurniEditorSearchEvent.java|1
-D|com/eu/habbo/messages/incoming/furnieditor/FurniEditorUpdateEvent.java|1
-D|com/eu/habbo/messages/incoming/furnieditor/FurniEditorUpdateFurnidataEvent.java|2
-D|com/eu/habbo/messages/incoming/furnieditor/FurnidataAuditLog.java|1
 D|com/eu/habbo/messages/incoming/guilds/GuildChangeSettingsEvent.java|1
 D|com/eu/habbo/messages/incoming/guilds/forums/GuildForumListEvent.java|2
 D|com/eu/habbo/messages/incoming/guilds/forums/GuildForumMarkAsReadEvent.java|1
