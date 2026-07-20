@@ -187,11 +187,7 @@ public final class Emulator {
 
                 while (!isShuttingDown && isReady) {
                     try {
-                        String line = reader.readLine();
-
-                        if (line != null) {
-                            ConsoleCommand.handle(line);
-                        }
+                        readConsoleCommand(reader);
                         System.out.println("Waiting for command: ");
                     } catch (Exception e) {
                         if (!(e instanceof IOException && e.getMessage().equals("Bad file descriptor"))) {
@@ -214,6 +210,15 @@ public final class Emulator {
             shutdownAfterStartupFailure();
             throw e;
         }
+    }
+
+    static boolean readConsoleCommand(BufferedReader reader)
+            throws IOException {
+        String line = reader.readLine();
+        if (line != null) {
+            ConsoleCommand.handle(line);
+        }
+        return true;
     }
 
     private static void setBuild() {

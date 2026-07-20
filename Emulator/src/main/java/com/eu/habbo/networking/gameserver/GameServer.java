@@ -93,7 +93,8 @@ public class GameServer extends Server {
         configureTransportOptions(this.webSocketBootstrap);
         this.webSocketBootstrap.childHandler(wsInitializer);
 
-        ChannelFuture wsFuture = this.webSocketBootstrap.bind(wsHost, wsPort);
+        ChannelFuture wsFuture =
+                this.bind(this.webSocketBootstrap, wsHost, wsPort);
 
         while (!wsFuture.isDone()) {
         }

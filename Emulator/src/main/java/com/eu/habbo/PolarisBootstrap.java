@@ -128,7 +128,7 @@ final class PolarisBootstrap {
         configuration.loaded = true;
         configuration.loadFromDatabase();
 
-        int runtimeThreads = configuration.getInt("runtime.threads");
+        int runtimeThreads = resolveRuntimeThreads(configuration);
         PersistenceExecutor persistenceExecutor =
                 PersistenceExecutor.forRuntimeThreads(
                         runtimeThreads);
@@ -141,6 +141,10 @@ final class PolarisBootstrap {
         database.getDataSource().setMinimumIdle(10);
         registerConfigurationDefaults.run();
         return true;
+    }
+
+    static int resolveRuntimeThreads(ConfigurationManager configuration) {
+        return configuration.getInt("runtime.threads");
     }
 
     private boolean initializePlugins() {

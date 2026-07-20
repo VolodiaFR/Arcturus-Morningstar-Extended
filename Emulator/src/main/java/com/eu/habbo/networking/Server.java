@@ -92,7 +92,8 @@ public abstract class Server {
     }
 
     public void connect() {
-        ChannelFuture channelFuture = this.serverBootstrap.bind(this.host, this.port);
+        ChannelFuture channelFuture =
+                this.bind(this.serverBootstrap, this.host, this.port);
 
         while (!channelFuture.isDone()) {
         }
@@ -107,6 +108,11 @@ public abstract class Server {
             channelFuture.channel().closeFuture().addListener(ignored -> this.listening = false);
             LOGGER.info("Started {} on {}:{}", this.name, this.host, this.port);
         }
+    }
+
+    protected ChannelFuture bind(
+            ServerBootstrap bootstrap, String host, int port) {
+        return bootstrap.bind(host, port);
     }
 
     public void stop() {
