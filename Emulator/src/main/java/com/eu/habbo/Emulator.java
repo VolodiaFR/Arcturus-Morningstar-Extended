@@ -52,6 +52,25 @@ public final class Emulator {
     private static final String ANSI_GREEN = "\u001B[32m";
     private static final String ANSI_YELLOW = "\u001B[33m";
     private static final String ANSI_DIM = "\u001B[2m";
+    private static final Pattern DURATION_PATTERN =
+            Pattern.compile(
+                    "(([0-9]*) (second|minute|hour|day|week|month|year))");
+    private static final Map<String, Integer> DURATION_SECONDS = Map.of(
+            "second", 1,
+            "minute", 60,
+            "hour", 3600,
+            "day", 86400,
+            "week", 604800,
+            "month", 2628000,
+            "year", 31536000);
+    private static final Map<String, Integer> CALENDAR_FIELDS = Map.of(
+            "second", Calendar.SECOND,
+            "minute", Calendar.MINUTE,
+            "hour", Calendar.HOUR,
+            "day", Calendar.DAY_OF_MONTH,
+            "week", Calendar.WEEK_OF_MONTH,
+            "month", Calendar.MONTH,
+            "year", Calendar.YEAR);
 
     // Fallback version, only used when running outside a packaged jar (e.g. from
     // the IDE). In production the version comes from the jar manifest below.
@@ -685,55 +704,36 @@ public final class Emulator {
     }
 
     public static int timeStringToSeconds(String timeString) {
-        int totalSeconds = 0;
-
-        Matcher m = Pattern.compile("(([0-9]*) (second|minute|hour|day|week|month|year))").matcher(timeString);
-        Map<String,Integer> map = new HashMap<String,Integer>() {
-            {
-                put("second", 1);
-                put("minute", 60);
-                put("hour", 3600);
-                put("day", 86400);
-                put("week", 604800);
-                put("month", 2628000);
-                put("year", 31536000);
-            }
-        };
+        long totalSeconds = 0L;
+        Matcher m = DURATION_PATTERN.matcher(timeString);
 
         while (m.find()) {
             try {
                 int amount = Integer.parseInt(m.group(2));
                 String what = m.group(3);
-                totalSeconds += amount * map.get(what);
+                totalSeconds += (long) amount
+                        * DURATION_SECONDS.get(what);
+                if (totalSeconds >= Integer.MAX_VALUE) {
+                    return Integer.MAX_VALUE;
+                }
             }
             catch (Exception ignored) { }
         }
 
-        return totalSeconds;
+        return (int) totalSeconds;
     }
 
     public static Date modifyDate(Date date, String timeString) {
         Calendar c = Calendar.getInstance();
         c.setTime(date);
 
-        Matcher m = Pattern.compile("(([0-9]*) (second|minute|hour|day|week|month|year))").matcher(timeString);
-        Map<String, Integer> map = new HashMap<String, Integer>() {
-            {
-                put("second", Calendar.SECOND);
-                put("minute", Calendar.MINUTE);
-                put("hour", Calendar.HOUR);
-                put("day", Calendar.DAY_OF_MONTH);
-                put("week", Calendar.WEEK_OF_MONTH);
-                put("month", Calendar.MONTH);
-                put("year", Calendar.YEAR);
-            }
-        };
+        Matcher m = DURATION_PATTERN.matcher(timeString);
 
         while (m.find()) {
             try {
                 int amount = Integer.parseInt(m.group(2));
                 String what = m.group(3);
-                c.add(map.get(what), amount);
+                c.add(CALENDAR_FIELDS.get(what), amount);
             }
             catch (Exception ignored) { }
         }
@@ -775,7 +775,11 @@ public final class Emulator {
     }
 
     public static int getIntUnixTimestamp() {
-        return (int) (System.currentTimeMillis() / 1000);
+        return (int) getLongUnixTimestamp();
+    }
+
+    public static long getLongUnixTimestamp() {
+        return System.currentTimeMillis() / 1000L;
     }
 
     public static boolean isNumeric(String string)

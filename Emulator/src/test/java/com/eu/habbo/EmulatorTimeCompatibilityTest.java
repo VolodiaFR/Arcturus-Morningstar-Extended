@@ -7,6 +7,7 @@ import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EmulatorTimeCompatibilityTest {
 
@@ -43,6 +44,15 @@ class EmulatorTimeCompatibilityTest {
     @Test
     void legacyDateParserStillReturnsNullForInvalidInput() {
         assertNull(Emulator.stringToDate("not a date"));
+    }
+
+    @Test
+    void longEpochHelperDoesNotUseTheLegacyIntRange() {
+        long before = System.currentTimeMillis() / 1000L;
+        long actual = Emulator.getLongUnixTimestamp();
+        long after = System.currentTimeMillis() / 1000L;
+
+        assertTrue(actual >= before && actual <= after);
     }
 
 }
