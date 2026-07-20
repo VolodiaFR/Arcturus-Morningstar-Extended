@@ -86,6 +86,7 @@ jobs:
   backup-restore:
     name: Migration backup + restore
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     services:
       mariadb:
         image: mariadb:11.4.12@sha256:a794d9eb009e20de605858a11f32f63b4075cbd197c650436f0e3b457e4caed7

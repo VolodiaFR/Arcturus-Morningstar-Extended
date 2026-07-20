@@ -33,8 +33,7 @@ class ReleasePipelineContractTest {
         // the run being a push from this repository, or that fork's commit could be
         // pushed to main and published as a signed release.
         assertTrue(workflow.contains("github.event.workflow_run.event == 'push'"));
-        assertTrue(workflow.contains(
-                "github.event.workflow_run.head_repository.full_name == github.repository"));
+        assertTrue(workflow.contains("github.event.workflow_run.head_repository.full_name == github.repository"));
     }
 
     @Test
