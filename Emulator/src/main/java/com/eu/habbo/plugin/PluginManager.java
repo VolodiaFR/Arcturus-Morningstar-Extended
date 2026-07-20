@@ -12,6 +12,7 @@ import com.eu.habbo.messages.RuntimeValidationReport;
 import com.eu.habbo.plugin.events.emulator.EmulatorConfigUpdatedEvent;
 import com.eu.habbo.plugin.events.emulator.EmulatorLoadedEvent;
 import com.eu.habbo.plugin.events.roomunit.RoomUnitLookAtPointEvent;
+import com.eu.habbo.util.HotelDateTimeUtil;
 import com.eu.habbo.plugin.events.users.UserDisconnectEvent;
 import com.eu.habbo.plugin.events.users.UserExitRoomEvent;
 import com.eu.habbo.plugin.events.users.UserSavedLookEvent;
@@ -49,7 +50,10 @@ public class PluginManager {
         var configuration = Emulator.getConfig();
         boolean runtimeReady = Emulator.isReady;
         new RoomConfigurationBinder(
-                        configuration, value -> Emulator.stringToDate(value).getTime() / 1000)
+                        configuration,
+                        value -> HotelDateTimeUtil.toEpochSecond(
+                                HotelDateTimeUtil.parseDateTimeStrict(
+                                        value)))
                 .bind();
         new WiredConfigurationBinder(configuration).bind();
         new NetworkConfigurationBinder(configuration).bind();
