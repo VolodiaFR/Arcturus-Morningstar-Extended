@@ -41,6 +41,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,6 +99,9 @@ public final class WiredManager {
     /** Whether the engine is initialized */
     private static volatile boolean initialized = false;
 
+    /** Explicit owner for the wired engine, index, and tick lifecycle. */
+    private static final AtomicReference<WiredRuntime> RUNTIME = new AtomicReference<>();
+
     private static final ThreadLocal<Integer> EVENT_HANDLING_DEPTH = new ThreadLocal<>();
     private static final ThreadLocal<ArrayDeque<DeferredEffectEvent>> DEFERRED_EFFECT_EVENTS = new ThreadLocal<>();
 
@@ -144,8 +148,9 @@ public final class WiredManager {
         WiredServices services = DefaultWiredServices.getInstance();
         engine = new WiredEngine(services, stackIndex, maxSteps);
 
-        // Start the centralized tick service (50ms interval)
-        WiredTickService.getInstance().start();
+        WiredRuntime runtime = new WiredRuntime(engine, stackIndex, WiredTickService.getInstance());
+        runtime.start();
+        RUNTIME.set(runtime);
 
         initialized = true;
 
@@ -172,17 +177,20 @@ public final class WiredManager {
 
         LOGGER.info("Shutting down Wired Manager...");
 
-        // Stop the tick service first
-        WiredTickService.getInstance().stop();
-
-        if (stackIndex != null) {
-            stackIndex.clearAll();
-        }
-
-        if (engine != null) {
-            engine.clearUnseenCache();
-            engine.clearAllDiagnostics();
-            engine.clearAllExecutionCaches();
+        WiredRuntime currentRuntime = RUNTIME.get();
+        if (currentRuntime != null) {
+            currentRuntime.shutdown();
+        } else {
+            // Defensive compatibility path for partially initialized legacy state.
+            WiredTickService.getInstance().stop();
+            if (stackIndex != null) {
+                stackIndex.clearAll();
+            }
+            if (engine != null) {
+                engine.clearUnseenCache();
+                engine.clearAllDiagnostics();
+                engine.clearAllExecutionCaches();
+            }
         }
 
         initialized = false;
@@ -194,7 +202,8 @@ public final class WiredManager {
      * @return true if enabled
      */
     public static boolean isEnabled() {
-        return initialized && engine != null;
+        WiredRuntime currentRuntime = RUNTIME.get();
+        return currentRuntime != null ? currentRuntime.isActive() : initialized && engine != null;
     }
 
     /**
@@ -210,7 +219,8 @@ public final class WiredManager {
      * @return the engine, or null if not initialized
      */
     public static WiredEngine getEngine() {
-        return engine;
+        WiredRuntime currentRuntime = RUNTIME.get();
+        return currentRuntime != null ? currentRuntime.engine() : engine;
     }
 
     /**
@@ -218,7 +228,8 @@ public final class WiredManager {
      * @return the stack index, or null if not initialized
      */
     public static RoomWiredStackIndex getStackIndex() {
-        return stackIndex;
+        WiredRuntime currentRuntime = RUNTIME.get();
+        return currentRuntime != null ? currentRuntime.stackIndex() : stackIndex;
     }
 
     /**
@@ -947,7 +958,7 @@ public final class WiredManager {
      * @param tickable the tickable item (e.g., WiredTriggerRepeater)
      */
     public static void registerTickable(Room room, WiredTickable tickable) {
-        WiredTickService.getInstance().register(room, tickable);
+        getTickService().register(room, tickable);
     }
 
     /**
@@ -961,7 +972,7 @@ public final class WiredManager {
      * @param tickable the tickable item
      */
     public static void unregisterTickable(Room room, WiredTickable tickable) {
-        WiredTickService.getInstance().unregister(room, tickable);
+        getTickService().unregister(room, tickable);
     }
 
     /**
@@ -973,7 +984,7 @@ public final class WiredManager {
      * @param room the room
      */
     public static void unregisterRoomTickables(Room room) {
-        WiredTickService.getInstance().unregisterRoom(room);
+        getTickService().unregisterRoom(room);
         if (room != null) {
             room.getFurniVariableManager().clearTransientAssignments();
             room.getRoomVariableManager().clearTransientAssignments();
@@ -987,7 +998,8 @@ public final class WiredManager {
      * @return the WiredTickService
      */
     public static WiredTickService getTickService() {
-        return WiredTickService.getInstance();
+        WiredRuntime currentRuntime = RUNTIME.get();
+        return currentRuntime != null ? currentRuntime.tickService() : WiredTickService.getInstance();
     }
 
     public static boolean isTriggerExecutionAllowed(Room room, HabboItem triggerItem, long timestamp) {
@@ -1031,7 +1043,7 @@ public final class WiredManager {
         if (!room.isLoaded()) return;
 
         // Use the centralized tick service for timer resets
-        WiredTickService.getInstance().resetRoomTimers(room);
+        getTickService().resetRoomTimers(room);
 
         room.setLastTimerReset(Emulator.getIntUnixTimestamp());
     }
