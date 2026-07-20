@@ -21,6 +21,7 @@ import java.util.concurrent.RejectedExecutionException;
 public class WsHandshakeHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOGGER = LoggerFactory.getLogger(WsHandshakeHandler.class);
     public static final String HANDLER_NAME = "wsCryptoHandshake";
+    private static final int MAX_PENDING_HANDSHAKE_FRAMES = 64;
     private final Executor cryptoExecutor;
     private final boolean signingEnabled;
     private KeyPair serverKeyPair;
@@ -28,6 +29,7 @@ public class WsHandshakeHandler extends ChannelInboundHandlerAdapter {
     private boolean helloSent = false;
     private boolean agreementStarted = false;
     private boolean handshakeComplete = false;
+    private java.util.ArrayDeque<ByteBuf> pendingFrames;
 
     public WsHandshakeHandler() {
         this(
@@ -173,6 +175,29 @@ public class WsHandshakeHandler extends ChannelInboundHandlerAdapter {
             return;
         }
 
+        if (agreementStarted) {
+            // Key agreement is running on the crypto pool. The client derives the
+            // session key locally and can start sending AES frames before the
+            // decoder is installed; queue them and replay once finishAgreement
+            // completes, instead of misreading them as handshake frames and
+            // closing the connection.
+            if (!(msg instanceof ByteBuf)) {
+                ctx.fireChannelRead(msg);
+                return;
+            }
+            if (this.pendingFrames == null) {
+                this.pendingFrames = new java.util.ArrayDeque<>();
+            }
+            if (this.pendingFrames.size() >= MAX_PENDING_HANDSHAKE_FRAMES) {
+                LOGGER.warn("[ws-crypto] too many frames during key agreement from {}", clientAddress(ctx));
+                ((ByteBuf) msg).release();
+                ctx.close();
+                return;
+            }
+            this.pendingFrames.add((ByteBuf) msg);
+            return;
+        }
+
         if (!(msg instanceof ByteBuf)) {
             ctx.fireChannelRead(msg);
             return;
@@ -297,11 +322,49 @@ public class WsHandshakeHandler extends ChannelInboundHandlerAdapter {
                 "wsAesEncoder",
                 new WsAesEncoder());
         this.handshakeComplete = true;
+        replayPendingFrames(ctx);
         pipeline.remove(this);
 
         LOGGER.debug(
                 "[ws-crypto] handshake complete for {}",
                 clientAddress(ctx));
+    }
+
+    private void replayPendingFrames(ChannelHandlerContext ctx) {
+        if (this.pendingFrames == null) {
+            return;
+        }
+        // Fire queued frames through the now-installed AES decoder, in arrival
+        // order, while this handler is still in the pipeline so ctx stays valid.
+        java.util.ArrayDeque<ByteBuf> queued = this.pendingFrames;
+        this.pendingFrames = null;
+        try {
+            ByteBuf frame;
+            while ((frame = queued.poll()) != null) {
+                ctx.fireChannelRead(frame);
+            }
+        } finally {
+            ByteBuf leftover;
+            while ((leftover = queued.poll()) != null) {
+                leftover.release();
+            }
+        }
+    }
+
+    private void releasePendingFrames() {
+        if (this.pendingFrames == null) {
+            return;
+        }
+        ByteBuf frame;
+        while ((frame = this.pendingFrames.poll()) != null) {
+            frame.release();
+        }
+        this.pendingFrames = null;
+    }
+
+    @Override
+    public void handlerRemoved(ChannelHandlerContext ctx) {
+        releasePendingFrames();
     }
 
     private static void failAgreement(
