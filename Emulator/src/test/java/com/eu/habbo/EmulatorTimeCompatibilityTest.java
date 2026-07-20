@@ -2,10 +2,12 @@ package com.eu.habbo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
@@ -24,6 +26,15 @@ class EmulatorTimeCompatibilityTest {
     void durationParserSaturatesInsteadOfOverflowing() {
         assertEquals(Integer.MAX_VALUE, Emulator.timeStringToSeconds("100 year"));
         assertEquals(Integer.MAX_VALUE, Emulator.timeStringToSeconds("68 year 10 year"));
+    }
+
+    @Test
+    void durationParserBoundsInvalidDigitRuns() {
+        String invalidDuration = "0".repeat(50_000) + " invalid";
+
+        assertTimeout(
+                Duration.ofMillis(500),
+                () -> assertEquals(0, Emulator.timeStringToSeconds(invalidDuration)));
     }
 
     @Test
