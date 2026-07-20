@@ -27,7 +27,6 @@ import com.eu.habbo.habbohotel.polls.Poll;
 import com.eu.habbo.habbohotel.polls.PollManager;
 import com.eu.habbo.habbohotel.users.DanceType;
 import com.eu.habbo.habbohotel.users.Habbo;
-import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
@@ -149,6 +148,7 @@ public class RoomManager {
     private final ConcurrentHashMap<String, RoomLayoutData> layoutCache;
     private final RoomDirectory roomDirectory;
     private final RoomSearchService roomSearchService;
+    private final RoomModerationService roomModerationService;
     private final ConcurrentHashMap<Integer, Room> activeRooms;
     private final ConcurrentHashMap<Integer, Set<Integer>> roomsByOwner;
     private final AtomicInteger indexedRoomCount;
@@ -179,6 +179,12 @@ public class RoomManager {
         this.roomsByOwner = this.roomDirectory.roomsByOwner();
         this.indexedRoomCount = this.roomDirectory.indexedRoomCount();
         this.roomSearchService = new RoomSearchService(this.activeRooms::values, Duration.ofSeconds(1));
+        this.roomModerationService = new RoomModerationService(
+                this::getRoom,
+                userId -> Emulator.getGameEnvironment().getHabboManager().getHabbo(userId),
+                HabboManager::getOfflineHabboInfo,
+                () -> Emulator.getIntUnixTimestamp(),
+                RoomBan::insert);
 
         this.gameTypes = new ArrayList<>();
 
@@ -1766,49 +1772,7 @@ public class RoomManager {
     }
 
     public void banUserFromRoom(Habbo rights, int userId, int roomId, RoomBanTypes length) {
-        Room room = this.getRoom(roomId);
-
-        if (room == null) return;
-
-        if (rights != null && !room.hasRights(rights)) return;
-
-        if (room.getOwnerId() == userId) return;
-
-        String name = "";
-
-        Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
-        if (habbo != null) {
-            if (habbo.hasPermission(Permission.ACC_UNKICKABLE)) {
-                return;
-            }
-
-            name = habbo.getHabboInfo().getUsername();
-        } else {
-            HabboInfo info = HabboManager.getOfflineHabboInfo(userId);
-
-            if (info != null) {
-                if (info.getRank().hasPermission(Permission.ACC_UNKICKABLE, false)) {
-                    return;
-                }
-                name = info.getUsername();
-            }
-        }
-
-        if (name.isEmpty()) {
-            return;
-        }
-
-        RoomBan roomBan = new RoomBan(roomId, userId, name, Emulator.getIntUnixTimestamp() + length.duration);
-        roomBan.insert();
-
-        room.addRoomBan(roomBan);
-
-        if (habbo != null) {
-            if (habbo.getHabboInfo().getCurrentRoom() == room) {
-                room.removeHabbo(habbo, true);
-                habbo.getClient().sendResponse(new RoomEnterErrorComposer(RoomEnterErrorComposer.ROOM_ERROR_BANNED));
-            }
-        }
+        this.roomModerationService.banUser(rights, userId, roomId, length);
     }
 
     public void registerGameType(Class<? extends Game> gameClass) {

@@ -85,7 +85,11 @@ class RoomModerationBehaviorTest {
                     List.of(Map.of(1, 41, 2, 8)),
                     dataSource.calls().stream()
                             .filter(call -> call.sql().startsWith("INSERT INTO room_bans"))
-                            .map(call -> Map.of(1, call.parameters().get(1), 2, call.parameters().get(2)))
+                            .map(call -> Map.of(
+                                    1,
+                                    call.parameters().get(1),
+                                    2,
+                                    call.parameters().get(2)))
                             .toList());
         }
     }
