@@ -10,6 +10,8 @@ import java.nio.charset.StandardCharsets;
 
 public class ServerMessage {
 
+    private static final int MAX_UNSIGNED_SHORT = 0xFFFF;
+
     private boolean initialized;
 
     private int header;
@@ -115,8 +117,12 @@ public class ServerMessage {
     }
 
     public void appendShort(int obj) {
+        if (obj < Short.MIN_VALUE || obj > MAX_UNSIGNED_SHORT) {
+            throw new IllegalArgumentException("Short value out of range: " + obj);
+        }
+
         try {
-            this.stream.writeShort((short) obj);
+            this.stream.writeShort(obj);
         } catch (IOException e) {
             throw new ServerMessageException(e);
         }
