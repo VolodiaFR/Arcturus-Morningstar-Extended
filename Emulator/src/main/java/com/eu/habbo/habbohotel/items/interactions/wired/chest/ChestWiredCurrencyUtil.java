@@ -1,13 +1,20 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 
+import com.eu.habbo.habbohotel.economy.EconomyLedger;
+import com.eu.habbo.habbohotel.economy.EconomyOperation;
+import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.users.LedgerWalletMutation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Currency helpers shared by wired chest effects and contract transactions.
  */
 public final class ChestWiredCurrencyUtil {
-    private ChestWiredCurrencyUtil() {
-    }
+    private static final Logger LOGGER = LoggerFactory.getLogger(ChestWiredCurrencyUtil.class);
+
+    private ChestWiredCurrencyUtil() {}
 
     public static int getBalance(Habbo habbo, int currencyType) {
         if (habbo == null) {
@@ -30,10 +37,27 @@ public final class ChestWiredCurrencyUtil {
         if (!has(habbo, currencyType, amount)) {
             return false;
         }
-        if (currencyType < 0) {
-            habbo.getHabboInfo().addCredits(-amount);
-        } else {
-            habbo.getHabboInfo().addCurrencyAmount(currencyType, -amount);
+        int ledgerCurrencyType = currencyType < 0 ? EconomyLedger.CREDITS : currencyType;
+        try {
+            LedgerWalletMutation.execute(
+                    habbo,
+                    new EconomyOperation(
+                            EconomyOperationId.create(
+                                    "wired-contract:" + habbo.getHabboInfo().getId()),
+                            habbo.getHabboInfo().getId(),
+                            habbo.getHabboInfo().getId(),
+                            "wired_contract_debit",
+                            "wired.contract.currency",
+                            ledgerCurrencyType,
+                            -amount,
+                            null,
+                            ""));
+        } catch (Exception exception) {
+            LOGGER.error(
+                    "Unable to debit wired contract currency for user {}",
+                    habbo.getHabboInfo().getId(),
+                    exception);
+            return false;
         }
         return true;
     }

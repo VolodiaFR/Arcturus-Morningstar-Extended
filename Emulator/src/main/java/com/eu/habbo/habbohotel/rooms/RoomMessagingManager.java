@@ -2,8 +2,8 @@ package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
+import com.eu.habbo.messages.ServerMessageFrame;
 import com.eu.habbo.messages.outgoing.generic.alerts.GenericAlertComposer;
-
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -24,6 +24,8 @@ public class RoomMessagingManager {
      * Sends a message to all Habbos in the room.
      */
     public void sendComposer(ServerMessage message) {
+        prepareBroadcast(message);
+
         for (Habbo habbo : this.room.getHabbos()) {
             if (habbo.getClient() == null) {
                 continue;
@@ -46,6 +48,7 @@ public class RoomMessagingManager {
             }
 
             responses.add(message);
+            prepareBroadcast(message);
         }
 
         if (responses.isEmpty()) {
@@ -57,7 +60,7 @@ public class RoomMessagingManager {
                 continue;
             }
 
-            habbo.getClient().sendResponses(new ArrayList<>(responses));
+            habbo.getClient().sendResponses(responses);
         }
     }
 
@@ -65,6 +68,8 @@ public class RoomMessagingManager {
      * Sends a message to all Habbos with rights in the room.
      */
     public void sendComposerToHabbosWithRights(ServerMessage message) {
+        prepareBroadcast(message);
+
         for (Habbo habbo : this.room.getHabbos()) {
             if (this.room.hasRights(habbo)) {
                 habbo.getClient().sendResponse(message);
@@ -78,6 +83,8 @@ public class RoomMessagingManager {
      * Sends a pet chat message to all Habbos who don't ignore pets.
      */
     public void petChat(ServerMessage message) {
+        prepareBroadcast(message);
+
         for (Habbo habbo : this.room.getHabbos()) {
             if (!habbo.getHabboStats().ignorePets) {
                 habbo.getClient().sendResponse(message);
@@ -92,6 +99,8 @@ public class RoomMessagingManager {
         if (message == null) {
             return;
         }
+
+        prepareBroadcast(message);
 
         for (Habbo habbo : this.room.getHabbos()) {
             if (habbo == null) {
@@ -110,5 +119,11 @@ public class RoomMessagingManager {
      */
     public void alert(String message) {
         this.sendComposer(new GenericAlertComposer(message).compose());
+    }
+
+    private static void prepareBroadcast(ServerMessage message) {
+        if (message != null) {
+            ServerMessageFrame.prepareBroadcast(message);
+        }
     }
 }

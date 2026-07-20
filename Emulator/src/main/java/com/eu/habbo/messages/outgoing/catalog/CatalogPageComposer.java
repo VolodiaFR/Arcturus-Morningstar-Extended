@@ -11,7 +11,6 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -38,21 +37,24 @@ public class CatalogPageComposer extends MessageComposer {
         this.page.serialize(this.response);
 
         if (this.page instanceof RecentPurchasesLayout) {
-            this.response.appendInt(this.habbo.getHabboStats().getRecentPurchases().size());
+            this.response.appendInt(
+                    this.habbo.getHabboStats().getRecentPurchases().size());
 
-            for (Map.Entry<Integer, CatalogItem> item : this.habbo.getHabboStats().getRecentPurchases().entrySet()) {
+            for (Map.Entry<Integer, CatalogItem> item :
+                    this.habbo.getHabboStats().getRecentPurchases().entrySet()) {
                 item.getValue().serialize(this.response);
             }
         } else {
             this.response.appendInt(this.page.getCatalogItems().size());
-            List<CatalogItem> items = new ArrayList<>(this.page.getCatalogItems().values());
+            List<CatalogItem> items =
+                    new ArrayList<>(this.page.getCatalogItems().values());
             Collections.sort(items);
             for (CatalogItem item : items) {
                 item.serialize(this.response);
             }
         }
         this.response.appendInt(this.offerId);
-        this.response.appendBoolean(false); //acceptSeasonCurrencyAsCredits
+        this.response.appendBoolean(false); // acceptSeasonCurrencyAsCredits
 
         if (this.page instanceof FrontPageFeaturedLayout || this.page instanceof FrontpageLayout) {
             this.serializeExtra(this.response);
@@ -62,9 +64,11 @@ public class CatalogPageComposer extends MessageComposer {
     }
 
     public void serializeExtra(ServerMessage message) {
-        message.appendInt(Emulator.getGameEnvironment().getCatalogManager().getCatalogFeaturedPages().size());
+        List<CatalogFeaturedPage> featuredPages =
+                Emulator.getGameEnvironment().getCatalogManager().getCatalogFeaturedPagesSnapshot();
+        message.appendInt(featuredPages.size());
 
-        for (CatalogFeaturedPage page : Emulator.getGameEnvironment().getCatalogManager().getCatalogFeaturedPages().values()) {
+        for (CatalogFeaturedPage page : featuredPages) {
             page.serialize(message);
         }
     }

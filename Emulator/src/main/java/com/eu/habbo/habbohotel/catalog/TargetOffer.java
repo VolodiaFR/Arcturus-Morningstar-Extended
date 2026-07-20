@@ -1,15 +1,13 @@
 package com.eu.habbo.habbohotel.catalog;
 
-
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.users.cache.HabboOfferPurchase;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class TargetOffer {
-    public static int ACTIVE_TARGET_OFFER_ID = 0;
+    public static volatile int ACTIVE_TARGET_OFFER_ID = 0;
 
     private final int id;
     private final int catalogItem;

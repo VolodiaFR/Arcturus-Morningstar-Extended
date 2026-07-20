@@ -1,14 +1,14 @@
 package com.eu.habbo.threading;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.database.PersistenceExecutor;
 import io.netty.util.concurrent.DefaultThreadFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ThreadPooling {
 
@@ -16,11 +16,17 @@ public class ThreadPooling {
 
     public final int threads;
     private final ScheduledExecutorService scheduledPool;
+    private final PersistenceExecutor persistenceExecutor;
     private volatile boolean canAdd;
 
     public ThreadPooling(Integer threads) {
+        this(threads, null);
+    }
+
+    public ThreadPooling(Integer threads, PersistenceExecutor persistenceExecutor) {
         this.threads = threads;
         this.scheduledPool = new HabboExecutorService(this.threads, new DefaultThreadFactory("HabExec"));
+        this.persistenceExecutor = persistenceExecutor;
         this.canAdd = true;
         LOGGER.info("Thread Pool -> Loaded!");
     }
@@ -44,24 +50,33 @@ public class ThreadPooling {
     public ScheduledFuture<?> run(Runnable run, long delay) {
         try {
             if (this.canAdd) {
-                return this.scheduledPool.schedule(() -> {
-                    try {
-                        run.run();
-                    } catch (Exception e) {
-                        LOGGER.error("Caught exception", e);
-                    }
-                }, delay, TimeUnit.MILLISECONDS);
+                return this.scheduledPool.schedule(
+                        () -> {
+                            try {
+                                run.run();
+                            } catch (Exception e) {
+                                LOGGER.error("Caught exception", e);
+                            }
+                        },
+                        delay,
+                        TimeUnit.MILLISECONDS);
             } else {
-                LOGGER.warn(
-                        "Rejected delayed task during shutdown (delay: {} ms)",
-                        delay
-                );
+                LOGGER.warn("Rejected delayed task during shutdown (delay: {} ms)", delay);
             }
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);
         }
 
         return null;
+    }
+
+    public void runPersistence(Runnable task) {
+        if (this.persistenceExecutor == null) {
+            this.run(task);
+            return;
+        }
+
+        this.persistenceExecutor.execute(task);
     }
 
     public void shutDown() {
@@ -105,13 +120,8 @@ public class ThreadPooling {
             Thread.currentThread().interrupt();
         }
 
-        ShutdownResult result = new ShutdownResult(
-                terminatedGracefully,
-                terminated,
-                cancelledTasks,
-                completedTasks,
-                interrupted
-        );
+        ShutdownResult result =
+                new ShutdownResult(terminatedGracefully, terminated, cancelledTasks, completedTasks, interrupted);
 
         if (terminatedGracefully) {
             LOGGER.info("Threading -> Disposed gracefully (completed tasks: {})", completedTasks);
@@ -119,15 +129,13 @@ public class ThreadPooling {
             LOGGER.warn(
                     "Threading -> Disposed after forced shutdown (completed tasks: {}, cancelled queued tasks: {})",
                     completedTasks,
-                    cancelledTasks
-            );
+                    cancelledTasks);
         } else {
             LOGGER.error(
                     "Threading -> Workers still active after forced shutdown (completed tasks: {}, cancelled queued tasks: {}, interrupted: {})",
                     completedTasks,
                     cancelledTasks,
-                    interrupted
-            );
+                    interrupted);
         }
 
         return result;
@@ -138,9 +146,7 @@ public class ThreadPooling {
             boolean terminated,
             int cancelledTasks,
             long completedTasks,
-            boolean interrupted
-    ) {
-    }
+            boolean interrupted) {}
 
     public void setCanAdd(boolean canAdd) {
         this.canAdd = canAdd;
@@ -149,6 +155,4 @@ public class ThreadPooling {
     public ScheduledExecutorService getService() {
         return this.scheduledPool;
     }
-
-
 }

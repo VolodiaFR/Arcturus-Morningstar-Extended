@@ -1,6 +1,9 @@
 package com.eu.habbo.habbohotel.rooms;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;
@@ -11,11 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class RoomOwnerIndexTest {
 
@@ -95,20 +94,18 @@ class RoomOwnerIndexTest {
 
     @Test
     void unloadKeepsCancellationAndDisposalOrdering() throws Exception {
-        String source = Files.readString(Path.of(
-                "src/main/java/com/eu/habbo/habbohotel/rooms/RoomManager.java"));
-        int unload = source.indexOf("public void unloadRoomsForHabbo");
+        String source =
+                Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/rooms/RoomLifecycleService.java"));
+        int unload = source.indexOf("void unloadRoomsFor");
         int selection = source.indexOf("roomsToUnloadForOwner(ownerId)", unload);
-        int callback = source.indexOf("fireEvent(new RoomUncachedEvent(room))", selection);
+        int callback = source.indexOf("this.uncacheAllowed.test(room)", selection);
         int disposal = source.indexOf("room.dispose()", callback);
-        int untrack = source.indexOf("this.untrackRoomOwner(room)", disposal);
-        int removal = source.indexOf("this.activeRooms.remove(room.getId())", untrack);
+        int removal = source.indexOf("this.remove(room)", disposal);
 
         assertTrue(unload >= 0 && unload < selection);
         assertTrue(selection < callback);
         assertTrue(callback < disposal);
-        assertTrue(disposal < untrack);
-        assertTrue(untrack < removal);
+        assertTrue(disposal < removal);
     }
 
     private static TestRoom eligibleRoom(int id, int ownerId) {
@@ -118,7 +115,7 @@ class RoomOwnerIndexTest {
     private static RoomCategory publicCategory() throws Exception {
         ResultSet row = (ResultSet) Proxy.newProxyInstance(
                 ResultSet.class.getClassLoader(),
-                new Class<?>[]{ResultSet.class},
+                new Class<?>[] {ResultSet.class},
                 (proxy, method, arguments) -> switch (method.getName()) {
                     case "getInt" -> 0;
                     case "getBoolean" -> false;

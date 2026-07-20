@@ -1,28 +1,35 @@
 package com.eu.habbo.networking.gameserver;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.gameclients.GameClientManager;
 import com.eu.habbo.messages.PacketManager;
 import com.eu.habbo.networking.Server;
-import com.eu.habbo.networking.gameserver.decoders.*;
+import com.eu.habbo.networking.ServerBindException;
+import com.eu.habbo.networking.gameserver.decoders.GameByteDecoder;
+import com.eu.habbo.networking.gameserver.decoders.GameByteFrameDecoder;
+import com.eu.habbo.networking.gameserver.decoders.GameClientMessageLogger;
+import com.eu.habbo.networking.gameserver.decoders.GameMessageHandler;
+import com.eu.habbo.networking.gameserver.decoders.GameMessageRateLimit;
+import com.eu.habbo.networking.gameserver.decoders.GamePolicyDecoder;
+import com.eu.habbo.networking.gameserver.decoders.PacketDispatchLatencyHandler;
+import com.eu.habbo.networking.gameserver.decoders.PacketDispatchMarker;
 import com.eu.habbo.networking.gameserver.encoders.GameServerMessageEncoder;
 import com.eu.habbo.networking.gameserver.encoders.GameServerMessageLogger;
 import com.eu.habbo.networking.gameserver.handlers.IdleTimeoutHandler;
+import com.eu.habbo.networking.gameserver.handlers.SustainedUnwritableHandler;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.FixedRecvByteBufAllocator;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LoggingHandler;
+import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
 
 public class GameServer extends Server {
     private static final Logger LOGGER = LoggerFactory.getLogger(GameServer.class);
@@ -34,7 +41,12 @@ public class GameServer extends Server {
     private volatile Channel webSocketChannel;
 
     public GameServer(String host, int port) throws Exception {
-        super("Game Server", host, port, Emulator.getConfig().getInt("io.bossgroup.threads"), Emulator.getConfig().getInt("io.workergroup.threads"));
+        super(
+                "Game Server",
+                host,
+                port,
+                configuration().getInt("io.bossgroup.threads"),
+                configuration().getInt("io.workergroup.threads"));
         this.packetManager = new PacketManager();
         this.gameClientManager = new GameClientManager();
     }
@@ -47,6 +59,10 @@ public class GameServer extends Server {
             @Override
             public void initChannel(SocketChannel ch) throws Exception {
                 ch.pipeline().addLast("logger", new LoggingHandler());
+                ch.pipeline()
+                        .addLast(
+                                "outboundBackpressure",
+                                new SustainedUnwritableHandler(configuredUnwritableTimeoutSeconds(), TimeUnit.SECONDS));
 
                 // Decoders.
                 ch.pipeline().addLast(new GamePolicyDecoder());
@@ -58,6 +74,12 @@ public class GameServer extends Server {
                 }
                 ch.pipeline().addLast("idleEventHandler", new IdleTimeoutHandler(30, 60));
                 ch.pipeline().addLast(new GameMessageRateLimit());
+                ch.pipeline().addLast("packetDispatchMarker", new PacketDispatchMarker());
+                ch.pipeline()
+                        .addLast(
+                                GamePacketExecutionGroup.get(),
+                                "packetDispatchLatency",
+                                new PacketDispatchLatencyHandler());
                 ch.pipeline().addLast(GamePacketExecutionGroup.get(), "gameMessageHandler", new GameMessageHandler());
 
                 // Encoders.
@@ -74,49 +96,48 @@ public class GameServer extends Server {
 
     private void initializeWebSocketServer() {
         this.webSocketListening = false;
-        if (!Emulator.getConfig().getBoolean("ws.enabled", false)) {
+        if (!configuration().getBoolean("ws.enabled", false)) {
             return;
         }
 
-        String wsHost = Emulator.getConfig().getValue("ws.host", "0.0.0.0");
-        int wsPort = Emulator.getConfig().getInt("ws.port", 2096);
+        String wsHost = configuration().getValue("ws.host", "0.0.0.0");
+        int wsPort = configuration().getInt("ws.port", 2096);
 
-        WebSocketChannelInitializer wsInitializer = new WebSocketChannelInitializer();
+        WebSocketChannelInitializer wsInitializer = new WebSocketChannelInitializer(
+                configuredUnwritableTimeoutSeconds(), configuration().getInt("http.blocking.pool.size", 8));
 
         this.webSocketBootstrap = new ServerBootstrap();
         this.webSocketBootstrap.group(this.getBossGroup(), this.getWorkerGroup());
         this.webSocketBootstrap.channel(NioServerSocketChannel.class);
-        this.webSocketBootstrap.childOption(ChannelOption.TCP_NODELAY, true);
-        this.webSocketBootstrap.childOption(ChannelOption.SO_KEEPALIVE, true);
-        this.webSocketBootstrap.childOption(ChannelOption.SO_REUSEADDR, true);
-        this.webSocketBootstrap.childOption(ChannelOption.SO_RCVBUF, 4096);
-        this.webSocketBootstrap.childOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(4096));
-        this.webSocketBootstrap.childOption(ChannelOption.ALLOCATOR, allocator());
+        configureTransportOptions(this.webSocketBootstrap);
         this.webSocketBootstrap.childHandler(wsInitializer);
 
-        ChannelFuture wsFuture = this.webSocketBootstrap.bind(wsHost, wsPort);
-
-        while (!wsFuture.isDone()) {
-        }
+        ChannelFuture wsFuture = this.bind(this.webSocketBootstrap, wsHost, wsPort);
+        wsFuture.awaitUninterruptibly();
 
         if (!wsFuture.isSuccess()) {
-            LOGGER.error("Failed to start WebSocket server on {}:{}", wsHost, wsPort);
+            throw new ServerBindException("WebSocket Server", wsHost, wsPort, wsFuture.cause());
         } else {
             this.webSocketChannel = wsFuture.channel();
             this.webSocketListening = true;
             wsFuture.channel().closeFuture().addListener(ignored -> this.webSocketListening = false);
             LOGGER.info("WebSocket server started on {}:{} (SSL: {})", wsHost, wsPort, wsInitializer.isSslEnabled());
 
-            if (com.eu.habbo.Emulator.getConfig().getBoolean("crypto.ws.signing.enabled", false)) {
+            if (configuration().getBoolean("crypto.ws.signing.enabled", false)) {
                 try {
                     com.eu.habbo.networking.gameserver.crypto.CryptoSigningKeyManager.get();
-                    LOGGER.info("[ws-crypto] signing public key ready: {}",
+                    LOGGER.info(
+                            "[ws-crypto] signing public key ready: {}",
                             com.eu.habbo.networking.gameserver.crypto.CryptoSigningKeyManager.publicKeyBase64());
                 } catch (Exception e) {
                     LOGGER.error("[ws-crypto] failed to warm signing keypair", e);
                 }
             }
         }
+    }
+
+    private static ConfigurationManager configuration() {
+        return Emulator.getConfig();
     }
 
     public PacketManager getPacketManager() {
@@ -137,10 +158,12 @@ public class GameServer extends Server {
         if (this.webSocketChannel != null) {
             this.webSocketChannel.close().syncUninterruptibly();
         }
-        for (GameClient client : new ArrayList<>(this.gameClientManager.getSessions().values())) {
+        for (GameClient client :
+                new ArrayList<>(this.gameClientManager.getSessions().values())) {
             this.gameClientManager.forceDisposeClient(client);
         }
 
+        BlockingHttpExecutionGroup.shutdown();
         GamePacketExecutionGroup.shutdown();
 
         super.stop();

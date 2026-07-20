@@ -5,11 +5,11 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.hotelview.HotelViewNextLTDAvailableComposer;
 
 public class HotelViewRequestLTDAvailabilityEvent extends MessageHandler {
-    public static boolean ENABLED = false;
-    public static int TIMESTAMP;
-    public static int ITEM_ID;
-    public static int PAGE_ID;
-    public static String ITEM_NAME;
+    public static volatile boolean ENABLED = false;
+    public static volatile int TIMESTAMP;
+    public static volatile int ITEM_ID;
+    public static volatile int PAGE_ID;
+    public static volatile String ITEM_NAME;
 
     @Override
     public void handle() throws Exception {

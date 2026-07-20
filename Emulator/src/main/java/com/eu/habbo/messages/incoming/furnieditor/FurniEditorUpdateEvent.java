@@ -1,14 +1,12 @@
 package com.eu.habbo.messages.incoming.furnieditor;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.items.editor.FurniEditorRepository;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.furnieditor.FurniEditorResultComposer;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 
 public class FurniEditorUpdateEvent extends MessageHandler {
 
@@ -41,25 +39,10 @@ public class FurniEditorUpdateEvent extends MessageHandler {
             return;
         }
 
-        String sql = "UPDATE items_base SET " + payload.setClauses + " WHERE id = ?";
-
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
-            int idx = 1;
-            for (Object value : payload.values) {
-                if (value instanceof Integer) {
-                    stmt.setInt(idx++, (Integer) value);
-                } else if (value instanceof Double) {
-                    stmt.setDouble(idx++, (Double) value);
-                } else {
-                    stmt.setString(idx++, String.valueOf(value));
-                }
-            }
-            stmt.setInt(idx, id);
-            if (stmt.executeUpdate() == 0) {
-                this.client.sendResponse(new FurniEditorResultComposer(false, "Item not found: " + id));
-                return;
-            }
+        if (!new FurniEditorRepository(Emulator.getDatabase().getDataSource())
+                .updateItem(id, payload.setClauses, payload.values)) {
+            this.client.sendResponse(new FurniEditorResultComposer(false, "Item not found: " + id));
+            return;
         }
 
         // Reload emulator item definitions

@@ -1,24 +1,24 @@
 package com.eu.habbo.messages.incoming.crafting;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class CraftingCraftSecretContractTest {
     private static String source() throws Exception {
-        return Files.readString(Path.of("src/main/java/com/eu/habbo/messages/incoming/crafting/CraftingCraftSecretEvent.java"));
+        return Files.readString(
+                Path.of("src/main/java/com/eu/habbo/messages/incoming/crafting/CraftingCraftSecretEvent.java"));
     }
 
     @Test
     void rejectsInvalidIngredientCountsBeforeReadingItemIds() throws Exception {
-        String source = source();
+        String source = source().replaceAll("\\s+", "");
 
-        int countRead = source.indexOf("int count = this.packet.readInt()");
-        int guard = source.indexOf("count <= 0 || !PacketGuard.isValidIntList(", countRead);
-        int loop = source.indexOf("for (int i = 0; i < count; i++)", guard);
+        int countRead = source.indexOf("intcount=this.packet.readInt()");
+        int guard = source.indexOf("count<=0||!PacketGuard.isValidIntList(", countRead);
+        int loop = source.indexOf("for(inti=0;i<count;i++)", guard);
 
         assertTrue(countRead > -1, "secret crafting must read the client supplied ingredient count");
         assertTrue(guard > countRead, "secret crafting must validate the ingredient count");
@@ -27,14 +27,16 @@ class CraftingCraftSecretContractTest {
 
     @Test
     void rejectsDuplicateIngredientItemsBeforeRecipeLookup() throws Exception {
-        String source = source();
+        String source = source().replaceAll("\\s+", "");
 
-        int setDeclaration = source.indexOf("Set<HabboItem> habboItems = Collections.newSetFromMap(new IdentityHashMap<>())");
-        int duplicateGuard = source.indexOf("habboItem == null || !habboItems.add(habboItem)", setDeclaration);
-        int recipeLookup = source.indexOf("CraftingRecipe recipe = altar.getRecipe(items)", duplicateGuard);
+        int setDeclaration =
+                source.indexOf("Set<HabboItem>habboItems=Collections.newSetFromMap(newIdentityHashMap<>())");
+        int duplicateGuard = source.indexOf("habboItem==null||!habboItems.add(habboItem)", setDeclaration);
+        int recipeLookup = source.indexOf("CraftingReciperecipe=altar.getRecipe(items)", duplicateGuard);
 
         assertTrue(setDeclaration > -1, "secret crafting should track unique inventory items");
         assertTrue(duplicateGuard > setDeclaration, "secret crafting must reject duplicate item ids");
-        assertTrue(recipeLookup > duplicateGuard, "duplicate rejection must happen before recipe lookup/reward creation");
+        assertTrue(
+                recipeLookup > duplicateGuard, "duplicate rejection must happen before recipe lookup/reward creation");
     }
 }

@@ -2,25 +2,25 @@ package com.eu.habbo.habbohotel.catalog.marketplace;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.economy.EconomyLedger;
+import com.eu.habbo.habbohotel.economy.EconomyMutationResult;
 import com.eu.habbo.habbohotel.economy.EconomyOperation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class MarketPlacePurchaseTransaction {
     private static final Logger LOGGER = LoggerFactory.getLogger(MarketPlacePurchaseTransaction.class);
-    private static final String SELL_OFFER = "UPDATE marketplace_items SET state = 2, sold_timestamp = ? WHERE id = ? AND state = 1";
-    private static final String TRANSFER_ITEM =
-            "UPDATE items SET user_id = ? WHERE id = ? AND user_id = -1";
+    private static final String SELL_OFFER =
+            "UPDATE marketplace_items SET state = 2, sold_timestamp = ? WHERE id = ? AND state = 1";
+    private static final String TRANSFER_ITEM = "UPDATE items SET user_id = ? WHERE id = ? AND user_id = -1";
 
-    private MarketPlacePurchaseTransaction() {
-    }
+    private MarketPlacePurchaseTransaction() {}
 
-    static boolean commit(int offerId, int itemId, int buyerId, int currencyType, int charge, int soldTimestamp) {
-        if (offerId <= 0 || itemId <= 0 || buyerId <= 0 || charge <= 0) return false;
+    static EconomyMutationResult commit(
+            int offerId, int itemId, int buyerId, int currencyType, int charge, int soldTimestamp) {
+        if (offerId <= 0 || itemId <= 0 || buyerId <= 0 || charge <= 0) return null;
 
         Connection connection = null;
         try {
@@ -30,32 +30,42 @@ final class MarketPlacePurchaseTransaction {
             if (!executeOfferSale(connection, offerId, soldTimestamp)
                     || !executeItemTransfer(connection, itemId, buyerId)) {
                 connection.rollback();
-                return false;
+                return null;
             }
 
-            EconomyLedger.apply(connection, new EconomyOperation(
-                    "marketplace:offer:" + offerId + ":buyer",
-                    buyerId,
-                    buyerId,
-                    "marketplace_purchase",
-                    "catalog.marketplace.buy",
-                    currencyType < 0 ? EconomyLedger.CREDITS : currencyType,
-                    -charge,
-                    itemId,
-                    "offerId=" + offerId));
+            EconomyMutationResult walletMutation = EconomyLedger.apply(
+                    connection,
+                    new EconomyOperation(
+                            "marketplace:offer:" + offerId + ":buyer",
+                            buyerId,
+                            buyerId,
+                            "marketplace_purchase",
+                            "catalog.marketplace.buy",
+                            currencyType < 0 ? EconomyLedger.CREDITS : currencyType,
+                            -charge,
+                            itemId,
+                            "offerId=" + offerId));
 
             connection.commit();
-            return true;
+            return walletMutation;
         } catch (SQLException e) {
             if (connection != null) {
-                try { connection.rollback(); } catch (SQLException rollbackError) { e.addSuppressed(rollbackError); }
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackError) {
+                    e.addSuppressed(rollbackError);
+                }
             }
             LOGGER.error("Atomic marketplace purchase failed for offer {}", offerId, e);
-            return false;
+            return null;
         } finally {
             if (connection != null) {
-                try { connection.setAutoCommit(true); connection.close(); }
-                catch (SQLException e) { LOGGER.warn("Failed to close marketplace transaction", e); }
+                try {
+                    connection.setAutoCommit(true);
+                    connection.close();
+                } catch (SQLException e) {
+                    LOGGER.warn("Failed to close marketplace transaction", e);
+                }
             }
         }
     }
@@ -75,5 +85,4 @@ final class MarketPlacePurchaseTransaction {
             return statement.executeUpdate() == 1;
         }
     }
-
 }

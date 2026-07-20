@@ -1,11 +1,10 @@
 package com.eu.habbo.monitoring;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class EmulatorHealthWiringContractTest {
 
@@ -23,9 +22,7 @@ class EmulatorHealthWiringContractTest {
 
     @Test
     void gameServerExposesActualWebSocketListenerState() throws Exception {
-        String source = Files.readString(Path.of(
-                "src/main/java/com/eu/habbo/networking/gameserver/GameServer.java"
-        ));
+        String source = Files.readString(Path.of("src/main/java/com/eu/habbo/networking/gameserver/GameServer.java"));
 
         assertTrue(source.contains("private volatile boolean webSocketListening;"));
         assertTrue(source.contains("this.webSocketListening = true;"));
@@ -37,17 +34,16 @@ class EmulatorHealthWiringContractTest {
 
     @Test
     void emuStatsPublishesOneAuthoritativeHealthSnapshot() throws Exception {
-        String source = Files.readString(Path.of(
-                "src/main/java/com/eu/habbo/monitoring/EmulatorStatsService.java"
-        ));
+        String source = Files.readString(Path.of("src/main/java/com/eu/habbo/monitoring/EmulatorStatsService.java"));
+        String compactSource = source.replaceAll("\\s+", "");
 
-        assertTrue(source.contains("HealthCheck.unhealthy(\"database\""));
-        assertTrue(source.contains("HealthCheck.unhealthy(\"tcp\""));
-        assertTrue(source.contains("HealthCheck.unhealthy(\"executor\""));
-        assertTrue(source.contains("HealthCheck.unhealthy(\"runtime\""));
-        assertTrue(source.contains("HealthCheck.unhealthy(\"websocket\""));
-        assertTrue(source.contains("HealthCheck.degraded(\"schedulers\""));
-        assertTrue(source.contains("HealthCheck.degraded(\"jvm\""));
+        assertTrue(compactSource.contains("HealthCheck.unhealthy(\"database\""));
+        assertTrue(compactSource.contains("HealthCheck.unhealthy(\"tcp\""));
+        assertTrue(compactSource.contains("HealthCheck.unhealthy(\"executor\""));
+        assertTrue(compactSource.contains("HealthCheck.unhealthy(\"runtime\""));
+        assertTrue(compactSource.contains("HealthCheck.unhealthy(\"websocket\""));
+        assertTrue(compactSource.contains("HealthCheck.degraded(\"schedulers\""));
+        assertTrue(compactSource.contains("HealthCheck.degraded(\"jvm\""));
         assertTrue(source.contains("public final HealthSnapshot health;"));
         assertTrue(source.contains("health.status.name()"));
     }

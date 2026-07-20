@@ -10,13 +10,14 @@ import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
-
 import java.util.HashMap;
 import java.util.Map;
 
 public class MassGiftCommand extends Command {
     public MassGiftCommand() {
-        super("cmd_massgift", Emulator.getTexts().getValue("commands.keys.cmd_massgift").split(";"));
+        super(
+                "cmd_massgift",
+                Emulator.getTexts().getValue("commands.keys.cmd_massgift").split(";"));
     }
 
     @Override
@@ -27,19 +28,33 @@ public class MassGiftCommand extends Command {
             try {
                 itemId = Integer.parseInt(params[1]);
             } catch (Exception e) {
-                gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_gift.not_a_number"), RoomChatMessageBubbles.ALERT);
+                gameClient
+                        .getHabbo()
+                        .whisper(
+                                Emulator.getTexts().getValue("commands.error.cmd_gift.not_a_number"),
+                                RoomChatMessageBubbles.ALERT);
                 return true;
             }
 
             if (itemId <= 0) {
-                gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_gift.not_a_number"), RoomChatMessageBubbles.ALERT);
+                gameClient
+                        .getHabbo()
+                        .whisper(
+                                Emulator.getTexts().getValue("commands.error.cmd_gift.not_a_number"),
+                                RoomChatMessageBubbles.ALERT);
                 return true;
             }
 
             final Item baseItem = Emulator.getGameEnvironment().getItemManager().getItem(itemId);
 
             if (baseItem == null) {
-                gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_gift.not_found").replace("%itemid%", itemId + ""), RoomChatMessageBubbles.ALERT);
+                gameClient
+                        .getHabbo()
+                        .whisper(
+                                Emulator.getTexts()
+                                        .getValue("commands.error.cmd_gift.not_found")
+                                        .replace("%itemid%", itemId + ""),
+                                RoomChatMessageBubbles.ALERT);
                 return true;
             }
 
@@ -57,26 +72,39 @@ public class MassGiftCommand extends Command {
             keys.put("display", "BUBBLE");
             keys.put("image", "${image.library.url}notifications/gift.gif");
             keys.put("message", Emulator.getTexts().getValue("generic.gift.received.anonymous"));
-            ServerMessage giftNotificiationMessage = new BubbleAlertComposer(BubbleAlertKeys.RECEIVED_BADGE.key, keys).compose();
+            ServerMessage giftNotificiationMessage =
+                    new BubbleAlertComposer(BubbleAlertKeys.RECEIVED_BADGE.key, keys).compose();
+            Map<Integer, Integer> giftFurniture = Emulator.getGameEnvironment()
+                    .getCatalogManager()
+                    .getGiftWrappingSnapshot()
+                    .furniture();
 
             Emulator.getThreading().run(() -> {
-                for (Map.Entry<Integer, Habbo> set : Emulator.getGameEnvironment().getHabboManager().getOnlineHabbos().entrySet()) {
+                for (Map.Entry<Integer, Habbo> set : Emulator.getGameEnvironment()
+                        .getHabboManager()
+                        .getOnlineHabbos()
+                        .entrySet()) {
                     Habbo habbo = set.getValue();
 
-                    HabboItem item = Emulator.getGameEnvironment().getItemManager().createItem(0, baseItem, 0, 0, "");
+                    HabboItem item =
+                            Emulator.getGameEnvironment().getItemManager().createItem(0, baseItem, 0, 0, "");
 
-                    Item giftItem = Emulator.getGameEnvironment().getItemManager().getItem((Integer) Emulator.getGameEnvironment().getCatalogManager().giftFurnis.values().toArray()[Emulator.getRandom().nextInt(Emulator.getGameEnvironment().getCatalogManager().giftFurnis.size())]);
+                    Item giftItem = Emulator.getGameEnvironment()
+                            .getItemManager()
+                            .getItem((Integer) giftFurniture.values()
+                                    .toArray()[Emulator.getRandom().nextInt(giftFurniture.size())]);
 
                     String extraData = "1\t" + item.getId();
                     extraData += "\t0\t0\t0\t" + finalMessage + "\t0\t0";
 
-                    Emulator.getGameEnvironment().getItemManager().createGift(habbo.getHabboInfo().getUsername(), giftItem, extraData, 0, 0);
+                    Emulator.getGameEnvironment()
+                            .getItemManager()
+                            .createGift(habbo.getHabboInfo().getUsername(), giftItem, extraData, 0, 0);
 
                     habbo.getClient().sendResponse(new InventoryRefreshComposer());
                     habbo.getClient().sendResponse(giftNotificiationMessage);
                 }
             });
-
 
             return true;
         }

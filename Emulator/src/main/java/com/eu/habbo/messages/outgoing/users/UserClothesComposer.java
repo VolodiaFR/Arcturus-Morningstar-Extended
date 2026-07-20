@@ -6,8 +6,8 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-
 import java.util.ArrayList;
+import java.util.Map;
 
 public class UserClothesComposer extends MessageComposer {
     private static class ClothEntry {
@@ -25,8 +25,11 @@ public class UserClothesComposer extends MessageComposer {
     private final ArrayList<ClothEntry> clothEntries = new ArrayList<>();
 
     public UserClothesComposer(Habbo habbo) {
+        Map<Integer, ClothItem> clothing =
+                Emulator.getGameEnvironment().getCatalogManager().getClothingSnapshot();
+
         for (int value : habbo.getInventory().getWardrobeComponent().getClothing()) {
-            ClothItem item = Emulator.getGameEnvironment().getCatalogManager().clothing.get(value);
+            ClothItem item = clothing.get(value);
 
             if (item != null) {
                 for (Integer j : item.setId) {
@@ -37,7 +40,7 @@ public class UserClothesComposer extends MessageComposer {
             }
         }
 
-        for (ClothItem item : Emulator.getGameEnvironment().getCatalogManager().clothing.values()) {
+        for (ClothItem item : clothing.values()) {
             if (item != null) {
                 this.clothEntries.add(new ClothEntry(item.name, item.setId));
             }
