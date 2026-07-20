@@ -52,6 +52,16 @@ class ConfigRegistryTest {
                 ConfigRegistry.standard().renderMarkdown());
     }
 
+    @Test
+    void networkWorkerAndBackpressureDefaultsAreTyped() {
+        String reference = ConfigRegistry.standard().renderMarkdown();
+
+        assertTrue(reference.contains("| `http.blocking.pool.size` | integer | `8` |"));
+        assertTrue(reference.contains("| `io.netty.write_buffer.low_water_mark` | integer | `32768` |"));
+        assertTrue(reference.contains("| `io.netty.write_buffer.high_water_mark` | integer | `65536` |"));
+        assertTrue(reference.contains("| `io.netty.unwritable.timeout.seconds` | integer | `10` |"));
+    }
+
     private static Set<String> keys(Path path) throws Exception {
         Set<String> keys = new HashSet<>();
         for (String line : Files.readAllLines(path)) {
