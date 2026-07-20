@@ -10,12 +10,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 final class RoomUnitIndex {
     private final ConcurrentHashMap<Integer, Habbo> habbos = new ConcurrentHashMap<>(3);
-    private final Int2ObjectMap<Habbo> queue =
-            Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
-    private final Int2ObjectMap<Bot> bots =
-            Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
-    private final Int2ObjectMap<Pet> pets =
-            Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
+    private final Int2ObjectMap<Habbo> queue = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
+    private final Int2ObjectMap<Bot> bots = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
+    private final Int2ObjectMap<Pet> pets = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
     private volatile int unitCounter;
 
     ConcurrentHashMap<Integer, Habbo> habbos() {

@@ -20,7 +20,8 @@ class RoomUserVariableRepositoryTest {
         dataSource.rows(ignored -> List.of(row));
 
         RoomUserVariableRepository repository = new RoomUserVariableRepository(dataSource);
-        RoomUserVariableRepository.StoredAssignment assignment = repository.findByUser(44, 7).getFirst();
+        RoomUserVariableRepository.StoredAssignment assignment =
+                repository.findByUser(44, 7).getFirst();
 
         assertEquals(91, assignment.definitionItemId());
         assertEquals(303, assignment.value());
@@ -38,8 +39,7 @@ class RoomUserVariableRepositoryTest {
 
         RoomJdbcTestSupport.SqlCall call = dataSource.calls().getFirst();
         assertEquals(
-                "DELETE FROM room_user_wired_variables "
-                        + "WHERE room_id = ? AND user_id = ? AND variable_item_id = ?",
+                "DELETE FROM room_user_wired_variables " + "WHERE room_id = ? AND user_id = ? AND variable_item_id = ?",
                 call.sql());
         assertEquals(Map.of(1, 44, 2, 7, 3, 91), call.parameters());
     }

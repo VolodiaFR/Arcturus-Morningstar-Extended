@@ -44,23 +44,14 @@ final class RoomUserVariableRepository {
                     int rawValue = set.getInt("value");
                     Integer value = set.wasNull() ? null : rawValue;
                     assignments.add(new StoredAssignment(
-                            set.getInt("variable_item_id"),
-                            value,
-                            set.getInt("created_at"),
-                            set.getInt("updated_at")));
+                            set.getInt("variable_item_id"), value, set.getInt("created_at"), set.getInt("updated_at")));
                 }
             }
         }
         return assignments;
     }
 
-    void upsert(
-            int roomId,
-            int userId,
-            int definitionItemId,
-            Integer value,
-            int createdAt,
-            int updatedAt)
+    void upsert(int roomId, int userId, int definitionItemId, Integer value, int createdAt, int updatedAt)
             throws SQLException {
         try (Connection connection = dataSource.get().getConnection();
                 PreparedStatement statement = connection.prepareStatement(UPSERT_SQL)) {
@@ -80,9 +71,8 @@ final class RoomUserVariableRepository {
 
     void delete(int roomId, int userId, int definitionItemId) throws SQLException {
         try (Connection connection = dataSource.get().getConnection();
-                PreparedStatement statement = connection.prepareStatement(
-                        "DELETE FROM room_user_wired_variables "
-                                + "WHERE room_id = ? AND user_id = ? AND variable_item_id = ?")) {
+                PreparedStatement statement = connection.prepareStatement("DELETE FROM room_user_wired_variables "
+                        + "WHERE room_id = ? AND user_id = ? AND variable_item_id = ?")) {
             statement.setInt(1, roomId);
             statement.setInt(2, userId);
             statement.setInt(3, definitionItemId);
