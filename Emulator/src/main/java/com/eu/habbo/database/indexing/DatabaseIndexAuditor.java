@@ -49,7 +49,10 @@ public final class DatabaseIndexAuditor {
             }
             if (!report.redundantCandidates().isEmpty()) {
                 LOGGER.info(
-                        "Database indexes -> redundant candidates (never removed automatically): {}",
+                        "Database indexes -> {} redundant candidate(s) identified (never removed automatically; enable debug.mode to list them)",
+                        report.redundantCandidates().size());
+                LOGGER.debug(
+                        "Database indexes -> redundant candidates: {}",
                         report.redundantCandidates());
             }
         } catch (SQLException | RuntimeException error) {
