@@ -2214,9 +2214,6 @@ D|com/eu/habbo/messages/incoming/housekeeping/HousekeepingSetHcSubscriptionEvent
 D|com/eu/habbo/messages/incoming/housekeeping/HousekeepingSetUserRankEvent.java|2
 D|com/eu/habbo/messages/incoming/housekeeping/HousekeepingTradeLockUserEvent.java|1
 D|com/eu/habbo/messages/incoming/housekeeping/HousekeepingTransferRoomOwnershipEvent.java|1
-D|com/eu/habbo/messages/incoming/inventory/nickicons/PurchaseNickIconEvent.java|1
-D|com/eu/habbo/messages/incoming/inventory/prefixes/PurchaseCatalogPrefixEvent.java|1
-D|com/eu/habbo/messages/incoming/inventory/prefixes/PurchasePrefixEvent.java|1
 D|com/eu/habbo/messages/incoming/navigator/RequestDeleteRoomEvent.java|1
 D|com/eu/habbo/messages/incoming/polls/AnswerPollEvent.java|1
 D|com/eu/habbo/messages/incoming/polls/CancelPollEvent.java|1

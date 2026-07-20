@@ -12,8 +12,7 @@ class PurchasePrefixEventTest {
     @Test
     void customPrefixShapeRulesRetainLegacyBehavior() throws Exception {
         PurchasePrefixEvent event = new PurchasePrefixEvent();
-        Method containsControlChars =
-                PurchasePrefixEvent.class.getDeclaredMethod("containsControlChars", String.class);
+        Method containsControlChars = PurchasePrefixEvent.class.getDeclaredMethod("containsControlChars", String.class);
         Method isValidIcon = PurchasePrefixEvent.class.getDeclaredMethod("isValidIcon", String.class);
         Method isAllowedFont = PurchasePrefixEvent.class.getDeclaredMethod("isAllowedFont", String.class);
         Method isAllowedEffect = PurchasePrefixEvent.class.getDeclaredMethod("isAllowedEffect", String.class);
