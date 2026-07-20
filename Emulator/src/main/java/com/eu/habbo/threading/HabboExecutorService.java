@@ -1,8 +1,5 @@
 package com.eu.habbo.threading;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -11,15 +8,14 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HabboExecutorService extends ScheduledThreadPoolExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(HabboExecutorService.class);
 
     public HabboExecutorService(int corePoolSize, ThreadFactory threadFactory) {
-        super(
-                corePoolSize,
-                threadFactory,
-                RejectedExecutionHandlerImpl.aborting());
+        super(corePoolSize, threadFactory, RejectedExecutionHandlerImpl.aborting());
     }
 
     @Override

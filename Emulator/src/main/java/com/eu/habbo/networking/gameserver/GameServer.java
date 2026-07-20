@@ -17,10 +17,9 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LoggingHandler;
+import java.util.ArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
 
 public class GameServer extends Server {
     private static final Logger LOGGER = LoggerFactory.getLogger(GameServer.class);
@@ -32,7 +31,12 @@ public class GameServer extends Server {
     private volatile Channel webSocketChannel;
 
     public GameServer(String host, int port) throws Exception {
-        super("Game Server", host, port, Emulator.getConfig().getInt("io.bossgroup.threads"), Emulator.getConfig().getInt("io.workergroup.threads"));
+        super(
+                "Game Server",
+                host,
+                port,
+                Emulator.getConfig().getInt("io.bossgroup.threads"),
+                Emulator.getConfig().getInt("io.workergroup.threads"));
         this.packetManager = new PacketManager();
         this.gameClientManager = new GameClientManager();
     }
@@ -56,13 +60,12 @@ public class GameServer extends Server {
                 }
                 ch.pipeline().addLast("idleEventHandler", new IdleTimeoutHandler(30, 60));
                 ch.pipeline().addLast(new GameMessageRateLimit());
-                ch.pipeline().addLast(
-                        "packetDispatchMarker",
-                        new PacketDispatchMarker());
-                ch.pipeline().addLast(
-                        GamePacketExecutionGroup.get(),
-                        "packetDispatchLatency",
-                        new PacketDispatchLatencyHandler());
+                ch.pipeline().addLast("packetDispatchMarker", new PacketDispatchMarker());
+                ch.pipeline()
+                        .addLast(
+                                GamePacketExecutionGroup.get(),
+                                "packetDispatchLatency",
+                                new PacketDispatchLatencyHandler());
                 ch.pipeline().addLast(GamePacketExecutionGroup.get(), "gameMessageHandler", new GameMessageHandler());
 
                 // Encoders.
@@ -94,16 +97,11 @@ public class GameServer extends Server {
         configureTransportOptions(this.webSocketBootstrap);
         this.webSocketBootstrap.childHandler(wsInitializer);
 
-        ChannelFuture wsFuture =
-                this.bind(this.webSocketBootstrap, wsHost, wsPort);
+        ChannelFuture wsFuture = this.bind(this.webSocketBootstrap, wsHost, wsPort);
         wsFuture.awaitUninterruptibly();
 
         if (!wsFuture.isSuccess()) {
-            throw new ServerBindException(
-                    "WebSocket Server",
-                    wsHost,
-                    wsPort,
-                    wsFuture.cause());
+            throw new ServerBindException("WebSocket Server", wsHost, wsPort, wsFuture.cause());
         } else {
             this.webSocketChannel = wsFuture.channel();
             this.webSocketListening = true;
@@ -113,7 +111,8 @@ public class GameServer extends Server {
             if (com.eu.habbo.Emulator.getConfig().getBoolean("crypto.ws.signing.enabled", false)) {
                 try {
                     com.eu.habbo.networking.gameserver.crypto.CryptoSigningKeyManager.get();
-                    LOGGER.info("[ws-crypto] signing public key ready: {}",
+                    LOGGER.info(
+                            "[ws-crypto] signing public key ready: {}",
                             com.eu.habbo.networking.gameserver.crypto.CryptoSigningKeyManager.publicKeyBase64());
                 } catch (Exception e) {
                     LOGGER.error("[ws-crypto] failed to warm signing keypair", e);
@@ -140,7 +139,8 @@ public class GameServer extends Server {
         if (this.webSocketChannel != null) {
             this.webSocketChannel.close().syncUninterruptibly();
         }
-        for (GameClient client : new ArrayList<>(this.gameClientManager.getSessions().values())) {
+        for (GameClient client :
+                new ArrayList<>(this.gameClientManager.getSessions().values())) {
             this.gameClientManager.forceDisposeClient(client);
         }
 

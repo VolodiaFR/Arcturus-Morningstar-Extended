@@ -1,11 +1,11 @@
 package com.eu.habbo;
 
-import com.eu.habbo.core.ConfigurationManager;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import com.eu.habbo.core.ConfigurationManager;
+import org.junit.jupiter.api.Test;
 
 class PolarisBootstrapRuntimeThreadsTest {
 

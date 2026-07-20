@@ -1,9 +1,6 @@
 package com.eu.habbo.util;
 
 import com.eu.habbo.Emulator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -11,18 +8,17 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.ResolverStyle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class HotelDateTimeUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(HotelDateTimeUtil.class);
     private static final String CONFIG_KEY = "hotel.timezone";
     private static final DateTimeFormatter STRICT_TIMESTAMP_FORMAT =
-            DateTimeFormatter.ofPattern(
-                            "uuuu-MM-dd HH:mm:ss")
-                    .withResolverStyle(ResolverStyle.STRICT);
+            DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss").withResolverStyle(ResolverStyle.STRICT);
     private static volatile String lastInvalidTimezoneId = null;
 
-    private HotelDateTimeUtil() {
-    }
+    private HotelDateTimeUtil() {}
 
     public static String getTimezoneId() {
         return getZoneId().getId();
@@ -30,7 +26,8 @@ public final class HotelDateTimeUtil {
 
     public static ZoneId getZoneId() {
         String configuredZoneId = Emulator.getConfig() != null
-                ? Emulator.getConfig().getValue(CONFIG_KEY, ZoneId.systemDefault().getId())
+                ? Emulator.getConfig()
+                        .getValue(CONFIG_KEY, ZoneId.systemDefault().getId())
                 : ZoneId.systemDefault().getId();
 
         try {
@@ -38,7 +35,11 @@ public final class HotelDateTimeUtil {
             return ZoneId.of(configuredZoneId.trim());
         } catch (Exception e) {
             if (!configuredZoneId.equals(lastInvalidTimezoneId)) {
-                LOGGER.warn("Invalid {} '{}', falling back to system timezone '{}'.", CONFIG_KEY, configuredZoneId, ZoneId.systemDefault().getId());
+                LOGGER.warn(
+                        "Invalid {} '{}', falling back to system timezone '{}'.",
+                        CONFIG_KEY,
+                        configuredZoneId,
+                        ZoneId.systemDefault().getId());
                 lastInvalidTimezoneId = configuredZoneId;
             }
             return ZoneId.systemDefault();
@@ -65,9 +66,7 @@ public final class HotelDateTimeUtil {
         return dateTime.atZone(getZoneId()).toEpochSecond();
     }
 
-    public static LocalDateTime parseDateTimeStrict(
-            String value) {
-        return LocalDateTime.parse(
-                value, STRICT_TIMESTAMP_FORMAT);
+    public static LocalDateTime parseDateTimeStrict(String value) {
+        return LocalDateTime.parse(value, STRICT_TIMESTAMP_FORMAT);
     }
 }

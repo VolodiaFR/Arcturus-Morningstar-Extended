@@ -1,19 +1,17 @@
 package com.eu.habbo;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import org.junit.jupiter.api.Test;
 
 class EmulatorStartupConfigDefaultsTest {
 
     @Test
     void registersStartupConfigDefaultsBeforePluginConfigEvent() throws Exception {
-        String source = Files.readString(Path.of(
-                "src/main/java/com/eu/habbo/PolarisBootstrap.java"));
+        String source = Files.readString(Path.of("src/main/java/com/eu/habbo/PolarisBootstrap.java"));
 
         int defaults = source.indexOf("registerConfigurationDefaults.run()");
         int plugins = source.indexOf("new PluginManager()");
@@ -37,14 +35,10 @@ class EmulatorStartupConfigDefaultsTest {
     }
 
     @Test
-    void bootstrapDoesNotOverrideOperatorDatabasePoolSizing()
-            throws Exception {
-        String source = Files.readString(Path.of(
-                "src/main/java/com/eu/habbo/PolarisBootstrap.java"));
+    void bootstrapDoesNotOverrideOperatorDatabasePoolSizing() throws Exception {
+        String source = Files.readString(Path.of("src/main/java/com/eu/habbo/PolarisBootstrap.java"));
 
-        assertFalse(source.contains(
-                "database.getDataSource().setMaximumPoolSize"));
-        assertFalse(source.contains(
-                "database.getDataSource().setMinimumIdle"));
+        assertFalse(source.contains("database.getDataSource().setMaximumPoolSize"));
+        assertFalse(source.contains("database.getDataSource().setMinimumIdle"));
     }
 }

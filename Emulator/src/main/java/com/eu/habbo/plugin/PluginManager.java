@@ -12,13 +12,13 @@ import com.eu.habbo.messages.RuntimeValidationReport;
 import com.eu.habbo.plugin.events.emulator.EmulatorConfigUpdatedEvent;
 import com.eu.habbo.plugin.events.emulator.EmulatorLoadedEvent;
 import com.eu.habbo.plugin.events.roomunit.RoomUnitLookAtPointEvent;
-import com.eu.habbo.util.HotelDateTimeUtil;
 import com.eu.habbo.plugin.events.users.UserDisconnectEvent;
 import com.eu.habbo.plugin.events.users.UserExitRoomEvent;
 import com.eu.habbo.plugin.events.users.UserSavedLookEvent;
 import com.eu.habbo.plugin.events.users.UserSavedMottoEvent;
 import com.eu.habbo.plugin.events.users.UserTakeStepEvent;
 import com.eu.habbo.threading.runnables.RoomTrashing;
+import com.eu.habbo.util.HotelDateTimeUtil;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.io.File;
@@ -51,9 +51,7 @@ public class PluginManager {
         boolean runtimeReady = Emulator.isReady;
         new RoomConfigurationBinder(
                         configuration,
-                        value -> HotelDateTimeUtil.toEpochSecond(
-                                HotelDateTimeUtil.parseDateTimeStrict(
-                                        value)))
+                        value -> HotelDateTimeUtil.toEpochSecond(HotelDateTimeUtil.parseDateTimeStrict(value)))
                 .bind();
         new WiredConfigurationBinder(configuration).bind();
         new NetworkConfigurationBinder(configuration).bind();

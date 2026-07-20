@@ -1,14 +1,13 @@
 package com.eu.habbo.database;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.eu.habbo.core.ConfigurationManager;
 import com.zaxxer.hikari.HikariConfig;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class DatabasePoolSizingTest {
 
@@ -22,8 +21,7 @@ class DatabasePoolSizingTest {
                 db.pool.maxsize=37
                 db.pool.minsize=7
                 """);
-        ConfigurationManager configuration =
-                new ConfigurationManager(configFile.toString());
+        ConfigurationManager configuration = new ConfigurationManager(configFile.toString());
         HikariConfig hikari = new HikariConfig();
 
         DatabasePool.applyPoolSizing(hikari, configuration);
@@ -33,12 +31,10 @@ class DatabasePoolSizingTest {
     }
 
     @Test
-    void appliesDocumentedDefaultsWhenSizesAreAbsent()
-            throws Exception {
+    void appliesDocumentedDefaultsWhenSizesAreAbsent() throws Exception {
         Path configFile = this.tempDirectory.resolve("config.ini");
         Files.writeString(configFile, "");
-        ConfigurationManager configuration =
-                new ConfigurationManager(configFile.toString());
+        ConfigurationManager configuration = new ConfigurationManager(configFile.toString());
         HikariConfig hikari = new HikariConfig();
 
         DatabasePool.applyPoolSizing(hikari, configuration);

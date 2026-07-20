@@ -14,10 +14,9 @@ import io.netty.channel.MultiThreadIoEventLoopGroup;
 import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.TimeUnit;
 
 public abstract class Server {
 
@@ -38,7 +37,9 @@ public abstract class Server {
             synchronized (Server.class) {
                 if (sharedAllocator == null) {
                     boolean pooled = Emulator.getConfig() != null
-                            && "true".equalsIgnoreCase(Emulator.getConfig().getValue("io.netty.allocator.pooled", "false"));
+                            && "true"
+                                    .equalsIgnoreCase(
+                                            Emulator.getConfig().getValue("io.netty.allocator.pooled", "false"));
                     sharedAllocator = pooled ? new PooledByteBufAllocator(false) : new UnpooledByteBufAllocator(false);
                     LOGGER.info("Netty ByteBuf allocator: {}", pooled ? "pooled-heap" : "unpooled-heap");
                 }
@@ -65,8 +66,10 @@ public abstract class Server {
 
         // Netty 4.2: NioEventLoopGroup is deprecated in favour of the generic
         // MultiThreadIoEventLoopGroup driven by an IoHandlerFactory (NIO here).
-        this.bossGroup = new MultiThreadIoEventLoopGroup(bossGroupThreads, new DefaultThreadFactory(threadName + "Boss"), NioIoHandler.newFactory());
-        this.workerGroup = new MultiThreadIoEventLoopGroup(workerGroupThreads, new DefaultThreadFactory(threadName + "Worker"), NioIoHandler.newFactory());
+        this.bossGroup = new MultiThreadIoEventLoopGroup(
+                bossGroupThreads, new DefaultThreadFactory(threadName + "Boss"), NioIoHandler.newFactory());
+        this.workerGroup = new MultiThreadIoEventLoopGroup(
+                workerGroupThreads, new DefaultThreadFactory(threadName + "Worker"), NioIoHandler.newFactory());
         this.serverBootstrap = new ServerBootstrap();
     }
 
@@ -76,33 +79,22 @@ public abstract class Server {
         configureTransportOptions(this.serverBootstrap);
     }
 
-    protected static void configureTransportOptions(
-            ServerBootstrap bootstrap) {
+    protected static void configureTransportOptions(ServerBootstrap bootstrap) {
         bootstrap.option(ChannelOption.SO_BACKLOG, 1024);
         bootstrap.childOption(ChannelOption.TCP_NODELAY, true);
         bootstrap.childOption(ChannelOption.SO_KEEPALIVE, true);
         bootstrap.childOption(ChannelOption.SO_REUSEADDR, true);
-        bootstrap.childOption(
-                ChannelOption.RCVBUF_ALLOCATOR,
-                new AdaptiveRecvByteBufAllocator(
-                        1024,
-                        8192,
-                        65536));
+        bootstrap.childOption(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator(1024, 8192, 65536));
         bootstrap.childOption(ChannelOption.ALLOCATOR, allocator());
     }
 
     public void connect() {
-        ChannelFuture channelFuture =
-                this.bind(this.serverBootstrap, this.host, this.port);
+        ChannelFuture channelFuture = this.bind(this.serverBootstrap, this.host, this.port);
         channelFuture.awaitUninterruptibly();
 
         if (!channelFuture.isSuccess()) {
             this.listening = false;
-            throw new ServerBindException(
-                    this.name,
-                    this.host,
-                    this.port,
-                    channelFuture.cause());
+            throw new ServerBindException(this.name, this.host, this.port, channelFuture.cause());
         } else {
             this.serverChannel = channelFuture.channel();
             this.listening = true;
@@ -111,8 +103,7 @@ public abstract class Server {
         }
     }
 
-    protected ChannelFuture bind(
-            ServerBootstrap bootstrap, String host, int port) {
+    protected ChannelFuture bind(ServerBootstrap bootstrap, String host, int port) {
         return bootstrap.bind(host, port);
     }
 
@@ -123,9 +114,11 @@ public abstract class Server {
             this.serverChannel.close().syncUninterruptibly();
         }
         try {
-            this.workerGroup.shutdownGracefully(100, 3000, TimeUnit.MILLISECONDS).sync();
+            this.workerGroup
+                    .shutdownGracefully(100, 3000, TimeUnit.MILLISECONDS)
+                    .sync();
             this.bossGroup.shutdownGracefully(100, 3000, TimeUnit.MILLISECONDS).sync();
-        } catch(InterruptedException e) {
+        } catch (InterruptedException e) {
             LOGGER.error("Exception during {} shutdown... HARD STOP", this.name, e);
             Thread.currentThread().interrupt();
         }
