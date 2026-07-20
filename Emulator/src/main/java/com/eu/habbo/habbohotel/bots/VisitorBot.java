@@ -4,16 +4,16 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.modtool.ModToolRoomVisit;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessage;
 import com.eu.habbo.habbohotel.users.Habbo;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.Set;
 
 public class VisitorBot extends Bot {
-    private static SimpleDateFormat DATE_FORMAT;
+    private static DateTimeFormatter DATE_FORMAT;
     private boolean showedLog = false;
     private Set<ModToolRoomVisit> visits = new HashSet<>(3);
 
@@ -26,7 +26,11 @@ public class VisitorBot extends Bot {
     }
 
     public static void initialise() {
-        DATE_FORMAT = new SimpleDateFormat(Emulator.getConfig().getValue("bots.visitor.dateformat"));
+        initialise(Emulator.getConfig().getValue("bots.visitor.dateformat"));
+    }
+
+    static void initialise(String pattern) {
+        DATE_FORMAT = DateTimeFormatter.ofPattern(pattern).withZone(ZoneId.systemDefault());
     }
 
     @Override
@@ -35,14 +39,15 @@ public class VisitorBot extends Bot {
             if (message.getMessage().equalsIgnoreCase(Emulator.getTexts().getValue("generic.yes"))) {
                 this.showedLog = true;
 
-                String visitMessage = Emulator.getTexts().getValue("bots.visitor.list").replace("%count%", this.visits.size() + "");
+                String visitMessage =
+                        Emulator.getTexts().getValue("bots.visitor.list").replace("%count%", this.visits.size() + "");
 
                 StringBuilder list = new StringBuilder();
                 for (ModToolRoomVisit visit : this.visits) {
                     list.append("\r");
                     list.append(visit.roomName).append(" ");
                     list.append(Emulator.getTexts().getValue("generic.time.at")).append(" ");
-                    list.append(DATE_FORMAT.format(new Date((visit.timestamp * 1000L))));
+                    list.append(formatTimestamp(visit.timestamp));
                 }
 
                 visitMessage = visitMessage.replace("%list%", list.toString());
@@ -57,15 +62,29 @@ public class VisitorBot extends Bot {
     public void onUserEnter(Habbo habbo) {
         if (!this.showedLog) {
             if (habbo.getHabboInfo().getCurrentRoom() != null) {
-                this.visits = Emulator.getGameEnvironment().getModToolManager().getVisitsForRoom(habbo.getHabboInfo().getCurrentRoom(), 10, true, habbo.getHabboInfo().getLastOnline(), Emulator.getIntUnixTimestamp(), habbo.getHabboInfo().getCurrentRoom().getOwnerName());
+                this.visits = Emulator.getGameEnvironment()
+                        .getModToolManager()
+                        .getVisitsForRoom(
+                                habbo.getHabboInfo().getCurrentRoom(),
+                                10,
+                                true,
+                                habbo.getHabboInfo().getLastOnline(),
+                                Emulator.getIntUnixTimestamp(),
+                                habbo.getHabboInfo().getCurrentRoom().getOwnerName());
 
                 if (this.visits.isEmpty()) {
                     this.talk(Emulator.getTexts().getValue("bots.visitor.no_visits"));
                 } else {
-                    this.talk(Emulator.getTexts().getValue("bots.visitor.visits").replace("%count%", this.visits.size() + "").replace("%positive%", Emulator.getTexts().getValue("generic.yes")));
+                    this.talk(Emulator.getTexts()
+                            .getValue("bots.visitor.visits")
+                            .replace("%count%", this.visits.size() + "")
+                            .replace("%positive%", Emulator.getTexts().getValue("generic.yes")));
                 }
             }
         }
     }
 
+    static String formatTimestamp(int timestamp) {
+        return DATE_FORMAT.format(Instant.ofEpochSecond(timestamp));
+    }
 }

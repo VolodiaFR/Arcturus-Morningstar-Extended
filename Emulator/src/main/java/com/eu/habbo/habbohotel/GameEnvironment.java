@@ -37,10 +37,15 @@ import org.slf4j.LoggerFactory;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.Executor;
 
 public class GameEnvironment {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GameEnvironment.class);
+    private final HotelServiceRegistry services =
+            new HotelServiceRegistry();
+    private final Executor persistenceExecutor;
 
     public CreditsScheduler creditsScheduler;
     public PixelScheduler pixelScheduler;
@@ -78,63 +83,198 @@ public class GameEnvironment {
     private TraxEditorManager traxEditorManager;
     private MentionManager mentionManager;
 
+    public GameEnvironment() {
+        this(Runnable::run);
+    }
+
+    public GameEnvironment(Executor persistenceExecutor) {
+        this.persistenceExecutor =
+                Objects.requireNonNull(
+                        persistenceExecutor,
+                        "persistenceExecutor");
+    }
+
     public void load() throws Exception {
         LOGGER.info("GameEnvironment -> Loading...");
 
-        this.permissionsManager = new PermissionsManager();
-        this.habboManager = new HabboManager();
-        this.hotelViewManager = new HotelViewManager();
-        this.itemManager = new ItemManager();
+        this.permissionsManager = this.services.create(
+                "permissions manager",
+                PermissionsManager::new);
+        this.habboManager = this.services.create(
+                "habbo manager",
+                () -> new HabboManager(this.persistenceExecutor),
+                HabboManager::dispose);
+        this.hotelViewManager = this.services.create(
+                "hotel view manager",
+                HotelViewManager::new,
+                HotelViewManager::dispose);
+        this.itemManager = this.services.create(
+                "item manager",
+                ItemManager::new,
+                ItemManager::dispose);
         this.itemManager.load();
-        this.furnitureTextProvider = new FurnitureTextProvider();
+        this.furnitureTextProvider = this.services.create(
+                "furniture text provider",
+                FurnitureTextProvider::new);
         this.furnitureTextProvider.init();
-        this.botManager = new BotManager();
-        this.petManager = new PetManager();
-        this.guildManager = new GuildManager();
-        this.catalogManager = new CatalogManager();
-        this.roomManager = new RoomManager();
-        this.navigatorManager = new NavigatorManager();
-        this.commandHandler = new CommandHandler();
-        this.modToolManager = new ModToolManager();
-        this.modToolSanctions = new ModToolSanctions();
-        this.achievementManager = new AchievementManager();
+        this.botManager = this.services.create(
+                "bot manager",
+                BotManager::new,
+                BotManager::dispose);
+        this.petManager = this.services.create(
+                "pet manager",
+                PetManager::new);
+        this.guildManager = this.services.create(
+                "guild manager",
+                GuildManager::new,
+                GuildManager::dispose);
+        this.catalogManager = this.services.create(
+                "catalog manager",
+                CatalogManager::new,
+                CatalogManager::dispose);
+        this.roomManager = this.services.create(
+                "room manager",
+                () -> new RoomManager(this.persistenceExecutor),
+                RoomManager::dispose);
+        this.services.beforeDispose(
+                "room cycles",
+                () -> this.roomManager.quiesceRoomCycles());
+        this.navigatorManager = this.services.create(
+                "navigator manager",
+                NavigatorManager::new);
+        this.commandHandler = this.services.create(
+                "command handler",
+                CommandHandler::new,
+                CommandHandler::dispose);
+        this.modToolManager = this.services.create(
+                "moderation tools",
+                ModToolManager::new);
+        this.modToolSanctions = this.services.create(
+                "moderation sanctions",
+                ModToolSanctions::new);
+        this.achievementManager = this.services.create(
+                "achievement manager",
+                AchievementManager::new);
         this.achievementManager.reload();
-        this.guideManager = new GuideManager();
-        this.wordFilter = new WordFilter();
-        this.craftingManager = new CraftingManager();
-        this.pollManager = new PollManager();
-        this.calendarManager = new CalendarManager();
-        this.roomChatBubbleManager = new RoomChatBubbleManager();
-        this.googleTranslateManager = new GoogleTranslateManager();
-        this.customBadgeManager = new CustomBadgeManager();
-        this.infostandBackgroundManager = new InfostandBackgroundManager();
-        this.wheelManager = new WheelManager();
-        this.soundboardManager = new SoundboardManager();
-        this.traxEditorManager = new TraxEditorManager();
-        this.mentionManager = new MentionManager();
+        this.guideManager = this.services.create(
+                "guide manager",
+                GuideManager::new);
+        this.wordFilter = this.services.create(
+                "word filter",
+                WordFilter::new);
+        this.craftingManager = this.services.create(
+                "crafting manager",
+                CraftingManager::new,
+                CraftingManager::dispose);
+        this.pollManager = this.services.create(
+                "poll manager",
+                PollManager::new);
+        this.calendarManager = this.services.create(
+                "calendar manager",
+                CalendarManager::new,
+                CalendarManager::dispose);
+        this.roomChatBubbleManager = this.services.create(
+                "room chat bubbles",
+                RoomChatBubbleManager::new);
+        this.googleTranslateManager = this.services.create(
+                "Google Translate cache",
+                GoogleTranslateManager::new,
+                GoogleTranslateManager::clearCache);
+        this.customBadgeManager = this.services.create(
+                "custom badge manager",
+                CustomBadgeManager::new);
+        this.infostandBackgroundManager = this.services.create(
+                "infostand backgrounds",
+                InfostandBackgroundManager::new);
+        this.wheelManager = this.services.create(
+                "wheel manager",
+                WheelManager::new);
+        this.soundboardManager = this.services.create(
+                "soundboard manager",
+                SoundboardManager::new);
+        this.traxEditorManager = this.services.create(
+                "trax editor manager",
+                TraxEditorManager::new);
+        this.mentionManager = this.services.create(
+                "mention manager",
+                MentionManager::new);
 
         this.roomManager.loadPublicRooms();
         this.navigatorManager.loadNavigator();
 
-        this.creditsScheduler = new CreditsScheduler();
+        this.creditsScheduler = this.services.create(
+                "credits scheduler",
+                CreditsScheduler::new);
+        this.services.onDispose(
+                "credits scheduler",
+                () -> {
+                    if (this.creditsScheduler != null) {
+                        this.creditsScheduler.setDisposed(true);
+                    }
+                });
         Emulator.getThreading().run(this.creditsScheduler);
-        this.pixelScheduler = new PixelScheduler();
+        this.pixelScheduler = this.services.create(
+                "pixel scheduler",
+                PixelScheduler::new);
+        this.services.onDispose(
+                "pixel scheduler",
+                () -> {
+                    if (this.pixelScheduler != null) {
+                        this.pixelScheduler.setDisposed(true);
+                    }
+                });
         Emulator.getThreading().run(this.pixelScheduler);
-        this.pointsScheduler = new PointsScheduler();
+        this.pointsScheduler = this.services.create(
+                "points scheduler",
+                PointsScheduler::new);
+        this.services.onDispose(
+                "points scheduler",
+                () -> {
+                    if (this.pointsScheduler != null) {
+                        this.pointsScheduler.setDisposed(true);
+                    }
+                });
         Emulator.getThreading().run(this.pointsScheduler);
-        this.gotwPointsScheduler = new GotwPointsScheduler();
+        this.gotwPointsScheduler = this.services.create(
+                "gotw points scheduler",
+                GotwPointsScheduler::new);
+        this.services.onDispose(
+                "gotw points scheduler",
+                () -> {
+                    if (this.gotwPointsScheduler != null) {
+                        this.gotwPointsScheduler.setDisposed(true);
+                    }
+                });
         Emulator.getThreading().run(this.gotwPointsScheduler);
 
-        this.subscriptionManager = new SubscriptionManager();
+        this.subscriptionManager = this.services.create(
+                "subscription manager",
+                SubscriptionManager::new,
+                SubscriptionManager::dispose);
         this.subscriptionManager.init();
 
-        this.subscriptionScheduler = new SubscriptionScheduler();
+        this.subscriptionScheduler = this.services.create(
+                "subscription scheduler",
+                SubscriptionScheduler::new);
+        this.services.onDispose(
+                "subscription scheduler",
+                () -> {
+                    if (this.subscriptionScheduler != null) {
+                        this.subscriptionScheduler.setDisposed(true);
+                    }
+                });
         Emulator.getThreading().run(this.subscriptionScheduler);
 
         LOGGER.info("GameEnvironment -> Loaded!");
     }
 
     public void dispose() {
+        if (this.services.hasServices()) {
+            this.services.dispose();
+            LOGGER.info("GameEnvironment -> Disposed!");
+            return;
+        }
+
         Map<String, Runnable> steps = new LinkedHashMap<>();
         steps.put("points scheduler", this.pointsScheduler == null
                 ? null

@@ -2,7 +2,13 @@ package com.eu.habbo.habbohotel.bots;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.permissions.Permission;
-import com.eu.habbo.habbohotel.rooms.*;
+import com.eu.habbo.habbohotel.rooms.FurnitureMovementError;
+import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomTile;
+import com.eu.habbo.habbohotel.rooms.RoomTileState;
+import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.RoomUnitType;
+import com.eu.habbo.habbohotel.rooms.RoomUserRotation;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -15,25 +21,26 @@ import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUsersComposer;
 import com.eu.habbo.plugin.events.bots.BotPickUpEvent;
 import com.eu.habbo.plugin.events.bots.BotPlacedEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.lang.reflect.Method;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
-
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BotManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(BotManager.class);
 
-    final private static Map<String, Class<? extends Bot>> botDefenitions = new HashMap<>();
-    public static int MINIMUM_CHAT_SPEED = 7;
-    public static int MAXIMUM_CHAT_SPEED = 604800;
-    public static int MAXIMUM_CHAT_LENGTH = 120;
-    public static int MAXIMUM_NAME_LENGTH = 15;
-    public static int MAXIMUM_BOT_INVENTORY_SIZE = 25;
+    private static final Map<String, Class<? extends Bot>> botDefenitions = new HashMap<>();
+    public static volatile int MINIMUM_CHAT_SPEED = 7;
+    public static volatile int MAXIMUM_CHAT_SPEED = 604800;
+    public static volatile int MAXIMUM_CHAT_LENGTH = 120;
+    public static volatile int MAXIMUM_NAME_LENGTH = 15;
+    public static volatile int MAXIMUM_BOT_INVENTORY_SIZE = 25;
 
     public BotManager() throws Exception {
         long millis = System.currentTimeMillis();
@@ -60,10 +67,15 @@ public class BotManager {
                 m.setAccessible(true);
                 m.invoke(null);
             } catch (NoSuchMethodException e) {
-                LOGGER.info("Bot Manager -> Failed to execute initialise method upon bot type '{}'. No Such Method!", set.getKey());
+                LOGGER.info(
+                        "Bot Manager -> Failed to execute initialise method upon bot type '{}'. No Such Method!",
+                        set.getKey());
                 return false;
             } catch (Exception e) {
-                LOGGER.info("Bot Manager -> Failed to execute initialise method upon bot type '{}'. Error: {}", set.getKey(), e.getMessage());
+                LOGGER.info(
+                        "Bot Manager -> Failed to execute initialise method upon bot type '{}'. Error: {}",
+                        set.getKey(),
+                        e.getMessage());
                 return false;
             }
         }
@@ -89,11 +101,14 @@ public class BotManager {
         }
     }
 
-    public Bot createBot(Connection connection, Map<String, String> data, String type, int ownerId) throws SQLException {
+    public Bot createBot(Connection connection, Map<String, String> data, String type, int ownerId)
+            throws SQLException {
         if (ownerId <= 0) return null;
 
         Bot bot = null;
-        try (PreparedStatement statement = connection.prepareStatement("INSERT INTO bots (user_id, room_id, name, motto, figure, gender, type) VALUES (?, 0, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "INSERT INTO bots (user_id, room_id, name, motto, figure, gender, type) VALUES (?, 0, ?, ?, ?, ?, ?)",
+                Statement.RETURN_GENERATED_KEYS)) {
             statement.setInt(1, ownerId);
             statement.setString(2, data.get("name"));
             statement.setString(3, data.get("motto"));
@@ -103,7 +118,8 @@ public class BotManager {
             statement.execute();
             try (ResultSet set = statement.getGeneratedKeys()) {
                 if (set.next()) {
-                    try (PreparedStatement stmt = connection.prepareStatement("SELECT users.username AS owner_name, bots.* FROM bots LEFT JOIN users ON bots.user_id = users.id WHERE bots.id = ? LIMIT 1")) {
+                    try (PreparedStatement stmt = connection.prepareStatement(
+                            "SELECT users.username AS owner_name, bots.* FROM bots LEFT JOIN users ON bots.user_id = users.id WHERE bots.id = ? LIMIT 1")) {
                         stmt.setInt(1, set.getInt(1));
                         try (ResultSet resultSet = stmt.executeQuery()) {
                             if (resultSet.next()) {
@@ -122,21 +138,27 @@ public class BotManager {
         BotPlacedEvent event = new BotPlacedEvent(bot, location, habbo);
         Emulator.getPluginManager().fireEvent(event);
 
-        if (event.isCancelled())
-            return;
+        if (event.isCancelled()) return;
 
         if (room != null && bot != null && habbo != null) {
-            if (room.getOwnerId() == habbo.getHabboInfo().getId() || habbo.hasPermission(Permission.ACC_ANYROOMOWNER) || habbo.hasPermission(Permission.ACC_PLACEFURNI)) {
-                if (room.getCurrentBots().size() >= Room.MAXIMUM_BOTS && !habbo.hasPermission(Permission.ACC_UNLIMITED_BOTS)) {
+            if (room.getOwnerId() == habbo.getHabboInfo().getId()
+                    || habbo.hasPermission(Permission.ACC_ANYROOMOWNER)
+                    || habbo.hasPermission(Permission.ACC_PLACEFURNI)) {
+                if (room.getCurrentBots().size() >= Room.MAXIMUM_BOTS
+                        && !habbo.hasPermission(Permission.ACC_UNLIMITED_BOTS)) {
                     habbo.getClient().sendResponse(new BotErrorComposer(BotErrorComposer.ROOM_ERROR_MAX_BOTS));
                     return;
                 }
 
-                if (room.hasHabbosAt(location.x, location.y) || (!location.isWalkable() && location.state != RoomTileState.SIT && location.state != RoomTileState.LAY))
-                    return;
+                if (room.hasHabbosAt(location.x, location.y)
+                        || (!location.isWalkable()
+                                && location.state != RoomTileState.SIT
+                                && location.state != RoomTileState.LAY)) return;
 
                 if (room.hasBotsAt(location.x, location.y)) {
-                    habbo.getClient().sendResponse(new BotErrorComposer(BotErrorComposer.ROOM_ERROR_BOTS_SELECTED_TILE_NOT_FREE));
+                    habbo.getClient()
+                            .sendResponse(
+                                    new BotErrorComposer(BotErrorComposer.ROOM_ERROR_BOTS_SELECTED_TILE_NOT_FREE));
                     return;
                 }
 
@@ -174,7 +196,10 @@ public class BotManager {
 
                 bot.cycle(false);
             } else {
-                habbo.getClient().sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, FurnitureMovementError.NO_RIGHTS.errorCode));
+                habbo.getClient()
+                        .sendResponse(new BubbleAlertComposer(
+                                BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key,
+                                FurnitureMovementError.NO_RIGHTS.errorCode));
             }
         }
     }
@@ -196,16 +221,22 @@ public class BotManager {
             BotPickUpEvent pickedUpEvent = new BotPickUpEvent(bot, habbo);
             Emulator.getPluginManager().fireEvent(pickedUpEvent);
 
-            if (pickedUpEvent.isCancelled())
-                return;
+            if (pickedUpEvent.isCancelled()) return;
 
             Room currentRoom = habbo != null ? habbo.getHabboInfo().getCurrentRoom() : null;
             if (habbo == null
                     || bot.getOwnerId() == habbo.getHabboInfo().getId()
                     || habbo.hasPermission(Permission.ACC_ANYROOMOWNER)
-                    || (currentRoom != null && (currentRoom.getOwnerId() == habbo.getHabboInfo().getId() || habbo.hasPermission(Permission.ACC_PLACEFURNI)))) {
-                if (habbo != null && !habbo.hasPermission(Permission.ACC_UNLIMITED_BOTS) && habbo.getInventory().getBotsComponent().getBots().size() >= BotManager.MAXIMUM_BOT_INVENTORY_SIZE) {
-                    habbo.alert(Emulator.getTexts().getValue("error.bots.max.inventory").replace("%amount%", BotManager.MAXIMUM_BOT_INVENTORY_SIZE + ""));
+                    || (currentRoom != null
+                            && (currentRoom.getOwnerId() == habbo.getHabboInfo().getId()
+                                    || habbo.hasPermission(Permission.ACC_PLACEFURNI)))) {
+                if (habbo != null
+                        && !habbo.hasPermission(Permission.ACC_UNLIMITED_BOTS)
+                        && habbo.getInventory().getBotsComponent().getBots().size()
+                                >= BotManager.MAXIMUM_BOT_INVENTORY_SIZE) {
+                    habbo.alert(Emulator.getTexts()
+                            .getValue("error.bots.max.inventory")
+                            .replace("%amount%", BotManager.MAXIMUM_BOT_INVENTORY_SIZE + ""));
                     return;
                 }
 
@@ -217,7 +248,9 @@ public class BotManager {
                 bot.needsUpdate(true);
                 Emulator.getThreading().run(bot);
 
-                Habbo receiver = habbo == null ? Emulator.getGameEnvironment().getHabboManager().getHabbo(receiverInfo.getId()) : habbo;
+                Habbo receiver = habbo == null
+                        ? Emulator.getGameEnvironment().getHabboManager().getHabbo(receiverInfo.getId())
+                        : habbo;
                 if (receiver != null) {
                     receiver.getInventory().getBotsComponent().addBot(bot);
                     receiver.getClient().sendResponse(new AddBotComposer(bot));
@@ -241,8 +274,7 @@ public class BotManager {
 
             if (botClazz != null)
                 return botClazz.getDeclaredConstructor(ResultSet.class).newInstance(set);
-            else
-                LOGGER.error("Unknown Bot Type: {}", type);
+            else LOGGER.error("Unknown Bot Type: {}", type);
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
         } catch (Exception e) {
@@ -253,7 +285,8 @@ public class BotManager {
     }
 
     public boolean deleteBot(Bot bot) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("DELETE FROM bots WHERE id = ? LIMIT 1")) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement("DELETE FROM bots WHERE id = ? LIMIT 1")) {
             statement.setInt(1, bot.getId());
             return statement.execute();
         } catch (SQLException e) {
@@ -270,9 +303,14 @@ public class BotManager {
                 m.setAccessible(true);
                 m.invoke(null);
             } catch (NoSuchMethodException e) {
-                LOGGER.info("Bot Manager -> Failed to execute dispose method upon bot type '{}'. No Such Method!", set.getKey());
+                LOGGER.info(
+                        "Bot Manager -> Failed to execute dispose method upon bot type '{}'. No Such Method!",
+                        set.getKey());
             } catch (Exception e) {
-                LOGGER.info("Bot Manager -> Failed to execute dispose method upon bot type '{}'. Error: {}", set.getKey(), e.getMessage());
+                LOGGER.info(
+                        "Bot Manager -> Failed to execute dispose method upon bot type '{}'. Error: {}",
+                        set.getKey(),
+                        e.getMessage());
             }
         }
     }

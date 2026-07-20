@@ -448,6 +448,8 @@ public final class EmulatorStatsService {
         previousIncomingBytes = incomingBytes;
         previousOutgoingBytes = outgoingBytes;
         previousTelemetryAt = now;
+        PacketDispatchLatencyMetrics.Snapshot dispatch =
+                PacketDispatchLatencyMetrics.snapshot();
 
         return new NetworkMetrics(
                 Math.max(0D, incomingPacketsPerSecond),
@@ -455,7 +457,11 @@ public final class EmulatorStatsService {
                 Math.max(0D, incomingKilobytesPerSecond),
                 Math.max(0D, outgoingKilobytesPerSecond),
                 incomingPackets,
-                outgoingPackets
+                outgoingPackets,
+                dispatch.samples(),
+                dispatch.averageMs(),
+                dispatch.p95Ms(),
+                dispatch.maxMs()
         );
     }
 
@@ -785,14 +791,46 @@ public final class EmulatorStatsService {
         public final double outgoingKilobytesPerSecond;
         public final long totalIncomingPackets;
         public final long totalOutgoingPackets;
+        public final long dispatchSamples;
+        public final double dispatchAverageMs;
+        public final double dispatchP95Ms;
+        public final double dispatchMaxMs;
 
         public NetworkMetrics(double incomingPacketsPerSecond, double outgoingPacketsPerSecond, double incomingKilobytesPerSecond, double outgoingKilobytesPerSecond, long totalIncomingPackets, long totalOutgoingPackets) {
+            this(
+                    incomingPacketsPerSecond,
+                    outgoingPacketsPerSecond,
+                    incomingKilobytesPerSecond,
+                    outgoingKilobytesPerSecond,
+                    totalIncomingPackets,
+                    totalOutgoingPackets,
+                    0L,
+                    0D,
+                    0D,
+                    0D);
+        }
+
+        public NetworkMetrics(
+                double incomingPacketsPerSecond,
+                double outgoingPacketsPerSecond,
+                double incomingKilobytesPerSecond,
+                double outgoingKilobytesPerSecond,
+                long totalIncomingPackets,
+                long totalOutgoingPackets,
+                long dispatchSamples,
+                double dispatchAverageMs,
+                double dispatchP95Ms,
+                double dispatchMaxMs) {
             this.incomingPacketsPerSecond = incomingPacketsPerSecond;
             this.outgoingPacketsPerSecond = outgoingPacketsPerSecond;
             this.incomingKilobytesPerSecond = incomingKilobytesPerSecond;
             this.outgoingKilobytesPerSecond = outgoingKilobytesPerSecond;
             this.totalIncomingPackets = totalIncomingPackets;
             this.totalOutgoingPackets = totalOutgoingPackets;
+            this.dispatchSamples = dispatchSamples;
+            this.dispatchAverageMs = dispatchAverageMs;
+            this.dispatchP95Ms = dispatchP95Ms;
+            this.dispatchMaxMs = dispatchMaxMs;
         }
     }
 

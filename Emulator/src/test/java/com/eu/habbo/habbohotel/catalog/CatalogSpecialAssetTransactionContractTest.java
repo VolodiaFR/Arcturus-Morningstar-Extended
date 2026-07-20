@@ -1,40 +1,43 @@
 package com.eu.habbo.habbohotel.catalog;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class CatalogSpecialAssetTransactionContractTest {
     private static String source(String relativePath) throws Exception {
-        return Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/" + relativePath));
+        return Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/" + relativePath))
+                .replaceAll("\\s+", "");
     }
 
     @Test
     void specialAssetsAcceptTheOwningTransactionConnection() throws Exception {
-        assertTrue(source("bots/BotManager.java").contains(
-                "createBot(Connection connection, Map<String, String> data, String type, int ownerId)"));
-        assertTrue(source("users/HabboBadge.java").contains("insert(Connection connection)"));
-        assertTrue(source("pets/Pet.java").contains("save(Connection connection)"));
-        assertTrue(source("pets/PetManager.java").contains(
-                "createPet(Connection connection, Item item, String name, String race, String color, GameClient client)"));
-        assertTrue(source("users/inventory/EffectsComponent.java").contains(
-                "persistEffect(Connection connection, int userId, int effectId, int duration)"));
-        assertTrue(source("guilds/GuildManager.java").contains(
-                "persistGuild(Connection connection, int furniId, int guildId)"));
+        assertTrue(source("bots/BotManager.java")
+                .contains("createBot(Connectionconnection,Map<String,String>data,Stringtype,intownerId)"));
+        assertTrue(source("users/HabboBadge.java").contains("insert(Connectionconnection)"));
+        assertTrue(source("pets/Pet.java").contains("save(Connectionconnection)"));
+        assertTrue(source("pets/PetManager.java")
+                .contains(
+                        "createPet(Connectionconnection,Itemitem,Stringname,Stringrace,Stringcolor,GameClientclient)"));
+        assertTrue(source("users/inventory/EffectsComponent.java")
+                .contains("persistEffect(Connectionconnection,intuserId,inteffectId,intduration)"));
+        assertTrue(source("guilds/GuildManager.java")
+                .contains("persistGuild(Connectionconnection,intfurniId,intguildId)"));
     }
 
     @Test
     void connectionAwareMethodsPropagateSqlFailures() throws Exception {
-        assertTrue(source("bots/BotManager.java").contains(
-                "createBot(Connection connection, Map<String, String> data, String type, int ownerId) throws SQLException"));
-        assertTrue(source("users/HabboBadge.java").contains("insert(Connection connection) throws SQLException"));
-        assertTrue(source("pets/Pet.java").contains("save(Connection connection) throws SQLException"));
-        assertTrue(source("users/inventory/EffectsComponent.java").contains(
-                "persistEffect(Connection connection, int userId, int effectId, int duration) throws SQLException"));
-        assertTrue(source("guilds/GuildManager.java").contains(
-                "persistGuild(Connection connection, int furniId, int guildId) throws SQLException"));
+        assertTrue(
+                source("bots/BotManager.java")
+                        .contains(
+                                "createBot(Connectionconnection,Map<String,String>data,Stringtype,intownerId)throwsSQLException"));
+        assertTrue(source("users/HabboBadge.java").contains("insert(Connectionconnection)throwsSQLException"));
+        assertTrue(source("pets/Pet.java").contains("save(Connectionconnection)throwsSQLException"));
+        assertTrue(source("users/inventory/EffectsComponent.java")
+                .contains("persistEffect(Connectionconnection,intuserId,inteffectId,intduration)throwsSQLException"));
+        assertTrue(source("guilds/GuildManager.java")
+                .contains("persistGuild(Connectionconnection,intfurniId,intguildId)throwsSQLException"));
     }
 }

@@ -20,6 +20,11 @@ class RCONServerHandlerContractTest {
         return Files.readString(Path.of("src/main/java/com/eu/habbo/Emulator.java"));
     }
 
+    private static String bootstrapSource() throws Exception {
+        return Files.readString(Path.of(
+                "src/main/java/com/eu/habbo/PolarisBootstrap.java"));
+    }
+
     @Test
     void rconRequestsAreRateLimitedPerRemoteAddress() throws Exception {
         String source = serverSource();
@@ -39,8 +44,10 @@ class RCONServerHandlerContractTest {
     @Test
     void rconRateLimitDefaultsAreRegisteredBeforeServerStarts() throws Exception {
         String source = emulatorSource();
-        int registerIndex = source.indexOf("registerStartupConfigDefaults();");
-        int serverIndex = source.indexOf("new RCONServer");
+        String bootstrap = bootstrapSource();
+        int registerIndex =
+                bootstrap.indexOf("registerConfigurationDefaults.run()");
+        int serverIndex = bootstrap.indexOf("new RCONServer");
 
         assertTrue(registerIndex >= 0, "RCON rate limiting must have a registered default toggle");
         assertTrue(source.contains("register(\"rcon.rate_limit.limit_for_period\", \"60\")"),

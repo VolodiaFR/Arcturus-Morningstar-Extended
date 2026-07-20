@@ -1,17 +1,16 @@
 package com.eu.habbo.habbohotel.catalog;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class AtomicCatalogPurchaseContractTest {
     @Test
     void coordinatorCommitsAssetsAndConditionalChargesTogether() throws Exception {
-        String source = Files.readString(Path.of(
-                "src/main/java/com/eu/habbo/habbohotel/catalog/CatalogPurchaseTransaction.java"));
+        String source = Files.readString(
+                Path.of("src/main/java/com/eu/habbo/habbohotel/catalog/CatalogPurchaseTransaction.java"));
 
         int begin = source.indexOf("connection.setAutoCommit(false)");
         int persist = source.indexOf("work.persist(connection)", begin);
@@ -33,13 +32,13 @@ class AtomicCatalogPurchaseContractTest {
 
     @Test
     void catalogPublishesFurnitureOnlyAfterAtomicPurchaseReturns() throws Exception {
-        String source = Files.readString(Path.of(
-                "src/main/java/com/eu/habbo/habbohotel/catalog/CatalogManager.java"));
+        String source = Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/catalog/CatalogManager.java"))
+                .replaceAll("\\s+", "");
 
         int method = source.indexOf("purchaseFurnitureAtomically(");
         int transaction = source.indexOf("CatalogPurchaseTransaction.execute(", method);
         int inventory = source.indexOf("getItemsComponent().addItems(", transaction);
-        int success = source.indexOf("new PurchaseOKComposer(", transaction);
+        int success = source.indexOf("newPurchaseOKComposer(", transaction);
 
         assertTrue(method > -1);
         assertTrue(transaction > method);
@@ -49,8 +48,8 @@ class AtomicCatalogPurchaseContractTest {
 
     @Test
     void limitedFurnitureReservationUsesThePurchaseConnection() throws Exception {
-        String source = Files.readString(Path.of(
-                "src/main/java/com/eu/habbo/habbohotel/catalog/CatalogLimitedConfiguration.java"));
+        String source = Files.readString(
+                Path.of("src/main/java/com/eu/habbo/habbohotel/catalog/CatalogLimitedConfiguration.java"));
 
         assertTrue(source.contains("limitedSold(Connection connection, int catalogItemId"));
         assertTrue(source.contains("AND number = ? AND user_id = 0 LIMIT 1"));
@@ -59,8 +58,8 @@ class AtomicCatalogPurchaseContractTest {
 
     @Test
     void badgesAndEffectsPublishOnlyAfterTheirTransactionCommits() throws Exception {
-        String source = Files.readString(Path.of(
-                "src/main/java/com/eu/habbo/habbohotel/catalog/CatalogManager.java"));
+        String source = Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/catalog/CatalogManager.java"))
+                .replaceAll("\\s+", "");
 
         int method = source.indexOf("purchaseEntitlementsAtomically(");
         int transaction = source.indexOf("CatalogPurchaseTransaction.execute(", method);
@@ -79,8 +78,8 @@ class AtomicCatalogPurchaseContractTest {
 
     @Test
     void botsAndPetsPublishOnlyAfterTheirTransactionCommits() throws Exception {
-        String source = Files.readString(Path.of(
-                "src/main/java/com/eu/habbo/habbohotel/catalog/CatalogManager.java"));
+        String source = Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/catalog/CatalogManager.java"))
+                .replaceAll("\\s+", "");
 
         int method = source.indexOf("purchaseBotsAndPetsAtomically(");
         int transaction = source.indexOf("CatalogPurchaseTransaction.execute(", method);
@@ -99,10 +98,10 @@ class AtomicCatalogPurchaseContractTest {
 
     @Test
     void guildAndMusicFurnitureUseTheFurnitureTransaction() throws Exception {
-        String source = Files.readString(Path.of(
-                "src/main/java/com/eu/habbo/habbohotel/catalog/CatalogManager.java"));
-        int transaction = source.indexOf("CatalogPurchaseTransaction.execute(",
-                source.indexOf("purchaseFurnitureAtomically("));
+        String source = Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/catalog/CatalogManager.java"))
+                .replaceAll("\\s+", "");
+        int transaction =
+                source.indexOf("CatalogPurchaseTransaction.execute(", source.indexOf("purchaseFurnitureAtomically("));
         int guildPersist = source.indexOf("persistGuild(connection", transaction);
         int musicCreate = source.indexOf("createMusicDiscExtraData(", transaction);
         int inventory = source.indexOf("getItemsComponent().addItems(", transaction);

@@ -1,9 +1,11 @@
 package com.eu.habbo.habbohotel.catalog.marketplace;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.economy.EconomyMutationResult;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.users.LedgerWalletMutation;
 import com.eu.habbo.habbohotel.users.WalletBalanceMath;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.catalog.marketplace.RequestOffersEvent;
@@ -19,9 +21,6 @@ import com.eu.habbo.plugin.events.marketplace.MarketPlaceItemOfferedEvent;
 import com.eu.habbo.plugin.events.marketplace.MarketPlaceItemSoldEvent;
 import com.eu.habbo.plugin.events.users.UserCreditsEvent;
 import com.eu.habbo.plugin.events.users.UserPointsEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -30,23 +29,36 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MarketPlace {
     private static final Logger LOGGER = LoggerFactory.getLogger(MarketPlace.class);
+    private static final String PURCHASE_OFFER_SQL = """
+            SELECT item_id, user_id, price, state
+            FROM marketplace_items
+            WHERE id = ? LIMIT 1
+            """;
+    private static final String PURCHASE_ITEM_SQL = """
+            SELECT id, user_id, room_id, item_id, wall_pos, x, y, z, rot,
+                   extra_data, wired_data, limited_data, guild_id
+            FROM items
+            WHERE id = ? LIMIT 1
+            """;
     public static final int MINIMUM_LISTING_PRICE = 1;
     public static final int MAXIMUM_LISTING_PRICE = 1_000_000_000;
 
-    //Configuration. Loaded from database & updated accordingly.
-    public static boolean MARKETPLACE_ENABLED = true;
+    // Configuration. Loaded from database & updated accordingly.
+    public static volatile boolean MARKETPLACE_ENABLED = true;
 
-    //Currency to use.
-    public static int MARKETPLACE_CURRENCY = 0;
-
+    // Currency to use.
+    public static volatile int MARKETPLACE_CURRENCY = 0;
 
     public static Set<MarketPlaceOffer> getOwnOffers(Habbo habbo) {
         Set<MarketPlaceOffer> offers = new HashSet<>();
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT items_base.type AS type, items.item_id AS base_item_id, items.limited_data AS ltd_data, marketplace_items.* FROM marketplace_items INNER JOIN items ON marketplace_items.item_id = items.id INNER JOIN items_base ON items.item_id = items_base.id WHERE marketplace_items.user_id = ?")) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT items_base.type AS type, items.item_id AS base_item_id, items.limited_data AS ltd_data, marketplace_items.* FROM marketplace_items INNER JOIN items ON marketplace_items.item_id = items.id INNER JOIN items_base ON items.item_id = items_base.id WHERE marketplace_items.user_id = ?")) {
             statement.setInt(1, habbo.getHabboInfo().getId());
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
@@ -60,7 +72,6 @@ public class MarketPlace {
         return offers;
     }
 
-
     public static void takeBackItem(Habbo habbo, int offerId) {
         MarketPlaceOffer offer = habbo.getInventory().getOffer(offerId);
 
@@ -68,17 +79,21 @@ public class MarketPlace {
             return;
         }
 
-        if (!Emulator.getPluginManager().fireEvent(new MarketPlaceItemCancelledEvent(offer)).isCancelled()) {
+        if (!Emulator.getPluginManager()
+                .fireEvent(new MarketPlaceItemCancelledEvent(offer))
+                .isCancelled()) {
             takeBackItem(habbo, offer);
         }
     }
-
 
     private static void takeBackItem(Habbo habbo, MarketPlaceOffer offer) {
         if (offer != null && habbo.getInventory().getMarketplaceItems().contains(offer)) {
             RequestOffersEvent.cachedResults.clear();
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
-                try (PreparedStatement ownerCheck = connection.prepareStatement("SELECT user_id FROM marketplace_items WHERE id = ?", ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
+                try (PreparedStatement ownerCheck = connection.prepareStatement(
+                        "SELECT user_id FROM marketplace_items WHERE id = ?",
+                        ResultSet.TYPE_SCROLL_INSENSITIVE,
+                        ResultSet.CONCUR_READ_ONLY)) {
                     ownerCheck.setInt(1, offer.getOfferId());
                     try (ResultSet ownerSet = ownerCheck.executeQuery()) {
                         ownerSet.last();
@@ -89,28 +104,40 @@ public class MarketPlace {
 
                         ownerSet.first();
                         if (ownerSet.getInt("user_id") != habbo.getHabboInfo().getId()) {
-                            LOGGER.warn("User {} attempted to take back marketplace offer {} owned by user {}", habbo.getHabboInfo().getId(), offer.getOfferId(), ownerSet.getInt("user_id"));
+                            LOGGER.warn(
+                                    "User {} attempted to take back marketplace offer {} owned by user {}",
+                                    habbo.getHabboInfo().getId(),
+                                    offer.getOfferId(),
+                                    ownerSet.getInt("user_id"));
                             return;
                         }
 
-                        try (PreparedStatement statement = connection.prepareStatement("DELETE FROM marketplace_items WHERE id = ? AND state != 2")) {
+                        try (PreparedStatement statement = connection.prepareStatement(
+                                "DELETE FROM marketplace_items WHERE id = ? AND state != 2")) {
                             statement.setInt(1, offer.getOfferId());
                             int count = statement.executeUpdate();
 
                             if (count != 0) {
                                 habbo.getInventory().removeMarketplaceOffer(offer);
-                                try (PreparedStatement updateItems = connection.prepareStatement("UPDATE items SET user_id = ? WHERE id = ? LIMIT 1")) {
+                                try (PreparedStatement updateItems = connection.prepareStatement(
+                                        "UPDATE items SET user_id = ? WHERE id = ? LIMIT 1")) {
                                     updateItems.setInt(1, habbo.getHabboInfo().getId());
                                     updateItems.setInt(2, offer.getSoldItemId());
                                     updateItems.execute();
 
-                                    try (PreparedStatement selectItem = connection.prepareStatement("SELECT * FROM items WHERE id = ? LIMIT 1")) {
+                                    try (PreparedStatement selectItem =
+                                            connection.prepareStatement("SELECT * FROM items WHERE id = ? LIMIT 1")) {
                                         selectItem.setInt(1, offer.getSoldItemId());
                                         try (ResultSet set = selectItem.executeQuery()) {
                                             while (set.next()) {
-                                                HabboItem item = Emulator.getGameEnvironment().getItemManager().loadHabboItem(set);
-                                                habbo.getInventory().getItemsComponent().addItem(item);
-                                                habbo.getClient().sendResponse(new MarketplaceCancelSaleComposer(offer, true));
+                                                HabboItem item = Emulator.getGameEnvironment()
+                                                        .getItemManager()
+                                                        .loadHabboItem(set);
+                                                habbo.getInventory()
+                                                        .getItemsComponent()
+                                                        .addItem(item);
+                                                habbo.getClient()
+                                                        .sendResponse(new MarketplaceCancelSaleComposer(offer, true));
                                                 habbo.getClient().sendResponse(new AddHabboItemComposer(item));
                                                 habbo.getClient().sendResponse(new InventoryRefreshComposer());
                                             }
@@ -128,10 +155,10 @@ public class MarketPlace {
         }
     }
 
-
     public static List<MarketPlaceOffer> getOffers(int minPrice, int maxPrice, String search, int sort) {
         List<MarketPlaceOffer> offers = new ArrayList<>(10);
-        String query = "SELECT B.* FROM marketplace_items a INNER JOIN (SELECT b.item_id AS base_item_id, b.limited_data AS ltd_data, marketplace_items.*, AVG(price) as avg, MIN(marketplace_items.price) as minPrice, MAX(marketplace_items.price) as maxPrice, COUNT(*) as number, (SELECT COUNT(*) FROM marketplace_items c INNER JOIN items as items_b ON c.item_id = items_b.id WHERE state = 2 AND items_b.item_id = base_item_id AND DATE(from_unixtime(sold_timestamp)) = CURDATE()) as sold_count_today FROM marketplace_items INNER JOIN items b ON marketplace_items.item_id = b.id INNER JOIN items_base bi ON b.item_id = bi.id INNER JOIN catalog_items ci ON bi.id = ci.item_ids WHERE price = (SELECT MIN(e.price) FROM marketplace_items e, items d WHERE e.item_id = d.id AND d.item_id = b.item_id AND e.state = 1 AND e.timestamp > ? AND e.price BETWEEN ? AND ? GROUP BY d.item_id) AND state = 1 AND timestamp > ? AND marketplace_items.price BETWEEN ? AND ?";
+        String query =
+                "SELECT B.* FROM marketplace_items a INNER JOIN (SELECT b.item_id AS base_item_id, b.limited_data AS ltd_data, marketplace_items.*, AVG(price) as avg, MIN(marketplace_items.price) as minPrice, MAX(marketplace_items.price) as maxPrice, COUNT(*) as number, (SELECT COUNT(*) FROM marketplace_items c INNER JOIN items as items_b ON c.item_id = items_b.id WHERE state = 2 AND items_b.item_id = base_item_id AND DATE(from_unixtime(sold_timestamp)) = CURDATE()) as sold_count_today FROM marketplace_items INNER JOIN items b ON marketplace_items.item_id = b.id INNER JOIN items_base bi ON b.item_id = bi.id INNER JOIN catalog_items ci ON bi.id = ci.item_ids WHERE price = (SELECT MIN(e.price) FROM marketplace_items e, items d WHERE e.item_id = d.id AND d.item_id = b.item_id AND e.state = 1 AND e.timestamp > ? AND e.price BETWEEN ? AND ? GROUP BY d.item_id) AND state = 1 AND timestamp > ? AND marketplace_items.price BETWEEN ? AND ?";
         if (minPrice > 0) {
             query += " AND CEIL(price + (price / 100)) >= ?";
         }
@@ -172,7 +199,8 @@ public class MarketPlace {
 
         query += " LIMIT 250";
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement(query)) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(query)) {
             int paramIndex = 1;
             statement.setInt(paramIndex++, Emulator.getIntUnixTimestamp() - 172800);
             statement.setInt(paramIndex++, MINIMUM_LISTING_PRICE);
@@ -204,9 +232,12 @@ public class MarketPlace {
         return offers;
     }
 
-
     public static void serializeItemInfo(int itemId, ServerMessage message) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT avg(marketplace_items.price) as price, COUNT(*) as sold, (datediff(NOW(), DATE(from_unixtime(marketplace_items.timestamp)))) as day FROM marketplace_items INNER JOIN items ON items.id = marketplace_items.item_id INNER JOIN items_base ON items.item_id = items_base.id WHERE items.limited_data = '0:0' AND marketplace_items.state = 2 AND items_base.sprite_id = ? AND DATE(from_unixtime(marketplace_items.timestamp)) >= NOW() - INTERVAL 30 DAY GROUP BY DATE(from_unixtime(marketplace_items.timestamp))", ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT avg(marketplace_items.price) as price, COUNT(*) as sold, (datediff(NOW(), DATE(from_unixtime(marketplace_items.timestamp)))) as day FROM marketplace_items INNER JOIN items ON items.id = marketplace_items.item_id INNER JOIN items_base ON items.item_id = items_base.id WHERE items.limited_data = '0:0' AND marketplace_items.state = 2 AND items_base.sprite_id = ? AND DATE(from_unixtime(marketplace_items.timestamp)) >= NOW() - INTERVAL 30 DAY GROUP BY DATE(from_unixtime(marketplace_items.timestamp))",
+                        ResultSet.TYPE_SCROLL_INSENSITIVE,
+                        ResultSet.CONCUR_READ_ONLY)) {
             statement.setInt(1, itemId);
 
             message.appendInt(avarageLastXDays(itemId, 7));
@@ -232,10 +263,13 @@ public class MarketPlace {
         }
     }
 
-
     public static int itemsOnSale(int baseItemId) {
         int number = 0;
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT COUNT(*) as number, AVG(price) as avg FROM marketplace_items INNER JOIN items ON marketplace_items.item_id = items.id INNER JOIN items_base ON items.item_id = items_base.id WHERE state = 1 AND timestamp >= ? AND items_base.sprite_id = ?", ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT COUNT(*) as number, AVG(price) as avg FROM marketplace_items INNER JOIN items ON marketplace_items.item_id = items.id INNER JOIN items_base ON items.item_id = items_base.id WHERE state = 1 AND timestamp >= ? AND items_base.sprite_id = ?",
+                        ResultSet.TYPE_SCROLL_INSENSITIVE,
+                        ResultSet.CONCUR_READ_ONLY)) {
             statement.setInt(1, Emulator.getIntUnixTimestamp() - 172800);
             statement.setInt(2, baseItemId);
             try (ResultSet set = statement.executeQuery()) {
@@ -249,10 +283,13 @@ public class MarketPlace {
         return number;
     }
 
-
     private static int avarageLastXDays(int baseItemId, int days) {
         int avg = 0;
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT AVG(price) as avg FROM marketplace_items INNER JOIN items ON marketplace_items.item_id = items.id INNER JOIN items_base ON items.item_id = items_base.id WHERE state = 2 AND DATE(from_unixtime(timestamp)) >= NOW() - INTERVAL ? DAY AND items_base.sprite_id = ?", ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT AVG(price) as avg FROM marketplace_items INNER JOIN items ON marketplace_items.item_id = items.id INNER JOIN items_base ON items.item_id = items_base.id WHERE state = 2 AND DATE(from_unixtime(timestamp)) >= NOW() - INTERVAL ? DAY AND items_base.sprite_id = ?",
+                        ResultSet.TYPE_SCROLL_INSENSITIVE,
+                        ResultSet.CONCUR_READ_ONLY)) {
             statement.setInt(1, days);
             statement.setInt(2, baseItemId);
 
@@ -267,15 +304,15 @@ public class MarketPlace {
         return calculateCommision(avg);
     }
 
-
     public static void buyItem(int offerId, GameClient client) {
         RequestOffersEvent.cachedResults.clear();
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
-            try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM marketplace_items WHERE id = ? LIMIT 1")) {
+            try (PreparedStatement statement = connection.prepareStatement(PURCHASE_OFFER_SQL)) {
                 statement.setInt(1, offerId);
                 try (ResultSet set = statement.executeQuery()) {
                     if (set.next()) {
-                        try (PreparedStatement itemStatement = connection.prepareStatement("SELECT * FROM items WHERE id = ? LIMIT 1", ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
+                        try (PreparedStatement itemStatement = connection.prepareStatement(
+                                PURCHASE_ITEM_SQL, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
                             itemStatement.setInt(1, set.getInt("item_id"));
                             try (ResultSet itemSet = itemStatement.executeQuery()) {
                                 itemSet.first();
@@ -290,14 +327,31 @@ public class MarketPlace {
                                     int price = MarketPlace.calculateCommision(rawPrice);
                                     if (set.getInt("state") != 1) {
                                         sendErrorMessage(client, set.getInt("item_id"), offerId);
-                                    } else if ((MARKETPLACE_CURRENCY == 0 && price > client.getHabbo().getHabboInfo().getCredits()) || (MARKETPLACE_CURRENCY > 0 && price > client.getHabbo().getHabboInfo().getCurrencyAmount(MARKETPLACE_CURRENCY))) {
-                                        client.sendResponse(new MarketplaceBuyErrorComposer(MarketplaceBuyErrorComposer.NOT_ENOUGH_CREDITS, 0, offerId, price));
+                                    } else if ((MARKETPLACE_CURRENCY == 0
+                                                    && price
+                                                            > client.getHabbo()
+                                                                    .getHabboInfo()
+                                                                    .getCredits())
+                                            || (MARKETPLACE_CURRENCY > 0
+                                                    && price
+                                                            > client.getHabbo()
+                                                                    .getHabboInfo()
+                                                                    .getCurrencyAmount(MARKETPLACE_CURRENCY))) {
+                                        client.sendResponse(new MarketplaceBuyErrorComposer(
+                                                MarketplaceBuyErrorComposer.NOT_ENOUGH_CREDITS, 0, offerId, price));
                                     } else {
-                                        Habbo habbo = Emulator.getGameServer().getGameClientManager().getHabbo(set.getInt("user_id"));
-                                        HabboItem item = Emulator.getGameEnvironment().getItemManager().loadHabboItem(itemSet);
+                                        Habbo habbo = Emulator.getGameServer()
+                                                .getGameClientManager()
+                                                .getHabbo(set.getInt("user_id"));
+                                        HabboItem item = Emulator.getGameEnvironment()
+                                                .getItemManager()
+                                                .loadHabboItem(itemSet);
 
-                                        MarketPlaceItemSoldEvent event = new MarketPlaceItemSoldEvent(habbo, client.getHabbo(), item, set.getInt("price"));
-                                        if (Emulator.getPluginManager().fireEvent(event).isCancelled()
+                                        MarketPlaceItemSoldEvent event = new MarketPlaceItemSoldEvent(
+                                                habbo, client.getHabbo(), item, set.getInt("price"));
+                                        if (Emulator.getPluginManager()
+                                                        .fireEvent(event)
+                                                        .isCancelled()
                                                 || !isValidListingPrice(event.price)) {
                                             return;
                                         }
@@ -305,34 +359,56 @@ public class MarketPlace {
                                         int soldTimestamp = Emulator.getIntUnixTimestamp();
                                         event.price = calculateCommision(event.price);
 
-                                        PreparedCharge charge = prepareMarketplaceCharge(client.getHabbo(), event.price);
+                                        PreparedCharge charge =
+                                                prepareMarketplaceCharge(client.getHabbo(), event.price);
                                         if (charge == null) return;
 
-                                        if (!MarketPlacePurchaseTransaction.commit(
-                                                offerId,
-                                                item.getId(),
-                                                client.getHabbo().getHabboInfo().getId(),
-                                                charge.currencyType(),
-                                                -charge.delta(),
-                                                soldTimestamp)) {
-                                            sendErrorMessage(client, item.getBaseItem().getId(), offerId);
+                                        EconomyMutationResult walletMutation =
+                                                LedgerWalletMutation.coordinated(client.getHabbo(), () -> {
+                                                    EconomyMutationResult mutation =
+                                                            MarketPlacePurchaseTransaction.commit(
+                                                                    offerId,
+                                                                    item.getId(),
+                                                                    client.getHabbo()
+                                                                            .getHabboInfo()
+                                                                            .getId(),
+                                                                    charge.currencyType(),
+                                                                    -charge.delta(),
+                                                                    soldTimestamp);
+                                                    if (mutation != null) {
+                                                        LedgerWalletMutation.applyCommitted(
+                                                                client.getHabbo(),
+                                                                charge.currencyType(),
+                                                                mutation.balanceAfter());
+                                                    }
+                                                    return mutation;
+                                                });
+                                        if (walletMutation == null) {
+                                            sendErrorMessage(
+                                                    client, item.getBaseItem().getId(), offerId);
                                             return;
                                         }
 
-                                        item.setUserId(client.getHabbo().getHabboInfo().getId());
+                                        item.setUserId(
+                                                client.getHabbo().getHabboInfo().getId());
                                         item.needsUpdate(true);
                                         Emulator.getThreading().run(item);
 
-                                        client.getHabbo().getInventory().getItemsComponent().addItem(item);
+                                        client.getHabbo()
+                                                .getInventory()
+                                                .getItemsComponent()
+                                                .addItem(item);
 
-                                        applyMarketplaceCharge(client, charge);
+                                        publishMarketplaceCharge(client, charge);
 
                                         client.sendResponse(new AddHabboItemComposer(item));
                                         client.sendResponse(new InventoryRefreshComposer());
-                                        client.sendResponse(new MarketplaceBuyErrorComposer(MarketplaceBuyErrorComposer.REFRESH, 0, offerId, price));
+                                        client.sendResponse(new MarketplaceBuyErrorComposer(
+                                                MarketplaceBuyErrorComposer.REFRESH, 0, offerId, price));
 
                                         if (habbo != null) {
-                                            MarketPlaceOffer offer = habbo.getInventory().getOffer(offerId);
+                                            MarketPlaceOffer offer =
+                                                    habbo.getInventory().getOffer(offerId);
                                             if (offer != null) {
                                                 offer.setState(MarketPlaceState.SOLD);
                                                 offer.setSoldTimestamp(soldTimestamp);
@@ -350,26 +426,33 @@ public class MarketPlace {
         }
     }
 
-
     public static void sendErrorMessage(GameClient client, int baseItemId, int offerId) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT marketplace_items.*, COUNT( * ) AS count\n" +
-                "FROM marketplace_items\n" +
-                "INNER JOIN items ON marketplace_items.item_id = items.id\n" +
-                "INNER JOIN items_base ON items.item_id = items_base.id\n" +
-                "WHERE items_base.sprite_id = ( \n" +
-                "SELECT items_base.sprite_id\n" +
-                "FROM items_base\n" +
-                "WHERE items_base.id = ? LIMIT 1)\n" +
-                "ORDER BY price ASC\n" +
-                "LIMIT 1", ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT marketplace_items.*, COUNT( * ) AS count\n" + "FROM marketplace_items\n"
+                                + "INNER JOIN items ON marketplace_items.item_id = items.id\n"
+                                + "INNER JOIN items_base ON items.item_id = items_base.id\n"
+                                + "WHERE items_base.sprite_id = ( \n"
+                                + "SELECT items_base.sprite_id\n"
+                                + "FROM items_base\n"
+                                + "WHERE items_base.id = ? LIMIT 1)\n"
+                                + "ORDER BY price ASC\n"
+                                + "LIMIT 1",
+                        ResultSet.TYPE_SCROLL_INSENSITIVE,
+                        ResultSet.CONCUR_READ_ONLY)) {
             statement.setInt(1, baseItemId);
             try (ResultSet countSet = statement.executeQuery()) {
                 countSet.last();
                 if (countSet.getRow() == 0)
-                    client.sendResponse(new MarketplaceBuyErrorComposer(MarketplaceBuyErrorComposer.SOLD_OUT, 0, offerId, 0));
+                    client.sendResponse(
+                            new MarketplaceBuyErrorComposer(MarketplaceBuyErrorComposer.SOLD_OUT, 0, offerId, 0));
                 else {
                     countSet.first();
-                    client.sendResponse(new MarketplaceBuyErrorComposer(MarketplaceBuyErrorComposer.UPDATES, countSet.getInt("count"), countSet.getInt("id"), MarketPlace.calculateCommision(countSet.getInt("price"))));
+                    client.sendResponse(new MarketplaceBuyErrorComposer(
+                            MarketplaceBuyErrorComposer.UPDATES,
+                            countSet.getInt("count"),
+                            countSet.getInt("id"),
+                            MarketPlace.calculateCommision(countSet.getInt("price"))));
                 }
             }
         } catch (SQLException e) {
@@ -377,13 +460,10 @@ public class MarketPlace {
         }
     }
 
-
     public static boolean sellItem(GameClient client, HabboItem item, int price) {
-        if (item == null || client == null)
-            return false;
+        if (item == null || client == null) return false;
 
-        if (!item.getBaseItem().allowMarketplace() || !isValidListingPrice(price))
-            return false;
+        if (!item.getBaseItem().allowMarketplace() || !isValidListingPrice(price)) return false;
 
         MarketPlaceItemOfferedEvent event = new MarketPlaceItemOfferedEvent(client.getHabbo(), item, price);
         if (Emulator.getPluginManager().fireEvent(event).isCancelled()) {
@@ -399,7 +479,10 @@ public class MarketPlace {
 
         MarketPlaceOffer offer = new MarketPlaceOffer(event.item, event.price, client.getHabbo());
         if (!offer.isPersisted()) {
-            LOGGER.warn("Marketplace offer insert failed for user {} item {}", client.getHabbo().getHabboInfo().getId(), event.item.getId());
+            LOGGER.warn(
+                    "Marketplace offer insert failed for user {} item {}",
+                    client.getHabbo().getHabboInfo().getId(),
+                    event.item.getId());
             return false;
         }
 
@@ -411,7 +494,6 @@ public class MarketPlace {
 
         return true;
     }
-
 
     public static void getCredits(GameClient client) {
         Set<MarketPlaceOffer> offers = new HashSet<>();
@@ -432,15 +514,20 @@ public class MarketPlace {
                 ? client.getHabbo().getHabboInfo().getCredits()
                 : client.getHabbo().getHabboInfo().getCurrencyAmount(MARKETPLACE_CURRENCY);
         if (claimable > Integer.MAX_VALUE) {
-            LOGGER.warn("Marketplace payout for user {} exceeds wallet range: {}",
-                    client.getHabbo().getHabboInfo().getId(), claimable);
+            LOGGER.warn(
+                    "Marketplace payout for user {} exceeds wallet range: {}",
+                    client.getHabbo().getHabboInfo().getId(),
+                    claimable);
             return;
         }
         try {
             WalletBalanceMath.checkedBalance(currentBalance, (int) claimable);
         } catch (IllegalArgumentException e) {
-            LOGGER.warn("Marketplace payout for user {} would overflow wallet: current={}, payout={}",
-                    client.getHabbo().getHabboInfo().getId(), currentBalance, claimable);
+            LOGGER.warn(
+                    "Marketplace payout for user {} would overflow wallet: current={}, payout={}",
+                    client.getHabbo().getHabboInfo().getId(),
+                    currentBalance,
+                    claimable);
             return;
         }
 
@@ -469,7 +556,9 @@ public class MarketPlace {
     }
 
     private static boolean removeUser(MarketPlaceOffer offer) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("UPDATE marketplace_items SET user_id = ? WHERE id = ?")) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement("UPDATE marketplace_items SET user_id = ? WHERE id = ?")) {
             statement.setInt(1, -1);
             statement.setInt(2, offer.getOfferId());
             return statement.executeUpdate() > 0;
@@ -479,7 +568,6 @@ public class MarketPlace {
         }
     }
 
-
     public static int calculateCommision(int price) {
         long commission = price + (long) Math.ceil(price / 100.0);
         return commission > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) commission;
@@ -488,33 +576,30 @@ public class MarketPlace {
     private static PreparedCharge prepareMarketplaceCharge(Habbo buyer, int price) {
         if (MARKETPLACE_CURRENCY == 0) {
             UserCreditsEvent event = new UserCreditsEvent(buyer, -price);
-            if (Emulator.getPluginManager().fireEvent(event).isCancelled()
-                    || event.credits != -price) return null;
+            if (Emulator.getPluginManager().fireEvent(event).isCancelled() || event.credits != -price) return null;
             return new PreparedCharge(-1, event.credits);
         }
 
         UserPointsEvent event = new UserPointsEvent(buyer, -price, MARKETPLACE_CURRENCY);
         if (Emulator.getPluginManager().fireEvent(event).isCancelled()
-                || event.type != MARKETPLACE_CURRENCY || event.points != -price) return null;
+                || event.type != MARKETPLACE_CURRENCY
+                || event.points != -price) return null;
         return new PreparedCharge(event.type, event.points);
     }
 
-    private static void applyMarketplaceCharge(GameClient client, PreparedCharge charge) {
+    private static void publishMarketplaceCharge(GameClient client, PreparedCharge charge) {
         if (charge.currencyType() < 0) {
-            client.getHabbo().getHabboInfo().addCredits(charge.delta());
             client.sendResponse(new UserCreditsComposer(client.getHabbo()));
             return;
         }
 
-        client.getHabbo().getHabboInfo().addCurrencyAmount(charge.currencyType(), charge.delta());
         client.sendResponse(new UserPointsComposer(
                 client.getHabbo().getHabboInfo().getCurrencyAmount(charge.currencyType()),
                 charge.delta(),
                 charge.currencyType()));
     }
 
-    private record PreparedCharge(int currencyType, int delta) {
-    }
+    private record PreparedCharge(int currencyType, int delta) {}
 
     public static boolean isValidListingPrice(int price) {
         return price >= MINIMUM_LISTING_PRICE && price <= MAXIMUM_LISTING_PRICE;

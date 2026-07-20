@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.rooms;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.bots.Bot;
+import com.eu.habbo.habbohotel.gameclients.GameClientFlushBatch;
 import com.eu.habbo.habbohotel.items.ICycleable;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.pets.Pet;
@@ -31,7 +32,6 @@ public class RoomCycleManager {
     private final Room room;
     private boolean cycleOdd;
     private long cycleTimestamp;
-    private int idleCycles;
     private int idleHostingCycles;
     private long rollerCycle = System.currentTimeMillis();
 
@@ -39,7 +39,6 @@ public class RoomCycleManager {
         this.room = room;
         this.cycleOdd = false;
         this.cycleTimestamp = 0;
-        this.idleCycles = 0;
         this.idleHostingCycles = 0;
     }
 
@@ -48,10 +47,17 @@ public class RoomCycleManager {
     }
 
     public void resetIdleCycles() {
-        this.idleCycles = 0;
+        this.room.resetIdleCycles();
     }
 
     public void cycle() {
+        try (GameClientFlushBatch ignored =
+                     GameClientFlushBatch.open()) {
+            this.cycleWithCoalescedFlushes();
+        }
+    }
+
+    private void cycleWithCoalescedFlushes() {
         this.cycleOdd = !this.cycleOdd;
         this.cycleTimestamp = System.currentTimeMillis();
         final boolean[] foundRightHolder = {false};
@@ -125,17 +131,7 @@ public class RoomCycleManager {
     }
 
     boolean advanceIdleUnload(boolean empty) {
-        if (!empty) {
-            this.idleCycles = 0;
-            return false;
-        }
-
-        if (this.idleCycles < 60) {
-            this.idleCycles++;
-            return false;
-        }
-
-        return true;
+        return this.room.advanceIdleUnload(empty);
     }
 
     private void processScheduledTasks() {

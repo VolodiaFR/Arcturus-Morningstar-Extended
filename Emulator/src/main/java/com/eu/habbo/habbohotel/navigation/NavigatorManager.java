@@ -3,9 +3,6 @@ package com.eu.habbo.habbohotel.navigation;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -17,13 +14,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class NavigatorManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NavigatorManager.class);
 
-    public static int MAXIMUM_RESULTS_PER_PAGE = 10;
-    public static boolean CATEGORY_SORT_USING_ORDER_NUM = false;
+    public static volatile int MAXIMUM_RESULTS_PER_PAGE = 10;
+    public static volatile boolean CATEGORY_SORT_USING_ORDER_NUM = false;
 
     public final Map<Integer, NavigatorPublicCategory> publicCategories = new HashMap<>();
     public final ConcurrentHashMap<String, NavigatorFilterField> filterSettings = new ConcurrentHashMap<>();
@@ -46,7 +45,9 @@ public class NavigatorManager {
             synchronized (this.publicCategories) {
                 this.publicCategories.clear();
 
-                try (Statement statement = connection.createStatement(); ResultSet set = statement.executeQuery("SELECT * FROM navigator_publiccats WHERE visible = '1' ORDER BY order_num DESC")) {
+                try (Statement statement = connection.createStatement();
+                        ResultSet set = statement.executeQuery(
+                                "SELECT * FROM navigator_publiccats WHERE visible = '1' ORDER BY order_num DESC")) {
                     while (set.next()) {
                         this.publicCategories.put(set.getInt("id"), new NavigatorPublicCategory(set));
                     }
@@ -54,17 +55,22 @@ public class NavigatorManager {
                     LOGGER.error("Caught SQL exception", e);
                 }
 
-                try (Statement statement = connection.createStatement(); ResultSet set = statement.executeQuery("SELECT * FROM navigator_publics WHERE visible = '1'")) {
+                try (Statement statement = connection.createStatement();
+                        ResultSet set = statement.executeQuery("SELECT * FROM navigator_publics WHERE visible = '1'")) {
                     while (set.next()) {
                         NavigatorPublicCategory category = this.publicCategories.get(set.getInt("public_cat_id"));
 
                         if (category != null) {
-                            Room room = Emulator.getGameEnvironment().getRoomManager().loadRoom(set.getInt("room_id"));
+                            Room room = Emulator.getGameEnvironment()
+                                    .getRoomManager()
+                                    .loadRoom(set.getInt("room_id"));
 
                             if (room != null) {
                                 category.addRoom(room);
                             } else {
-                                LOGGER.error("Public room (ID: {} defined in navigator_publics does not exist!", set.getInt("room_id"));
+                                LOGGER.error(
+                                        "Public room (ID: {} defined in navigator_publics does not exist!",
+                                        set.getInt("room_id"));
                             }
                         }
                     }
@@ -74,7 +80,8 @@ public class NavigatorManager {
             }
 
             synchronized (this.filterSettings) {
-                try (Statement statement = connection.createStatement(); ResultSet set = statement.executeQuery("SELECT * FROM navigator_filter")) {
+                try (Statement statement = connection.createStatement();
+                        ResultSet set = statement.executeQuery("SELECT * FROM navigator_filter")) {
                     while (set.next()) {
                         Method field = null;
                         Class<?> clazz = Room.class;
@@ -99,7 +106,14 @@ public class NavigatorManager {
                         }
 
                         if (field != null) {
-                            this.filterSettings.put(set.getString("key"), new NavigatorFilterField(set.getString("key"), field, set.getString("database_query"), NavigatorFilterComparator.valueOf(set.getString("compare").toUpperCase())));
+                            this.filterSettings.put(
+                                    set.getString("key"),
+                                    new NavigatorFilterField(
+                                            set.getString("key"),
+                                            field,
+                                            set.getString("database_query"),
+                                            NavigatorFilterComparator.valueOf(
+                                                    set.getString("compare").toUpperCase())));
                         }
                     }
                 } catch (SQLException e) {
@@ -110,10 +124,13 @@ public class NavigatorManager {
             LOGGER.error("Caught SQL exception", e);
         }
 
-        List<Room> staffPromotedRooms = Emulator.getGameEnvironment().getRoomManager().getRoomsStaffPromoted();
+        List<Room> staffPromotedRooms =
+                Emulator.getGameEnvironment().getRoomManager().getRoomsStaffPromoted();
 
         for (Room room : staffPromotedRooms) {
-            this.publicCategories.get(Emulator.getConfig().getInt("hotel.navigator.staffpicks.categoryid")).addRoom(room);
+            this.publicCategories
+                    .get(Emulator.getConfig().getInt("hotel.navigator.staffpicks.categoryid"))
+                    .addRoom(room);
         }
     }
 
@@ -150,7 +167,9 @@ public class NavigatorManager {
                 rooms = Emulator.getGameEnvironment().getRoomManager().getPublicRooms();
                 break;
             case "popular":
-                rooms = Emulator.getGameEnvironment().getRoomManager().getPopularRooms(Emulator.getConfig().getInt("hotel.navigator.popular.amount"));
+                rooms = Emulator.getGameEnvironment()
+                        .getRoomManager()
+                        .getPopularRooms(Emulator.getConfig().getInt("hotel.navigator.popular.amount"));
                 break;
             case "categories":
                 rooms = Emulator.getGameEnvironment().getRoomManager().getRoomsPromoted();

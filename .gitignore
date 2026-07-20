@@ -1,17 +1,17 @@
-logging/
+/logging/*.json
+/logging/*.log
+/logging/*.txt
+/logging/*.zip
+/Emulator/logging/
 *.iml
 .idea/
 target/**
 TODO.txt
 packet.pkt
 plugins/**
-src/test/
 target/
 config.ini
-*.txt
 !Emulator/abi-baseline/*.txt
-*.log
-*.zip
 .DS_Store
 
 /Emulator/plugins

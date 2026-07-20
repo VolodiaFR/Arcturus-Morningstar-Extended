@@ -3,18 +3,25 @@ package com.eu.habbo.habbohotel.users;
 import com.eu.habbo.habbohotel.catalog.marketplace.MarketPlace;
 import com.eu.habbo.habbohotel.catalog.marketplace.MarketPlaceOffer;
 import com.eu.habbo.habbohotel.catalog.marketplace.MarketPlaceState;
-import com.eu.habbo.habbohotel.users.inventory.*;
+import com.eu.habbo.habbohotel.users.inventory.BadgesComponent;
+import com.eu.habbo.habbohotel.users.inventory.BotsComponent;
+import com.eu.habbo.habbohotel.users.inventory.EffectsComponent;
+import com.eu.habbo.habbohotel.users.inventory.ItemsComponent;
+import com.eu.habbo.habbohotel.users.inventory.NickIconsComponent;
+import com.eu.habbo.habbohotel.users.inventory.PetsComponent;
+import com.eu.habbo.habbohotel.users.inventory.PrefixesComponent;
+import com.eu.habbo.habbohotel.users.inventory.UserVisualSettingsComponent;
+import com.eu.habbo.habbohotel.users.inventory.WardrobeComponent;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Set;
 
 public class HabboInventory {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HabboInventory.class);
 
-    //Configuration. Loaded from database & updated accordingly.
-    public static int MAXIMUM_ITEMS = 10000;
+    // Configuration. Loaded from database & updated accordingly.
+    public static volatile int MAXIMUM_ITEMS = 10000;
     private final Set<MarketPlaceOffer> items;
     private final Habbo habbo;
     private WardrobeComponent wardrobeComponent;
@@ -205,8 +212,7 @@ public class HabboInventory {
     public MarketPlaceOffer getOffer(int id) {
         synchronized (this.items) {
             for (MarketPlaceOffer offer : this.items) {
-                if (offer.getOfferId() == id)
-                    return offer;
+                if (offer.getOfferId() == id) return offer;
             }
         }
 

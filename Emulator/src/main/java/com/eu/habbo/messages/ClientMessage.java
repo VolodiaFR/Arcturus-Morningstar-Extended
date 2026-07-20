@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 public class ClientMessage {
     private final int header;
     private final ByteBuf buffer;
+    volatile long dispatchEnqueuedAtNanos;
 
     public ClientMessage(int messageId, ByteBuf buffer) {
         this.header = messageId;
