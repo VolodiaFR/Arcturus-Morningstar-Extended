@@ -150,6 +150,7 @@ final class PolarisBootstrap {
 
     private boolean initializeNetwork() throws Exception {
         ConfigurationManager configuration = runtime.configuration();
+        com.eu.habbo.networking.gameserver.auth.CloudflareIpRanges.loadAtStartup(configuration);
         GameServer gameServer = new GameServer(
                 configuration.getValue("game.host", "127.0.0.1"), configuration.getInt("game.port", 30000));
         runtime.installGameServer(gameServer);

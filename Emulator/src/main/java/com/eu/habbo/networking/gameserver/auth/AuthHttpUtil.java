@@ -169,9 +169,12 @@ public final class AuthHttpUtil {
 
     /**
      * Whether the channel's direct peer may set a forwarded-IP header. Loopback
-     * is always trusted; additional proxies can be allow-listed (exact IP or
-     * string prefix, comma-separated) via the {@code ws.ip.header.trusted}
-     * config key. Default-deny so the header can't be spoofed from the open net.
+     * is always trusted; Cloudflare's published edge ranges are trusted when
+     * {@code ws.ip.header} is {@code CF-Connecting-IP} (see
+     * {@link CloudflareIpRanges}); additional proxies can be allow-listed via
+     * the {@code ws.ip.header.trusted} config key (comma-separated exact IPs,
+     * dotted/colon prefixes, or CIDR blocks like {@code 10.0.0.0/8}).
+     * Default-deny so the header can't be spoofed from the open net.
      */
     public static boolean isTrustedProxy(ChannelHandlerContext ctx) {
         String peerIp = (ctx.channel().remoteAddress() instanceof InetSocketAddress a)
@@ -180,13 +183,23 @@ public final class AuthHttpUtil {
         if (peerIp.equals("127.0.0.1") || peerIp.equals("::1") || peerIp.equals("0:0:0:0:0:0:0:1")) {
             return true;
         }
+        if (CloudflareIpRanges.isCloudflareEdge(peerIp)) return true;
         String trusted = Emulator.getConfig() != null
                 ? Emulator.getConfig().getValue("ws.ip.header.trusted", "")
                 : "";
         if (trusted.isEmpty()) return false;
+        byte[] peerAddress = null; // lazily parsed, only needed for CIDR entries
         for (String entry : trusted.split(",")) {
             String t = entry.trim();
             if (t.isEmpty()) continue;
+            // CIDR block, e.g. "10.0.0.0/8" or "2400:cb00::/32".
+            if (t.indexOf('/') > 0) {
+                CidrRange range = CidrRange.parse(t);
+                if (range == null) continue;
+                if (peerAddress == null) peerAddress = CidrRange.parseAddress(peerIp);
+                if (range.contains(peerAddress)) return true;
+                continue;
+            }
             // Exact IP match, or a dotted/colon prefix range (e.g. "10.0.0." or
             // "2001:db8:") — never a bare-IP prefix, so "10.0.0.1" can't also
             // trust "10.0.0.12".
