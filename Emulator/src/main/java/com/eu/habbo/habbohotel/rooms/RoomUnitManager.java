@@ -23,8 +23,6 @@ import com.eu.habbo.messages.outgoing.inventory.AddPetComposer;
 import com.eu.habbo.messages.outgoing.rooms.pets.RoomPetComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.*;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,11 +40,11 @@ public class RoomUnitManager {
     static final int RIDING_EFFECT_ID = 77;
 
     private final Room room;
-    private final ConcurrentHashMap<Integer, Habbo> currentHabbos = new ConcurrentHashMap<>(3);
-    private final Int2ObjectMap<Habbo> habboQueue = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
-    private final Int2ObjectMap<Bot> currentBots = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
-    private final Int2ObjectMap<Pet> currentPets = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
-    private volatile int unitCounter;
+    private final RoomUnitIndex index = new RoomUnitIndex();
+    private final ConcurrentHashMap<Integer, Habbo> currentHabbos = index.habbos();
+    private final Int2ObjectMap<Habbo> habboQueue = index.queue();
+    private final Int2ObjectMap<Bot> currentBots = index.bots();
+    private final Int2ObjectMap<Pet> currentPets = index.pets();
 
     public RoomUnitManager(Room room) {
         this.room = room;
@@ -72,7 +70,7 @@ public class RoomUnitManager {
                     WiredUserMovementHelper.cleanupRoomUnit(pet.getRoomUnit());
                 }
             }
-            this.unitCounter = 0;
+            this.index.resetUnitCounter();
             this.currentHabbos.clear();
             this.currentPets.clear();
             this.currentBots.clear();
@@ -98,12 +96,12 @@ public class RoomUnitManager {
     }
 
     public int getUnitCounter() {
-        return this.unitCounter;
+        return this.index.unitCounter();
     }
 
     public int getNextUnitId() {
         synchronized (this.room.roomUnitLock) {
-            return this.unitCounter++;
+            return this.index.nextUnitId();
         }
     }
 
@@ -156,9 +154,9 @@ public class RoomUnitManager {
 
     public void addHabbo(Habbo habbo) {
         synchronized (this.room.roomUnitLock) {
-            habbo.getRoomUnit().setId(this.unitCounter);
+            habbo.getRoomUnit().setId(this.index.unitCounter());
             this.currentHabbos.put(habbo.getHabboInfo().getId(), habbo);
-            this.unitCounter++;
+            this.index.incrementUnitId();
         }
         this.room.scheduleDatabaseUserCountUpdate();
     }
@@ -506,9 +504,9 @@ public class RoomUnitManager {
 
     public void addBot(Bot bot) {
         synchronized (this.room.roomUnitLock) {
-            bot.getRoomUnit().setId(this.unitCounter);
+            bot.getRoomUnit().setId(this.index.unitCounter());
             this.currentBots.put(bot.getId(), bot);
-            this.unitCounter++;
+            this.index.incrementUnitId();
         }
     }
 
@@ -683,9 +681,9 @@ public class RoomUnitManager {
 
     public void addPet(Pet pet) {
         synchronized (this.room.roomUnitLock) {
-            pet.getRoomUnit().setId(this.unitCounter);
+            pet.getRoomUnit().setId(this.index.unitCounter());
             this.currentPets.put(pet.getId(), pet);
-            this.unitCounter++;
+            this.index.incrementUnitId();
 
             Habbo habbo = this.getHabbo(pet.getUserId());
             if (habbo != null) {
