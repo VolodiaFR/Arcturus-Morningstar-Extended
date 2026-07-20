@@ -354,15 +354,15 @@ public class RoomLayout {
                 break;
         }
 
-        short x = tile.x;
-        short y = tile.y;
+        int x = tile.x;
+        int y = tile.y;
 
         for (int i = 0; i <= offset; i++) {
             x += offsetX;
             y += offsetY;
         }
 
-        return this.getTile(x, y);
+        return this.getTile((short) x, (short) y);
     }
 
     public List<RoomTile> getTilesInFront(RoomTile tile, int rotation, int amount) {
