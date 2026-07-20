@@ -4,7 +4,6 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.modtool.ModToolRoomVisit;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessage;
 import com.eu.habbo.habbohotel.users.Habbo;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -40,7 +39,8 @@ public class VisitorBot extends Bot {
             if (message.getMessage().equalsIgnoreCase(Emulator.getTexts().getValue("generic.yes"))) {
                 this.showedLog = true;
 
-                String visitMessage = Emulator.getTexts().getValue("bots.visitor.list").replace("%count%", this.visits.size() + "");
+                String visitMessage =
+                        Emulator.getTexts().getValue("bots.visitor.list").replace("%count%", this.visits.size() + "");
 
                 StringBuilder list = new StringBuilder();
                 for (ModToolRoomVisit visit : this.visits) {
@@ -62,12 +62,23 @@ public class VisitorBot extends Bot {
     public void onUserEnter(Habbo habbo) {
         if (!this.showedLog) {
             if (habbo.getHabboInfo().getCurrentRoom() != null) {
-                this.visits = Emulator.getGameEnvironment().getModToolManager().getVisitsForRoom(habbo.getHabboInfo().getCurrentRoom(), 10, true, habbo.getHabboInfo().getLastOnline(), Emulator.getIntUnixTimestamp(), habbo.getHabboInfo().getCurrentRoom().getOwnerName());
+                this.visits = Emulator.getGameEnvironment()
+                        .getModToolManager()
+                        .getVisitsForRoom(
+                                habbo.getHabboInfo().getCurrentRoom(),
+                                10,
+                                true,
+                                habbo.getHabboInfo().getLastOnline(),
+                                Emulator.getIntUnixTimestamp(),
+                                habbo.getHabboInfo().getCurrentRoom().getOwnerName());
 
                 if (this.visits.isEmpty()) {
                     this.talk(Emulator.getTexts().getValue("bots.visitor.no_visits"));
                 } else {
-                    this.talk(Emulator.getTexts().getValue("bots.visitor.visits").replace("%count%", this.visits.size() + "").replace("%positive%", Emulator.getTexts().getValue("generic.yes")));
+                    this.talk(Emulator.getTexts()
+                            .getValue("bots.visitor.visits")
+                            .replace("%count%", this.visits.size() + "")
+                            .replace("%positive%", Emulator.getTexts().getValue("generic.yes")));
                 }
             }
         }
@@ -76,5 +87,4 @@ public class VisitorBot extends Bot {
     static String formatTimestamp(int timestamp) {
         return DATE_FORMAT.format(Instant.ofEpochSecond(timestamp));
     }
-
 }

@@ -118,8 +118,7 @@ public class CatalogManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CatalogManager.class);
 
-    public record GiftWrappingSnapshot(
-            Map<Integer, Integer> wrappers, Map<Integer, Integer> furniture) {}
+    public record GiftWrappingSnapshot(Map<Integer, Integer> wrappers, Map<Integer, Integer> furniture) {}
 
     public static final Map<String, Class<? extends CatalogPage>> pageDefinitions =
             new HashMap<String, Class<? extends CatalogPage>>(CatalogPageLayouts.values().length) {
@@ -689,8 +688,8 @@ public class CatalogManager {
         Map<Integer, TargetOffer> loadedTargetOffers = new HashMap<>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement statement = connection.prepareStatement(
-                        "SELECT * FROM catalog_target_offers WHERE end_timestamp > ?")) {
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT * FROM catalog_target_offers WHERE end_timestamp > ?")) {
             statement.setInt(1, Emulator.getIntUnixTimestamp());
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
@@ -769,8 +768,7 @@ public class CatalogManager {
         this.replaceGiftWrapping(loadedGiftWrappers, loadedGiftFurnis);
     }
 
-    void replaceGiftWrapping(
-            Map<Integer, Integer> loadedGiftWrappers, Map<Integer, Integer> loadedGiftFurnis) {
+    void replaceGiftWrapping(Map<Integer, Integer> loadedGiftWrappers, Map<Integer, Integer> loadedGiftFurnis) {
         synchronized (this.giftWrappers) {
             synchronized (this.giftFurnis) {
                 this.giftWrappers.clear();
@@ -978,8 +976,7 @@ public class CatalogManager {
     public GiftWrappingSnapshot getGiftWrappingSnapshot() {
         synchronized (this.giftWrappers) {
             synchronized (this.giftFurnis) {
-                return new GiftWrappingSnapshot(
-                        new HashMap<>(this.giftWrappers), new HashMap<>(this.giftFurnis));
+                return new GiftWrappingSnapshot(new HashMap<>(this.giftWrappers), new HashMap<>(this.giftFurnis));
             }
         }
     }

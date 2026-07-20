@@ -1,6 +1,9 @@
 package com.eu.habbo.habbohotel.catalog;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,11 +17,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class CatalogLimitedConfigurationTest {
 
@@ -82,28 +81,18 @@ class CatalogLimitedConfigurationTest {
 
     @Test
     void purchasePathMapsAnEmptyReservationToSoldOut() throws Exception {
-        String manager = Files.readString(Path.of(
-                "src/main/java/com/eu/habbo/habbohotel/catalog/CatalogManager.java"
-        ));
-        String configuration = Files.readString(Path.of(
-                "src/main/java/com/eu/habbo/habbohotel/catalog/CatalogLimitedConfiguration.java"
-        ));
+        String manager = Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/catalog/CatalogManager.java"));
+        String configuration = Files.readString(
+                Path.of("src/main/java/com/eu/habbo/habbohotel/catalog/CatalogLimitedConfiguration.java"));
 
         assertTrue(manager.contains("limitedConfiguration.pollNumber()"));
         assertTrue(manager.contains("limitedNumberReservation.isEmpty()"));
         assertFalse(manager.contains("limitedNumber = limitedConfiguration.getNumber()"));
         assertTrue(configuration.contains("this.limitedNumbers.pollFirst()"));
-        assertTrue(configuration.contains(
-                "public int available() {\n        synchronized (this.limitedNumbers) {"
-        ));
+        assertTrue(configuration.contains("public int available() {\n        synchronized (this.limitedNumbers) {"));
     }
 
     private static CatalogLimitedConfiguration configurationWith(Integer... numbers) {
-        return new CatalogLimitedConfiguration(
-                1,
-                new LinkedList<>(List.of(numbers)),
-                numbers.length,
-                false
-        );
+        return new CatalogLimitedConfiguration(1, new LinkedList<>(List.of(numbers)), numbers.length, false);
     }
 }

@@ -18,8 +18,7 @@ public class GiftConfigurationComposer extends MessageComposer {
         this.response.appendBoolean(true);
         this.response.appendInt(Emulator.getConfig().getInt("hotel.gifts.special.price", 2));
 
-        var giftWrapping =
-                Emulator.getGameEnvironment().getCatalogManager().getGiftWrappingSnapshot();
+        var giftWrapping = Emulator.getGameEnvironment().getCatalogManager().getGiftWrappingSnapshot();
 
         this.response.appendInt(giftWrapping.wrappers().size());
         for (Integer i : giftWrapping.wrappers().keySet()) {

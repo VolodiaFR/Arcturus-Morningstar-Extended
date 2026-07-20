@@ -1,20 +1,18 @@
 package com.eu.habbo.habbohotel.modtool;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import org.junit.jupiter.api.Test;
 
 class ModToolBanDateFormattingTest {
 
     @Test
     void preservesBanTimestampTextAndPublicFieldMutability() {
         int timestamp = 1_700_000_000;
-        String expected = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-                .format(new Date(timestamp * 1000L));
+        String expected = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(timestamp * 1000L));
 
         assertEquals(expected, ModToolBan.formatTimestamp(timestamp));
 
@@ -31,8 +29,7 @@ class ModToolBanDateFormattingTest {
     @Test
     void firstPartyBanFormattingDoesNotUseThePublicMutableFormatter() {
         int timestamp = 1_700_000_000;
-        String expected = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-                .format(new Date(timestamp * 1000L));
+        String expected = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(timestamp * 1000L));
         SimpleDateFormat original = ModToolBan.dateFormat;
         try {
             ModToolBan.dateFormat = new SimpleDateFormat("ss");

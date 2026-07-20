@@ -1,11 +1,14 @@
 package com.eu.habbo.habbohotel.catalog;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.eu.habbo.Emulator;
 import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.habbohotel.items.Item;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import org.junit.jupiter.api.Test;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
@@ -19,11 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class CatalogPublicCacheCompatibilityTest {
 
@@ -70,7 +69,8 @@ class CatalogPublicCacheCompatibilityTest {
         assertTrue(manager.contains("getClothingSnapshot()"));
         assertTrue(manager.contains("getTargetOffersSnapshot()"));
         assertTrue(manager.contains("getCatalogFeaturedPagesSnapshot()"));
-        assertTrue(manager.contains("return this.catalogFeaturedPages;"),
+        assertTrue(
+                manager.contains("return this.catalogFeaturedPages;"),
                 "the legacy featured-page getter must remain live");
 
         assertTrue(manager.contains("replaceContents(this.targetOffers, loadedTargetOffers);"));
@@ -79,10 +79,10 @@ class CatalogPublicCacheCompatibilityTest {
         assertTrue(manager.contains("replaceGiftWrapping(loadedGiftWrappers, loadedGiftFurnis);"));
         assertTrue(manager.contains("replaceFeaturedPages(loadedFeaturedPages);"));
 
-        assertNoDirectCacheRead("messages/incoming/catalog/CatalogBuyItemAsGiftEvent.java",
-                ".giftWrappers", ".giftFurnis");
-        assertNoDirectCacheRead("messages/outgoing/catalog/GiftConfigurationComposer.java",
-                ".giftWrappers", ".giftFurnis");
+        assertNoDirectCacheRead(
+                "messages/incoming/catalog/CatalogBuyItemAsGiftEvent.java", ".giftWrappers", ".giftFurnis");
+        assertNoDirectCacheRead(
+                "messages/outgoing/catalog/GiftConfigurationComposer.java", ".giftWrappers", ".giftFurnis");
         assertNoDirectCacheRead("habbohotel/commands/GiftCommand.java", ".giftFurnis");
         assertNoDirectCacheRead("habbohotel/commands/MassGiftCommand.java", ".giftFurnis");
         assertNoDirectCacheRead("habbohotel/commands/RoomGiftCommand.java", ".giftFurnis");
@@ -92,8 +92,7 @@ class CatalogPublicCacheCompatibilityTest {
         assertNoDirectCacheRead("habbohotel/users/Habbo.java", ".clothing");
         assertNoDirectCacheRead("habbohotel/commands/PromoteTargetOfferCommand.java", ".targetOffers");
 
-        assertFalse(source("messages/outgoing/catalog/CatalogPageComposer.java")
-                .contains("getCatalogFeaturedPages()"));
+        assertFalse(source("messages/outgoing/catalog/CatalogPageComposer.java").contains("getCatalogFeaturedPages()"));
         assertFalse(source("habbohotel/catalog/layouts/FrontPageFeaturedLayout.java")
                 .contains("getCatalogFeaturedPages()"));
     }
@@ -193,14 +192,13 @@ class CatalogPublicCacheCompatibilityTest {
                 start.await();
                 for (int index = 0; index < 1_000; index++) {
                     CatalogManager.GiftWrappingSnapshot giftWrapping = manager.getGiftWrappingSnapshot();
-                    assertEquals(giftWrapping.wrappers().keySet(), giftWrapping.furniture().keySet());
+                    assertEquals(
+                            giftWrapping.wrappers().keySet(),
+                            giftWrapping.furniture().keySet());
                     manager.getRecyclerPrizesSnapshot().values().forEach(Set::size);
-                    manager.getTargetOffersSnapshot().values().forEach(value -> {
-                    });
-                    manager.getClothingSnapshot().values().forEach(value -> {
-                    });
-                    manager.getCatalogFeaturedPagesSnapshot().forEach(value -> {
-                    });
+                    manager.getTargetOffersSnapshot().values().forEach(value -> {});
+                    manager.getClothingSnapshot().values().forEach(value -> {});
+                    manager.getCatalogFeaturedPagesSnapshot().forEach(value -> {});
                 }
                 return null;
             });
@@ -242,9 +240,10 @@ class CatalogPublicCacheCompatibilityTest {
         configField.setAccessible(true);
         Object previousConfig = configField.get(null);
         try {
-            configField.set(null, new ConfigurationManager(
-                    Path.of("..", "config example", "config.ini.example").toString()
-            ));
+            configField.set(
+                    null,
+                    new ConfigurationManager(Path.of("..", "config example", "config.ini.example")
+                            .toString()));
             return new CatalogManager(false);
         } finally {
             configField.set(null, previousConfig);

@@ -4,7 +4,6 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.catalog.CatalogFeaturedPage;
 import com.eu.habbo.habbohotel.catalog.CatalogPage;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -37,20 +36,20 @@ public class FrontPageFeaturedLayout extends CatalogPage {
 
     public void serializeExtra(ServerMessage message) {
 
-        List<CatalogFeaturedPage> featuredPages = Emulator.getGameEnvironment().getCatalogManager()
-                .getCatalogFeaturedPagesSnapshot();
+        List<CatalogFeaturedPage> featuredPages =
+                Emulator.getGameEnvironment().getCatalogManager().getCatalogFeaturedPagesSnapshot();
         message.appendInt(featuredPages.size());
 
         for (CatalogFeaturedPage page : featuredPages) {
             page.serialize(message);
         }
-        message.appendInt(1); //Position
+        message.appendInt(1); // Position
         message.appendString("NUOVO: Affare Stanza di Rilassamento");
         message.appendString("catalogue/feature_cata_vert_oly16bundle4.png");
-        message.appendInt(0); //Type
-        //0 : String //Page Name
-        //1 : Int //Page ID
-        //2 : String //Productdata
+        message.appendInt(0); // Type
+        // 0 : String //Page Name
+        // 1 : Int //Page ID
+        // 2 : String //Productdata
         message.appendString("");
         message.appendInt(-1);
 

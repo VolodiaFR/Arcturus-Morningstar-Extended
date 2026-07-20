@@ -1,28 +1,21 @@
 package com.eu.habbo.messages.outgoing.modtool;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import org.junit.jupiter.api.Test;
 
 class ModToolTimestampFormattingTest {
     private static final int TIMESTAMP = 1_700_000_000;
 
     @Test
     void preservesChatlogAndUserInfoTimestampText() {
-        assertEquals(
-                format("HH:mm", TIMESTAMP),
-                ModToolUserChatlogComposer.formatTimestamp(TIMESTAMP));
-        assertEquals(
-                format("HH:mm", TIMESTAMP),
-                ModToolIssueChatlogComposer.formatTimestamp(TIMESTAMP));
-        assertEquals(
-                format("yyyy-MM-dd HH:mm", TIMESTAMP),
-                ModToolUserInfoComposer.formatUnixTimestamp(TIMESTAMP));
+        assertEquals(format("HH:mm", TIMESTAMP), ModToolUserChatlogComposer.formatTimestamp(TIMESTAMP));
+        assertEquals(format("HH:mm", TIMESTAMP), ModToolIssueChatlogComposer.formatTimestamp(TIMESTAMP));
+        assertEquals(format("yyyy-MM-dd HH:mm", TIMESTAMP), ModToolUserInfoComposer.formatUnixTimestamp(TIMESTAMP));
         assertEquals("", ModToolUserInfoComposer.formatUnixTimestamp(0));
     }
 

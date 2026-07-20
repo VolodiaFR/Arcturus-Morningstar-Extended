@@ -11,7 +11,6 @@ import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,26 +28,46 @@ public class GiftCommand extends Command {
             try {
                 itemId = Integer.parseInt(params[2]);
             } catch (Exception e) {
-                gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_gift.not_a_number"), RoomChatMessageBubbles.ALERT);
+                gameClient
+                        .getHabbo()
+                        .whisper(
+                                Emulator.getTexts().getValue("commands.error.cmd_gift.not_a_number"),
+                                RoomChatMessageBubbles.ALERT);
                 return true;
             }
 
             if (itemId <= 0) {
-                gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_gift.not_a_number"), RoomChatMessageBubbles.ALERT);
+                gameClient
+                        .getHabbo()
+                        .whisper(
+                                Emulator.getTexts().getValue("commands.error.cmd_gift.not_a_number"),
+                                RoomChatMessageBubbles.ALERT);
                 return true;
             }
 
             Item baseItem = Emulator.getGameEnvironment().getItemManager().getItem(itemId);
 
             if (baseItem == null) {
-                gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_gift.not_found").replace("%itemid%", itemId + ""), RoomChatMessageBubbles.ALERT);
+                gameClient
+                        .getHabbo()
+                        .whisper(
+                                Emulator.getTexts()
+                                        .getValue("commands.error.cmd_gift.not_found")
+                                        .replace("%itemid%", itemId + ""),
+                                RoomChatMessageBubbles.ALERT);
                 return true;
             }
 
             HabboInfo habboInfo = HabboManager.getOfflineHabboInfo(username);
 
             if (habboInfo == null) {
-                gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_gift.user_not_found").replace("%username%", username), RoomChatMessageBubbles.ALERT);
+                gameClient
+                        .getHabbo()
+                        .whisper(
+                                Emulator.getTexts()
+                                        .getValue("commands.error.cmd_gift.user_not_found")
+                                        .replace("%username%", username),
+                                RoomChatMessageBubbles.ALERT);
                 return true;
             }
 
@@ -64,18 +83,26 @@ public class GiftCommand extends Command {
 
             HabboItem item = Emulator.getGameEnvironment().getItemManager().createItem(0, baseItem, 0, 0, "");
 
-            Map<Integer, Integer> giftFurniture = Emulator.getGameEnvironment().getCatalogManager()
-                    .getGiftWrappingSnapshot().furniture();
-            Item giftItem = Emulator.getGameEnvironment().getItemManager().getItem(
-                    (Integer) giftFurniture.values().toArray()[Emulator.getRandom().nextInt(giftFurniture.size())]
-            );
+            Map<Integer, Integer> giftFurniture = Emulator.getGameEnvironment()
+                    .getCatalogManager()
+                    .getGiftWrappingSnapshot()
+                    .furniture();
+            Item giftItem = Emulator.getGameEnvironment().getItemManager().getItem((Integer)
+                    giftFurniture.values().toArray()[Emulator.getRandom().nextInt(giftFurniture.size())]);
 
             String extraData = "1\t" + item.getId();
             extraData += "\t0\t0\t0\t" + finalMessage + "\t0\t0";
 
             Emulator.getGameEnvironment().getItemManager().createGift(username, giftItem, extraData, 0, 0);
 
-            gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.succes.cmd_gift").replace("%username%", username).replace("%itemname%", item.getBaseItem().getName()), RoomChatMessageBubbles.ALERT);
+            gameClient
+                    .getHabbo()
+                    .whisper(
+                            Emulator.getTexts()
+                                    .getValue("commands.succes.cmd_gift")
+                                    .replace("%username%", username)
+                                    .replace("%itemname%", item.getBaseItem().getName()),
+                            RoomChatMessageBubbles.ALERT);
 
             Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(habboInfo.getId());
 

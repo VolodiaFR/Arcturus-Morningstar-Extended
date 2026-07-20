@@ -1,8 +1,11 @@
 package com.eu.habbo.habbohotel.rooms;
 
-import com.eu.habbo.habbohotel.items.interactions.InteractionRoller;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.eu.habbo.habbohotel.items.interactions.InteractionRoller;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -10,11 +13,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class RoomSpecialTypesRollerCompatibilityTest {
 
@@ -59,7 +58,8 @@ class RoomSpecialTypesRollerCompatibilityTest {
                 });
 
                 assertTrue(disposeAttempted.await(2, TimeUnit.SECONDS));
-                assertThrows(TimeoutException.class,
+                assertThrows(
+                        TimeoutException.class,
                         () -> dispose.get(100, TimeUnit.MILLISECONDS),
                         "dispose must wait for first-party roller mutation to leave the shared monitor");
             }

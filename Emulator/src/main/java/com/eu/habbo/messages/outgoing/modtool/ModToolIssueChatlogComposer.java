@@ -1,12 +1,15 @@
 package com.eu.habbo.messages.outgoing.modtool;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.habbohotel.modtool.*;
+import com.eu.habbo.habbohotel.modtool.ModToolChatLog;
+import com.eu.habbo.habbohotel.modtool.ModToolChatRecordDataContext;
+import com.eu.habbo.habbohotel.modtool.ModToolIssue;
+import com.eu.habbo.habbohotel.modtool.ModToolIssueChatlogType;
+import com.eu.habbo.habbohotel.modtool.ModToolTicketType;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -29,7 +32,8 @@ public class ModToolIssueChatlogComposer extends MessageComposer {
         this.roomName = roomName;
     }
 
-    public ModToolIssueChatlogComposer(ModToolIssue issue, List<ModToolChatLog> chatlog, String roomName, ModToolIssueChatlogType type) {
+    public ModToolIssueChatlogComposer(
+            ModToolIssue issue, List<ModToolChatLog> chatlog, String roomName, ModToolIssueChatlogType type) {
         this.issue = issue;
         this.chatlog = chatlog;
         this.roomName = roomName;
@@ -46,10 +50,9 @@ public class ModToolIssueChatlogComposer extends MessageComposer {
 
         Collections.sort(this.chatlog);
 
-        if (this.chatlog.isEmpty())
-            return null;
+        if (this.chatlog.isEmpty()) return null;
 
-        this.response.appendByte(this.type.getType()); //Report Type
+        this.response.appendByte(this.type.getType()); // Report Type
 
         if (this.issue.type == ModToolTicketType.IM) {
             this.response.appendShort(1);
@@ -78,7 +81,7 @@ public class ModToolIssueChatlogComposer extends MessageComposer {
             ModToolChatRecordDataContext.PHOTO_ID.append(this.response);
             this.response.appendString(this.issue.photoItem.getId() + "");
         } else {
-            this.response.appendShort(3); //Context Count
+            this.response.appendShort(3); // Context Count
 
             ModToolChatRecordDataContext.ROOM_NAME.append(this.response);
             this.response.appendString(this.roomName);
@@ -99,7 +102,7 @@ public class ModToolIssueChatlogComposer extends MessageComposer {
             this.response.appendString(chatLog.message);
             this.response.appendBoolean(chatLog.highlighted);
         }
-        //}
+        // }
 
         return this.response;
     }
