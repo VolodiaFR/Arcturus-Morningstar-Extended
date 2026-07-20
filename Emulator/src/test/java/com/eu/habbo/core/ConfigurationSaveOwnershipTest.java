@@ -52,8 +52,7 @@ class ConfigurationSaveOwnershipTest {
     }
 
     private static Database databaseUsing(HikariDataSource dataSource) throws Exception {
-        Constructor<Database> constructor =
-                Database.class.getDeclaredConstructor(HikariDataSource.class);
+        Constructor<Database> constructor = Database.class.getDeclaredConstructor(HikariDataSource.class);
         constructor.setAccessible(true);
         return constructor.newInstance(dataSource);
     }

@@ -5,12 +5,11 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class InteractionPostIt extends HabboItem {
-    public static String STICKYPOLE_PREFIX_TEXT = "";
+    public static volatile String STICKYPOLE_PREFIX_TEXT = "";
 
     public InteractionPostIt(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -31,9 +30,7 @@ public class InteractionPostIt extends HabboItem {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-
-    }
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
 
     @Override
     public void serializeExtradata(ServerMessage serverMessage) {

@@ -42,8 +42,8 @@ db.pool.connection_timeout_ms = 10000
 db.pool.idle_timeout_ms       = 600000
 db.pool.max_lifetime_ms       = 1800000
 db.pool.validation_timeout_ms = 5000
-# set db.pool.leak_detection_ms to 0 to disable
-db.pool.leak_detection_ms     = 20000 set to 0 to disable
+# Set to 0 to disable leak detection.
+db.pool.leak_detection_ms     = 20000
 
 enc.enabled=false
 enc.e=3
@@ -68,7 +68,7 @@ nitro.secure.master_key=change-me-to-a-long-random-secret
 login.remember.enabled=true
 login.remember.duration.days=30
 # Optional: set a persistent remember-me JWT secret here, otherwise one is generated and stored in emulator_settings.
-login.remember.jwt.secret=hange-me-to-a-long-random-secret
+login.remember.jwt.secret=change-me-to-a-long-random-secret
 # Lifetime for SSO tickets minted by Polaris's built-in password/remember endpoints.
 login.sso.ticket.ttl.seconds=60
 

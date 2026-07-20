@@ -7,33 +7,41 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
-import com.eu.habbo.habbohotel.rooms.RoomSpecialTypes;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
-import com.eu.habbo.habbohotel.wired.core.*;
+import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
+import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WiredEffectSendSignal extends InteractionWiredEffect {
     private static final Logger LOGGER = LoggerFactory.getLogger(WiredEffectSendSignal.class);
 
     public static final WiredEffectType type = WiredEffectType.SEND_SIGNAL;
 
-    public static int MAX_SIGNAL_DEPTH = 100;
+    public static volatile int MAX_SIGNAL_DEPTH = 100;
 
-    private static final int ANTENNA_PICKED  = 0;
+    private static final int ANTENNA_PICKED = 0;
     private static final int ANTENNA_TRIGGER = 1;
     private static final String ANTENNA_INTERACTION = "antenna";
     private static final String FORWARD_ITEM_SPLIT_REGEX = "[;,\\t]";
@@ -42,12 +50,12 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
 
     private Set<HabboItem> items;
     private Set<HabboItem> forwardItems;
-    private int     antennaSource   = ANTENNA_PICKED;
-    private int     furniForward    = WiredSourceUtil.SOURCE_TRIGGER;
-    private int     userForward     = WiredSourceUtil.SOURCE_TRIGGER;
-    private boolean signalPerFurni  = false;
-    private boolean signalPerUser   = false;
-    private int     channel         = 0;
+    private int antennaSource = ANTENNA_PICKED;
+    private int furniForward = WiredSourceUtil.SOURCE_TRIGGER;
+    private int userForward = WiredSourceUtil.SOURCE_TRIGGER;
+    private boolean signalPerFurni = false;
+    private boolean signalPerUser = false;
+    private int channel = 0;
 
     public WiredEffectSendSignal(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -66,7 +74,11 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
         Room room = ctx.room();
         if (room == null) return;
 
-        LOGGER.debug("[SendSignal] execute() called, itemId={}, antennaSource={}, pickedItems={}", this.getId(), antennaSource, this.items.size());
+        LOGGER.debug(
+                "[SendSignal] execute() called, itemId={}, antennaSource={}, pickedItems={}",
+                this.getId(),
+                antennaSource,
+                this.items.size());
 
         int currentDepth = ctx.event().getCallStackDepth();
         if (currentDepth >= MAX_SIGNAL_DEPTH) {
@@ -76,9 +88,7 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
 
         Collection<HabboItem> antennas;
         if (antennaSource == ANTENNA_TRIGGER) {
-            antennas = ctx.sourceItem()
-                    .map(Collections::<HabboItem>singleton)
-                    .orElse(Collections.emptySet());
+            antennas = ctx.sourceItem().map(Collections::<HabboItem>singleton).orElse(Collections.emptySet());
         } else {
             Collection<HabboItem> baseAntennas = new ArrayList<>(this.items);
 
@@ -96,12 +106,16 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
                 .collect(Collectors.toList());
 
         if (resolvedAntennas.isEmpty()) {
-            LOGGER.debug("[SendSignal] No antennas resolved, aborting. antennaSource={}, selectorModified={}", antennaSource, ctx.targets().isItemsModifiedBySelector());
+            LOGGER.debug(
+                    "[SendSignal] No antennas resolved, aborting. antennaSource={}, selectorModified={}",
+                    antennaSource,
+                    ctx.targets().isItemsModifiedBySelector());
             return;
         }
         LOGGER.debug("[SendSignal] Resolved {} antenna(s), firing signals", resolvedAntennas.size());
 
-        RoomUnit triggeringUser = ctx.event().getOriginActor().orElseGet(() -> ctx.actor().orElse(null));
+        RoomUnit triggeringUser =
+                ctx.event().getOriginActor().orElseGet(() -> ctx.actor().orElse(null));
         List<RoomUnit> forwardedUsers = WiredSourceUtil.resolveUsersRaw(ctx, this.userForward);
         List<HabboItem> forwardedFurni = WiredSourceUtil.resolveItemsRaw(ctx, this.furniForward, this.forwardItems);
 
@@ -121,16 +135,14 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
                 mergedUsers.put(forwardedUser.getId(), forwardedUser);
             }
 
-            usersToSend = mergedUsers.isEmpty()
-                    ? Collections.singletonList(null)
-                    : new ArrayList<>(mergedUsers.values());
+            usersToSend =
+                    mergedUsers.isEmpty() ? Collections.singletonList(null) : new ArrayList<>(mergedUsers.values());
         } else {
             usersToSend = Collections.singletonList(triggeringUser);
         }
 
-        Collection<HabboItem> furniToSend = !forwardedFurni.isEmpty()
-                ? forwardedFurni
-                : Collections.singletonList(null);
+        Collection<HabboItem> furniToSend =
+                !forwardedFurni.isEmpty() ? forwardedFurni : Collections.singletonList(null);
 
         int nextDepth = currentDepth + 1;
         int signalUserCount = signalPerUser
@@ -140,13 +152,22 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
         for (RoomUnit user : usersToSend) {
             for (HabboItem sourceItem : furniToSend) {
                 for (HabboItem antenna : resolvedAntennas) {
-                    fireSignalAtAntenna(ctx, room, antenna, user, triggeringUser, sourceItem, signalUserCount, nextDepth);
+                    fireSignalAtAntenna(
+                            ctx, room, antenna, user, triggeringUser, sourceItem, signalUserCount, nextDepth);
                 }
             }
         }
     }
 
-    private void fireSignalAtAntenna(WiredContext ctx, Room room, HabboItem antenna, RoomUnit actor, RoomUnit originActor, HabboItem sourceItem, int signalUserCount, int depth) {
+    private void fireSignalAtAntenna(
+            WiredContext ctx,
+            Room room,
+            HabboItem antenna,
+            RoomUnit actor,
+            RoomUnit originActor,
+            HabboItem sourceItem,
+            int signalUserCount,
+            int depth) {
         if (antenna == null) return;
         RoomTile tile = room.getLayout().getTile(antenna.getX(), antenna.getY());
         if (tile == null) return;
@@ -155,8 +176,15 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
 
         int signalChannel = antenna.getId();
 
-        LOGGER.debug("[SendSignal] fireSignalAtAntenna: antennaId={} tile={},{} depth={} channel={} actor={} sourceItem={}",
-                signalChannel, tile.x, tile.y, depth, signalChannel, actor != null ? actor.getId() : "null", sourceItem != null ? sourceItem.getId() : "null");
+        LOGGER.debug(
+                "[SendSignal] fireSignalAtAntenna: antennaId={} tile={},{} depth={} channel={} actor={} sourceItem={}",
+                signalChannel,
+                tile.x,
+                tile.y,
+                depth,
+                signalChannel,
+                actor != null ? actor.getId() : "null",
+                sourceItem != null ? sourceItem.getId() : "null");
 
         WiredEvent.Builder builder = WiredEvent.builder(WiredEvent.Type.SIGNAL_RECEIVED, room)
                 .tile(tile)
@@ -190,29 +218,31 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
         antenna.setExtradata("1");
         room.updateItemState(antenna);
 
-        Emulator.getThreading().run(() -> {
-            if (!room.isLoaded()) return;
+        Emulator.getThreading()
+                .run(
+                        () -> {
+                            if (!room.isLoaded()) return;
 
-            Long currentToken = ANTENNA_PULSE_TOKENS.get(antenna.getId());
-            if (currentToken == null || currentToken.longValue() != token) return;
+                            Long currentToken = ANTENNA_PULSE_TOKENS.get(antenna.getId());
+                            if (currentToken == null || currentToken.longValue() != token) return;
 
-            antenna.setExtradata("0");
-            room.updateItemState(antenna);
-            ANTENNA_PULSE_TOKENS.remove(antenna.getId(), token);
-        }, ANTENNA_PULSE_MS);
+                            antenna.setExtradata("0");
+                            room.updateItemState(antenna);
+                            ANTENNA_PULSE_TOKENS.remove(antenna.getId(), token);
+                        },
+                        ANTENNA_PULSE_MS);
     }
 
     @Override
     public void serializeWiredData(ServerMessage message, Room room) {
         List<HabboItem> itemsSnapshot = new ArrayList<>(this.items);
 
-        itemsSnapshot.removeIf(item ->
-                item.getRoomId() != this.getRoomId() || room.getHabboItem(item.getId()) == null);
+        itemsSnapshot.removeIf(item -> item.getRoomId() != this.getRoomId() || room.getHabboItem(item.getId()) == null);
         this.items.retainAll(itemsSnapshot);
 
         List<HabboItem> forwardSnapshot = new ArrayList<>(this.forwardItems);
-        forwardSnapshot.removeIf(item ->
-                item.getRoomId() != this.getRoomId() || room.getHabboItem(item.getId()) == null);
+        forwardSnapshot.removeIf(
+                item -> item.getRoomId() != this.getRoomId() || room.getHabboItem(item.getId()) == null);
         this.forwardItems.retainAll(forwardSnapshot);
 
         String forwardString = forwardSnapshot.stream()
@@ -287,10 +317,10 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
 
         int[] params = settings.getIntParams();
         int requestedAntennaSource = params.length > 0 ? params[0] : ANTENNA_PICKED;
-        this.furniForward   = normalizeSource(params.length > 1 ? params[1] : WiredSourceUtil.SOURCE_TRIGGER);
-        this.userForward    = normalizeSource(params.length > 2 ? params[2] : WiredSourceUtil.SOURCE_TRIGGER);
+        this.furniForward = normalizeSource(params.length > 1 ? params[1] : WiredSourceUtil.SOURCE_TRIGGER);
+        this.userForward = normalizeSource(params.length > 2 ? params[2] : WiredSourceUtil.SOURCE_TRIGGER);
         this.signalPerFurni = params.length > 3 && params[3] == 1;
-        this.signalPerUser  = params.length > 4 && params[4] == 1;
+        this.signalPerUser = params.length > 4 && params[4] == 1;
         this.channel = params.length > 5 ? params[5] : 0;
         this.antennaSource = requestedAntennaSource;
         if (!newItems.isEmpty()) {
@@ -314,8 +344,16 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
         }
         this.setDelay(delay);
 
-        LOGGER.debug("[SendSignal] saveData: antennaSource={}, furniForward={}, userForward={}, signalPerFurni={}, signalPerUser={}, channel={}, items={}, forwardItems={}",
-                antennaSource, furniForward, userForward, signalPerFurni, signalPerUser, channel, items.size(), forwardItems.size());
+        LOGGER.debug(
+                "[SendSignal] saveData: antennaSource={}, furniForward={}, userForward={}, signalPerFurni={}, signalPerUser={}, channel={}, items={}, forwardItems={}",
+                antennaSource,
+                furniForward,
+                userForward,
+                signalPerFurni,
+                signalPerUser,
+                channel,
+                items.size(),
+                forwardItems.size());
 
         return true;
     }
@@ -330,12 +368,17 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
     public String getWiredData() {
         List<HabboItem> itemsSnapshot = new ArrayList<>(this.items);
         List<HabboItem> forwardSnapshot = new ArrayList<>(this.forwardItems);
-        return WiredManager.getGson().toJson(new JsonData(
-                this.getDelay(),
-                itemsSnapshot.stream().map(HabboItem::getId).collect(Collectors.toList()),
-                forwardSnapshot.stream().map(HabboItem::getId).collect(Collectors.toList()),
-                antennaSource, furniForward, userForward, signalPerFurni, signalPerUser, channel
-        ));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.getDelay(),
+                        itemsSnapshot.stream().map(HabboItem::getId).collect(Collectors.toList()),
+                        forwardSnapshot.stream().map(HabboItem::getId).collect(Collectors.toList()),
+                        antennaSource,
+                        furniForward,
+                        userForward,
+                        signalPerFurni,
+                        signalPerUser,
+                        channel));
     }
 
     @Override
@@ -347,12 +390,12 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
         JsonData data = WiredUtilityPayloadGuard.fromJson(wiredData, JsonData.class);
         if (data != null) {
             this.setDelay(WiredUtilityPayloadGuard.delay(data.delay));
-            this.antennaSource  = data.antennaSource;
-            this.furniForward   = normalizeSource(data.furniForward);
-            this.userForward    = normalizeSource(data.userForward);
+            this.antennaSource = data.antennaSource;
+            this.furniForward = normalizeSource(data.furniForward);
+            this.userForward = normalizeSource(data.userForward);
             this.signalPerFurni = data.signalPerFurni;
-            this.signalPerUser  = data.signalPerUser;
-            this.channel        = data.channel;
+            this.signalPerUser = data.signalPerUser;
+            this.channel = data.channel;
             if (data.itemIds != null) {
                 for (Integer id : data.itemIds) {
                     HabboItem item = room.getHabboItem(id);
@@ -377,12 +420,12 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
     public void onPickUp() {
         this.items.clear();
         this.forwardItems.clear();
-        this.antennaSource  = ANTENNA_PICKED;
-        this.furniForward   = WiredSourceUtil.SOURCE_TRIGGER;
-        this.userForward    = WiredSourceUtil.SOURCE_TRIGGER;
+        this.antennaSource = ANTENNA_PICKED;
+        this.furniForward = WiredSourceUtil.SOURCE_TRIGGER;
+        this.userForward = WiredSourceUtil.SOURCE_TRIGGER;
         this.signalPerFurni = false;
-        this.signalPerUser  = false;
-        this.channel        = 0;
+        this.signalPerUser = false;
+        this.channel = 0;
         this.setDelay(0);
     }
 
@@ -513,17 +556,25 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
         boolean signalPerUser;
         int channel;
 
-        public JsonData(int delay, List<Integer> itemIds, List<Integer> forwardItemIds, int antennaSource, int furniForward,
-                        int userForward, boolean signalPerFurni, boolean signalPerUser, int channel) {
-            this.delay          = delay;
-            this.itemIds        = itemIds;
+        public JsonData(
+                int delay,
+                List<Integer> itemIds,
+                List<Integer> forwardItemIds,
+                int antennaSource,
+                int furniForward,
+                int userForward,
+                boolean signalPerFurni,
+                boolean signalPerUser,
+                int channel) {
+            this.delay = delay;
+            this.itemIds = itemIds;
             this.forwardItemIds = forwardItemIds;
-            this.antennaSource  = antennaSource;
-            this.furniForward   = furniForward;
-            this.userForward    = userForward;
+            this.antennaSource = antennaSource;
+            this.furniForward = furniForward;
+            this.userForward = userForward;
             this.signalPerFurni = signalPerFurni;
-            this.signalPerUser  = signalPerUser;
-            this.channel        = channel;
+            this.signalPerUser = signalPerUser;
+            this.channel = channel;
         }
     }
 }

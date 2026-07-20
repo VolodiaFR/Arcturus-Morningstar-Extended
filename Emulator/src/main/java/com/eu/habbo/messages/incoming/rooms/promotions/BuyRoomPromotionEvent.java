@@ -13,7 +13,7 @@ import com.eu.habbo.messages.outgoing.navigator.NewNavigatorEventCategoriesCompo
 import com.eu.habbo.messages.outgoing.rooms.promotions.RoomPromotionMessageComposer;
 
 public class BuyRoomPromotionEvent extends MessageHandler {
-    public static String ROOM_PROMOTION_BADGE = "RADZZ";
+    public static volatile String ROOM_PROMOTION_BADGE = "RADZZ";
 
     @Override
     public void handle() throws Exception {
@@ -25,20 +25,20 @@ public class BuyRoomPromotionEvent extends MessageHandler {
         String description = this.packet.readString();
         int categoryId = this.packet.readInt();
 
-        if (NewNavigatorEventCategoriesComposer.CATEGORIES.stream().noneMatch(c -> c.getId() == categoryId))
-            return;
+        if (NewNavigatorEventCategoriesComposer.CATEGORIES.stream().noneMatch(c -> c.getId() == categoryId)) return;
 
         CatalogPage page = Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(pageId);
 
-        if (page == null || !page.getLayout().equals("roomads"))
-            return;
+        if (page == null || !page.getLayout().equals("roomads")) return;
 
         CatalogItem item = page.getCatalogItem(itemId);
         if (item != null) {
             if (this.client.getHabbo().getHabboInfo().canBuy(item)) {
                 Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(roomId);
 
-                if (!(room.isOwner(this.client.getHabbo()) || room.hasRights(this.client.getHabbo()) || room.getGuildRightLevel(this.client.getHabbo()).equals(RoomRightLevels.GUILD_ADMIN))) {
+                if (!(room.isOwner(this.client.getHabbo())
+                        || room.hasRights(this.client.getHabbo())
+                        || room.getGuildRightLevel(this.client.getHabbo()).equals(RoomRightLevels.GUILD_ADMIN))) {
                     return;
                 }
 
@@ -60,7 +60,11 @@ public class BuyRoomPromotionEvent extends MessageHandler {
                     this.client.sendResponse(new PurchaseOKComposer());
                     room.sendComposer(new RoomPromotionMessageComposer(room, room.getPromotion()).compose());
 
-                    if (!this.client.getHabbo().getInventory().getBadgesComponent().hasBadge(BuyRoomPromotionEvent.ROOM_PROMOTION_BADGE)) {
+                    if (!this.client
+                            .getHabbo()
+                            .getInventory()
+                            .getBadgesComponent()
+                            .hasBadge(BuyRoomPromotionEvent.ROOM_PROMOTION_BADGE)) {
                         this.client.getHabbo().addBadge(BuyRoomPromotionEvent.ROOM_PROMOTION_BADGE);
                     }
                 } else {

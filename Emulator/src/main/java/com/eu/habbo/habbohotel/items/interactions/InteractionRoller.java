@@ -7,15 +7,14 @@ import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
-import org.apache.commons.math3.util.Pair;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
+import org.apache.commons.math3.util.Pair;
 
 public class InteractionRoller extends HabboItem {
-    public static boolean NO_RULES = false;
+    public static volatile boolean NO_RULES = false;
     public static int DELAY = 400;
 
     public InteractionRoller(ResultSet set, Item baseItem) throws SQLException {
@@ -52,9 +51,7 @@ public class InteractionRoller extends HabboItem {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-
-    }
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
 
     @Override
     public void onWalkOn(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
@@ -65,7 +62,6 @@ public class InteractionRoller extends HabboItem {
     public void onWalkOff(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
         super.onWalkOff(roomUnit, room, objects);
     }
-
 
     @Override
     public boolean canStackAt(Room room, List<Pair<RoomTile, Set<HabboItem>>> itemsAtLocation) {
