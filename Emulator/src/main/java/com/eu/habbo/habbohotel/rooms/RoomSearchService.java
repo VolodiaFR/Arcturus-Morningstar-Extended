@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -104,7 +105,7 @@ final class RoomSearchService {
     }
 
     ArrayList<Room> roomsWithTag(String tag) {
-        return new ArrayList<>(this.cached(new SearchKey("tag-" + tag.toLowerCase(), 0, false), () -> {
+        return new ArrayList<>(this.cached(new SearchKey("tag-" + tag.toLowerCase(Locale.ROOT), 0, false), () -> {
             ArrayList<Room> result = new ArrayList<>();
             for (Room room : this.rooms.get()) {
                 for (String roomTag : room.getTags().split(";")) {

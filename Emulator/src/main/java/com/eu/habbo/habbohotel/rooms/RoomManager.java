@@ -144,6 +144,7 @@ public class RoomManager {
     public static int HOME_ROOM_ID = 0;
     public static boolean SHOW_PUBLIC_IN_POPULAR_TAB = false;
     private final Map<Integer, RoomCategory> roomCategories;
+    private final RoomModelRepository roomModelRepository;
     private final List<String> mapNames;
     private final ConcurrentHashMap<String, RoomLayoutData> layoutCache;
     private final RoomDirectory roomDirectory;
@@ -170,8 +171,9 @@ public class RoomManager {
         long millis = System.currentTimeMillis();
         this.persistenceExecutor = Objects.requireNonNull(persistenceExecutor, "persistenceExecutor");
         this.roomCategories = new HashMap<>();
-        this.mapNames = new ArrayList<>();
-        this.layoutCache = new ConcurrentHashMap<>();
+        this.roomModelRepository = new RoomModelRepository(this::openConnection);
+        this.mapNames = this.roomModelRepository.modelNames();
+        this.layoutCache = this.roomModelRepository.layouts();
         this.roomDirectory = new RoomDirectory();
         this.activeRooms = this.roomDirectory.activeRooms();
         this.roomsByOwner = this.roomDirectory.roomsByOwner();
@@ -227,37 +229,11 @@ public class RoomManager {
     }
 
     public void loadRoomModels() {
-        this.mapNames.clear();
-        this.layoutCache.clear();
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                Statement statement = connection.createStatement();
-                ResultSet set = statement.executeQuery("SELECT * FROM room_models")) {
-            while (set.next()) {
-                String name = set.getString("name");
-                this.mapNames.add(name);
-                this.layoutCache.put(name, new RoomLayoutData(set));
-            }
-        } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
-        }
+        this.roomModelRepository.reload();
     }
 
     public CustomRoomLayout loadCustomLayout(Room room) {
-        CustomRoomLayout layout = null;
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement statement =
-                        connection.prepareStatement("SELECT * FROM room_models_custom WHERE id = ? LIMIT 1")) {
-            statement.setInt(1, room.getId());
-            try (ResultSet set = statement.executeQuery()) {
-                if (set.next()) {
-                    layout = new CustomRoomLayout(set, room);
-                }
-            }
-        } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
-        }
-
-        return layout;
+        return this.roomModelRepository.loadCustomLayout(room);
     }
 
     private void loadRoomCategories() {
@@ -622,31 +598,11 @@ public class RoomManager {
     }
 
     public boolean layoutExists(String name) {
-        return this.mapNames.contains(name);
+        return this.roomModelRepository.exists(name);
     }
 
     public RoomLayout loadLayout(String name, Room room) {
-        RoomLayoutData cached = this.layoutCache.get(name);
-        if (cached != null) {
-            return new RoomLayout(cached, room);
-        }
-
-        // Fallback to DB if not in cache (should not happen for standard models)
-        RoomLayout layout = null;
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement statement =
-                        connection.prepareStatement("SELECT * FROM room_models WHERE name = ? LIMIT 1")) {
-            statement.setString(1, name);
-            try (ResultSet set = statement.executeQuery()) {
-                if (set.next()) {
-                    layout = new RoomLayout(set, room);
-                }
-            }
-        } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
-        }
-
-        return layout;
+        return this.roomModelRepository.load(name, room);
     }
 
     public void unloadRoom(Room room) {
