@@ -1,12 +1,11 @@
 package com.eu.habbo.networking.gameserver.handlers;
 
-import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.TimeUnit;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import io.netty.channel.embedded.EmbeddedChannel;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Test;
 
 class SustainedUnwritableHandlerTest {
 

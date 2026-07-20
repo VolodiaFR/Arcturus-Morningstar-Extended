@@ -1,5 +1,10 @@
 package com.eu.habbo.networking.gameserver.codec;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -10,24 +15,17 @@ import io.netty.handler.codec.http.websocketx.PingWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.PongWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
-import org.junit.jupiter.api.Test;
-
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.function.Supplier;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import org.junit.jupiter.api.Test;
 
 class WebSocketCodecTest {
 
     @Test
     void binaryFramesExposeTheirExactPayload() {
         EmbeddedChannel channel = new EmbeddedChannel(new WebSocketCodec());
-        channel.writeInbound(new BinaryWebSocketFrame(
-                Unpooled.copiedBuffer("game-packet", StandardCharsets.UTF_8)));
+        channel.writeInbound(new BinaryWebSocketFrame(Unpooled.copiedBuffer("game-packet", StandardCharsets.UTF_8)));
 
         ByteBuf payload = channel.readInbound();
         try {
@@ -56,8 +54,7 @@ class WebSocketCodecTest {
     void nonBinaryFramesAreRejectedAtTheGameProtocolBoundary() {
         List<Supplier<WebSocketFrame>> unexpectedFrames = List.of(
                 () -> new TextWebSocketFrame("text"),
-                () -> new ContinuationWebSocketFrame(
-                        Unpooled.copiedBuffer("continuation", StandardCharsets.UTF_8)),
+                () -> new ContinuationWebSocketFrame(Unpooled.copiedBuffer("continuation", StandardCharsets.UTF_8)),
                 PingWebSocketFrame::new,
                 PongWebSocketFrame::new,
                 CloseWebSocketFrame::new);
@@ -69,8 +66,7 @@ class WebSocketCodecTest {
 
     @Test
     void unaggregatedBinaryFragmentsAreRejected() {
-        assertRejected(new BinaryWebSocketFrame(
-                false, 0, Unpooled.copiedBuffer("fragment", StandardCharsets.UTF_8)));
+        assertRejected(new BinaryWebSocketFrame(false, 0, Unpooled.copiedBuffer("fragment", StandardCharsets.UTF_8)));
     }
 
     private static void assertRejected(WebSocketFrame frame) {

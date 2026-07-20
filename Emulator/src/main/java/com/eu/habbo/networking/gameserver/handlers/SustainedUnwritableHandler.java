@@ -2,17 +2,15 @@ package com.eu.habbo.networking.gameserver.handlers;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Objects;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class SustainedUnwritableHandler extends ChannelInboundHandlerAdapter {
 
-    private static final Logger LOGGER =
-            LoggerFactory.getLogger(SustainedUnwritableHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SustainedUnwritableHandler.class);
 
     private final long timeoutNanos;
     private ScheduledFuture<?> closeFuture;
@@ -30,10 +28,8 @@ public final class SustainedUnwritableHandler extends ChannelInboundHandlerAdapt
         if (context.channel().isWritable()) {
             cancelClose();
         } else if (this.closeFuture == null) {
-            this.closeFuture = context.executor().schedule(
-                    () -> closeIfStillUnwritable(context),
-                    this.timeoutNanos,
-                    TimeUnit.NANOSECONDS);
+            this.closeFuture = context.executor()
+                    .schedule(() -> closeIfStillUnwritable(context), this.timeoutNanos, TimeUnit.NANOSECONDS);
         }
         context.fireChannelWritabilityChanged();
     }

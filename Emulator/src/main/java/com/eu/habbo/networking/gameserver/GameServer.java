@@ -58,10 +58,10 @@ public class GameServer extends Server {
             @Override
             public void initChannel(SocketChannel ch) throws Exception {
                 ch.pipeline().addLast("logger", new LoggingHandler());
-                ch.pipeline().addLast(
-                        "outboundBackpressure",
-                        new SustainedUnwritableHandler(
-                                configuredUnwritableTimeoutSeconds(), TimeUnit.SECONDS));
+                ch.pipeline()
+                        .addLast(
+                                "outboundBackpressure",
+                                new SustainedUnwritableHandler(configuredUnwritableTimeoutSeconds(), TimeUnit.SECONDS));
 
                 // Decoders.
                 ch.pipeline().addLast(new GamePolicyDecoder());

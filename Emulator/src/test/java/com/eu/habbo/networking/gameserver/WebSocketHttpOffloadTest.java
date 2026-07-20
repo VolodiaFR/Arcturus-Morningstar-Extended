@@ -1,5 +1,8 @@
 package com.eu.habbo.networking.gameserver;
 
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
+
 import com.eu.habbo.Emulator;
 import com.eu.habbo.core.ConfigurationManager;
 import io.netty.channel.EventLoopGroup;
@@ -7,15 +10,11 @@ import io.netty.channel.MultiThreadIoEventLoopGroup;
 import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.EventExecutor;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class WebSocketHttpOffloadTest {
 
@@ -23,8 +22,7 @@ class WebSocketHttpOffloadTest {
     Path temporaryDirectory;
 
     @Test
-    void blockingHttpHandlersLeaveTheSocketEventLoopAndKeepChannelOrdering()
-            throws Exception {
+    void blockingHttpHandlersLeaveTheSocketEventLoopAndKeepChannelOrdering() throws Exception {
         Field configField = Emulator.class.getDeclaredField("config");
         configField.setAccessible(true);
         Object previousConfig = configField.get(null);
@@ -36,8 +34,7 @@ class WebSocketHttpOffloadTest {
                         + "crypto.ws.enabled=false\n");
         configField.set(null, new ConfigurationManager(configFile.toString()));
 
-        EventLoopGroup eventLoops =
-                new MultiThreadIoEventLoopGroup(1, NioIoHandler.newFactory());
+        EventLoopGroup eventLoops = new MultiThreadIoEventLoopGroup(1, NioIoHandler.newFactory());
         NioSocketChannel channel = new NioSocketChannel();
         try {
             eventLoops.register(channel).syncUninterruptibly();
@@ -58,8 +55,7 @@ class WebSocketHttpOffloadTest {
                     blockingExecutor,
                     channel.pipeline().context("emuStatsHttpHandler").executor());
             assertSame(
-                    socketExecutor,
-                    channel.pipeline().context("wsHttpHandler").executor());
+                    socketExecutor, channel.pipeline().context("wsHttpHandler").executor());
             assertSame(
                     socketExecutor,
                     channel.pipeline().context("authHttpHandler").executor());

@@ -1,18 +1,17 @@
 package com.eu.habbo.networking.rconserver;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.jupiter.api.Test;
-
 import java.nio.charset.StandardCharsets;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class RCONServerHandlerWriteTest {
 
@@ -32,13 +31,11 @@ class RCONServerHandlerWriteTest {
         ContextMarker marker = new ContextMarker();
         EmbeddedChannel channel = new EmbeddedChannel(delayedWrite, marker);
 
-        RCONServerHandler.writeAndClose(
-                channel.pipeline().context(marker), "{\"status\":1}");
+        RCONServerHandler.writeAndClose(channel.pipeline().context(marker), "{\"status\":1}");
 
         assertNotNull(delayedWrite.promise);
         assertTrue(channel.isOpen());
-        assertEquals("{\"status\":1}",
-                delayedWrite.message.toString(StandardCharsets.UTF_8));
+        assertEquals("{\"status\":1}", delayedWrite.message.toString(StandardCharsets.UTF_8));
 
         delayedWrite.promise.setSuccess();
         channel.runPendingTasks();
@@ -48,8 +45,7 @@ class RCONServerHandlerWriteTest {
         channel.finishAndReleaseAll();
     }
 
-    private static final class ContextMarker extends io.netty.channel.ChannelInboundHandlerAdapter {
-    }
+    private static final class ContextMarker extends io.netty.channel.ChannelInboundHandlerAdapter {}
 
     private static final class DelayedWriteHandler extends ChannelOutboundHandlerAdapter {
         private ByteBuf message;

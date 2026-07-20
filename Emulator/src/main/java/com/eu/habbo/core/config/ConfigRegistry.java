@@ -131,12 +131,9 @@ public final class ConfigRegistry {
                 "session.reconnect.grace.seconds");
         keys.add(definition("runtime.threads", ConfigKey.ValueType.INTEGER, "8", true));
         keys.add(definition("http.blocking.pool.size", ConfigKey.ValueType.INTEGER, "8", true));
-        keys.add(definition(
-                "io.netty.write_buffer.low_water_mark", ConfigKey.ValueType.INTEGER, "32768", true));
-        keys.add(definition(
-                "io.netty.write_buffer.high_water_mark", ConfigKey.ValueType.INTEGER, "65536", true));
-        keys.add(definition(
-                "io.netty.unwritable.timeout.seconds", ConfigKey.ValueType.INTEGER, "10", true));
+        keys.add(definition("io.netty.write_buffer.low_water_mark", ConfigKey.ValueType.INTEGER, "32768", true));
+        keys.add(definition("io.netty.write_buffer.high_water_mark", ConfigKey.ValueType.INTEGER, "65536", true));
+        keys.add(definition("io.netty.unwritable.timeout.seconds", ConfigKey.ValueType.INTEGER, "10", true));
         add(
                 keys,
                 ConfigKey.ValueType.LONG,

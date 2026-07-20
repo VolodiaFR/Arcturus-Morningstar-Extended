@@ -1,11 +1,11 @@
 package com.eu.habbo.networking;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import io.netty.channel.ChannelOption;
 import io.netty.channel.WriteBufferWaterMark;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class ServerOutboundBackpressureTest {
 
@@ -15,11 +15,8 @@ class ServerOutboundBackpressureTest {
         try {
             server.initializePipeline();
 
-            WriteBufferWaterMark waterMark = (WriteBufferWaterMark) server
-                    .getServerBootstrap()
-                    .config()
-                    .childOptions()
-                    .get(ChannelOption.WRITE_BUFFER_WATER_MARK);
+            WriteBufferWaterMark waterMark = (WriteBufferWaterMark)
+                    server.getServerBootstrap().config().childOptions().get(ChannelOption.WRITE_BUFFER_WATER_MARK);
 
             assertNotNull(waterMark);
             assertEquals(32 * 1024, waterMark.low());
