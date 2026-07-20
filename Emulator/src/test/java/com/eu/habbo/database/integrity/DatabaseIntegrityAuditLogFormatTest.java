@@ -58,6 +58,15 @@ class DatabaseIntegrityAuditLogFormatTest {
     }
 
     @Test
+    void sampleValuesCannotBreakTheSingleLineLogContract() {
+        String compact = DatabaseIntegrityAudit.compactSamples(List.of(
+                sample(Map.of("username", "first\r\nforged warning"), 1)));
+
+        assertFalse(compact.contains("\r"));
+        assertFalse(compact.contains("\n"));
+    }
+
+    @Test
     void unhealthyReportIsWrittenAsJsonAndClearedAgain() throws Exception {
         Path reportPath = tempDir.resolve("logging").resolve("database-integrity-audit.json");
         IntegrityAuditReport report = new IntegrityAuditReport(
