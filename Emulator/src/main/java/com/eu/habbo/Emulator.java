@@ -70,7 +70,7 @@ public final class Emulator {
     private static final String ANSI_YELLOW = "\u001B[33m";
     private static final String ANSI_DIM = "\u001B[2m";
     private static final Pattern DURATION_PATTERN =
-            Pattern.compile("(([0-9]*) (second|minute|hour|day|week|month|year))");
+            Pattern.compile("((?<![0-9])([0-9]++) (second|minute|hour|day|week|month|year))");
     private static final Map<String, Integer> DURATION_SECONDS = Map.of(
             "second", 1,
             "minute", 60,
