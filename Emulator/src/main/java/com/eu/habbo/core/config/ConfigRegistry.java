@@ -130,6 +130,13 @@ public final class ConfigRegistry {
                 "ws.port",
                 "session.reconnect.grace.seconds");
         keys.add(definition("runtime.threads", ConfigKey.ValueType.INTEGER, "8", true));
+        keys.add(definition("http.blocking.pool.size", ConfigKey.ValueType.INTEGER, "8", true));
+        keys.add(definition(
+                "io.netty.write_buffer.low_water_mark", ConfigKey.ValueType.INTEGER, "32768", true));
+        keys.add(definition(
+                "io.netty.write_buffer.high_water_mark", ConfigKey.ValueType.INTEGER, "65536", true));
+        keys.add(definition(
+                "io.netty.unwritable.timeout.seconds", ConfigKey.ValueType.INTEGER, "10", true));
         add(
                 keys,
                 ConfigKey.ValueType.LONG,
@@ -229,6 +236,12 @@ public final class ConfigRegistry {
         }
         if (name.startsWith("game.")) {
             return "Game listener setting.";
+        }
+        if (name.startsWith("http.blocking.")) {
+            return "Blocking HTTP worker setting.";
+        }
+        if (name.startsWith("io.netty.")) {
+            return "Netty channel flow-control setting.";
         }
         if (name.startsWith("ws.") || name.startsWith("crypto.ws.")) {
             return "WebSocket listener setting.";
