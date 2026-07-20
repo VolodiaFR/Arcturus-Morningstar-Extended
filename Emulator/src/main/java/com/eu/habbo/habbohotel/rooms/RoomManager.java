@@ -141,6 +141,7 @@ public class RoomManager {
     public static boolean SHOW_PUBLIC_IN_POPULAR_TAB = false;
     private final Map<Integer, RoomCategory> roomCategories;
     private final RoomModelRepository roomModelRepository;
+    private final RoomRepository roomRepository;
     private final List<String> mapNames;
     private final ConcurrentHashMap<String, RoomLayoutData> layoutCache;
     private final RoomDirectory roomDirectory;
@@ -170,6 +171,7 @@ public class RoomManager {
         long millis = System.currentTimeMillis();
         this.persistenceExecutor = Objects.requireNonNull(persistenceExecutor, "persistenceExecutor");
         this.roomCategories = new HashMap<>();
+        this.roomRepository = new RoomRepository(this::openConnection);
         this.roomModelRepository = new RoomModelRepository(this::openConnection);
         this.mapNames = this.roomModelRepository.modelNames();
         this.layoutCache = this.roomModelRepository.layouts();
@@ -573,12 +575,9 @@ public class RoomManager {
                 h.getClient().sendResponse(new RoomScoreComposer(room.getScore(), !this.hasVotedForRoom(h, room)));
             }
 
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                    PreparedStatement statement =
-                            connection.prepareStatement("INSERT INTO room_votes (user_id, room_id) VALUES (?, ?)")) {
-                statement.setInt(1, habbo.getHabboInfo().getId());
-                statement.setInt(2, room.getId());
-                statement.execute();
+            try {
+                this.roomRepository.recordVote(
+                        room.getId(), habbo.getHabboInfo().getId());
             } catch (SQLException e) {
                 LOGGER.error("Caught SQL exception", e);
             }
@@ -1092,14 +1091,9 @@ public class RoomManager {
 
     void logEnter(Habbo habbo, Room room) {
         habbo.getHabboStats().roomEnterTimestamp = Emulator.getIntUnixTimestamp();
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement statement = connection.prepareStatement(
-                        "INSERT INTO room_enter_log (room_id, user_id, timestamp) VALUES(?, ?, ?)")) {
-            statement.setInt(1, room.getId());
-            statement.setInt(2, habbo.getHabboInfo().getId());
-            statement.setInt(3, (int) (habbo.getHabboStats().roomEnterTimestamp));
-            statement.execute();
-
+        try {
+            this.roomRepository.recordEntry(
+                    room.getId(), habbo.getHabboInfo().getId(), (int) habbo.getHabboStats().roomEnterTimestamp);
             if (!habbo.getHabboStats().visitedRoom(room.getId()))
                 habbo.getHabboStats().addVisitRoom(room.getId());
         } catch (SQLException e) {
@@ -1160,13 +1154,9 @@ public class RoomManager {
 
         Room room = habbo.getHabboInfo().getCurrentRoom();
         if (room != null) {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                    PreparedStatement statement = connection.prepareStatement(
-                            "UPDATE room_enter_log SET exit_timestamp = ? WHERE user_id = ? AND room_id = ? ORDER BY timestamp DESC LIMIT 1")) {
-                statement.setInt(1, Emulator.getIntUnixTimestamp());
-                statement.setInt(2, habbo.getHabboInfo().getId());
-                statement.setInt(3, room.getId());
-                statement.execute();
+            try {
+                this.roomRepository.recordExit(
+                        room.getId(), habbo.getHabboInfo().getId(), Emulator.getIntUnixTimestamp());
             } catch (SQLException e) {
                 LOGGER.error("Caught SQL exception", e);
             }
@@ -1579,20 +1569,8 @@ public class RoomManager {
     }
 
     public CustomRoomLayout insertCustomLayout(Room room, String map, int doorX, int doorY, int doorDirection) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement statement = connection.prepareStatement(
-                        "INSERT INTO room_models_custom (id, name, door_x, door_y, door_dir, heightmap) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE door_x = ?, door_y = ?, door_dir = ?, heightmap = ?")) {
-            statement.setInt(1, room.getId());
-            statement.setString(2, "custom_" + room.getId());
-            statement.setInt(3, doorX);
-            statement.setInt(4, doorY);
-            statement.setInt(5, doorDirection);
-            statement.setString(6, map);
-            statement.setInt(7, doorX);
-            statement.setInt(8, doorY);
-            statement.setInt(9, doorDirection);
-            statement.setString(10, map);
-            statement.execute();
+        try {
+            this.roomRepository.upsertCustomLayout(room.getId(), map, doorX, doorY, doorDirection);
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
         }
