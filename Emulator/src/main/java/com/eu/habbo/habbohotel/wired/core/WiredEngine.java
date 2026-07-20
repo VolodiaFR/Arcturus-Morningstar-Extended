@@ -987,7 +987,7 @@ public final class WiredEngine {
                         toExecute.size(),
                         randomExtra.getSkipExecutions());
             } else {
-                int randomIndex = new Random().nextInt(effects.size());
+                int randomIndex = selectRandomIndex(effects.size());
                 toExecute = Collections.singletonList(effects.get(randomIndex));
                 debug(ctx.room(), "Random mode: selected effect {}/{}", randomIndex + 1, effects.size());
             }
@@ -1567,6 +1567,10 @@ public final class WiredEngine {
         InteractionWiredExtra extra = getStackExtra(room, stack, WiredExtraRandom.class);
 
         return (extra instanceof WiredExtraRandom) ? (WiredExtraRandom) extra : null;
+    }
+
+    static int selectRandomIndex(int bound) {
+        return new Random().nextInt(bound);
     }
 
     private WiredExtraUnseen getUnseenExtra(Room room, WiredStack stack) {
