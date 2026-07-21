@@ -15,7 +15,6 @@ import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.inventory.RemoveHabboItemComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.ChestDataComposer;
 import com.eu.habbo.threading.runnables.QueryDeleteHabboItems;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -85,14 +84,15 @@ public class ChestDepositFurniEvent extends MessageHandler {
         int deposited = toRemove.size();
         if (deposited <= 0) return;
 
-        contents.addLog(new ChestStorage.LogEntry("deposit", System.currentTimeMillis(), habbo.getHabboInfo().getUsername(), 0, deposited));
+        contents.addLog(new ChestStorage.LogEntry(
+                "deposit", System.currentTimeMillis(), habbo.getHabboInfo().getUsername(), 0, deposited));
         chest.persistContents();
 
         for (HabboItem removed : toRemove) {
             habbo.getClient().sendResponse(new RemoveHabboItemComposer(removed.getGiftAdjustedId()));
         }
         habbo.getClient().sendResponse(new InventoryRefreshComposer());
-        Emulator.getThreading().run(new QueryDeleteHabboItems(toRemove));
+        Emulator.getThreading().runPersistence(new QueryDeleteHabboItems(toRemove));
 
         this.client.sendResponse(new ChestDataComposer(chest));
         ChestFurniPackets.sendDelta(this.client, chest.getId(), List.of(), added);

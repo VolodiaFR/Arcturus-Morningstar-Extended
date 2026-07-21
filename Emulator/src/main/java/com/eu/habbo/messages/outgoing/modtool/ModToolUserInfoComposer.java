@@ -7,18 +7,22 @@ import com.eu.habbo.habbohotel.modtool.ModToolSanctions;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.*;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Map;
-
 public class ModToolUserInfoComposer extends MessageComposer {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModToolUserInfoComposer.class);
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+    private static final DateTimeFormatter DATE_FORMAT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault());
 
     private final ResultSet set;
     private final boolean hideMail;
@@ -53,27 +57,30 @@ public class ModToolUserInfoComposer extends MessageComposer {
             this.response.appendInt(totalBans); // Number of bans
             this.response.appendInt(this.set.getInt("tradelock_amount"));
             this.response.appendString(formatUnixTimestamp(tradeLockExpiryTimestamp)); // Trading lock expiry timestamp
-            this.response.appendString(formatUnixTimestamp(lastPurchaseTimestamp));   // Last Purchase Timestamp
-            this.response.appendInt(userId); //Personal Identification #
+            this.response.appendString(formatUnixTimestamp(lastPurchaseTimestamp)); // Last Purchase Timestamp
+            this.response.appendInt(userId); // Personal Identification #
             this.response.appendInt(identityRelatedBanCount); // Number of account bans on the same machine_id
             this.response.appendString(this.hideMail ? "" : this.set.getString("mail"));
-            this.response.appendString("Rank (" + this.set.getInt("rank_id") + "): " + this.set.getString("rank_name")); //user_class_txt
+            this.response.appendString(
+                    "Rank (" + this.set.getInt("rank_id") + "): " + this.set.getString("rank_name")); // user_class_txt
 
             ModToolSanctions modToolSanctions = Emulator.getGameEnvironment().getModToolSanctions();
 
             if (Emulator.getConfig().getBoolean("hotel.sanctions.enabled")) {
-                Map<Integer, ArrayList<ModToolSanctionItem>> modToolSanctionItemsHashMap = Emulator.getGameEnvironment().getModToolSanctions().getSanctions(this.set.getInt("user_id"));
-                ArrayList<ModToolSanctionItem> modToolSanctionItems = modToolSanctionItemsHashMap.get(this.set.getInt("user_id"));
+                Map<Integer, ArrayList<ModToolSanctionItem>> modToolSanctionItemsHashMap =
+                        Emulator.getGameEnvironment().getModToolSanctions().getSanctions(this.set.getInt("user_id"));
+                ArrayList<ModToolSanctionItem> modToolSanctionItems =
+                        modToolSanctionItemsHashMap.get(this.set.getInt("user_id"));
 
-                if (modToolSanctionItems != null && modToolSanctionItems.size() > 0) //has sanction
+                if (modToolSanctionItems != null && modToolSanctionItems.size() > 0) // has sanction
                 {
                     ModToolSanctionItem item = modToolSanctionItems.get(modToolSanctionItems.size() - 1);
-                    ModToolSanctionLevelItem modToolSanctionLevelItem = modToolSanctions.getSanctionLevelItem(item.sanctionLevel);
+                    ModToolSanctionLevelItem modToolSanctionLevelItem =
+                            modToolSanctions.getSanctionLevelItem(item.sanctionLevel);
 
                     this.response.appendString(modToolSanctions.getSanctionType(modToolSanctionLevelItem));
                     this.response.appendInt(31);
                 }
-
             }
 
             return this.response;
@@ -89,7 +96,8 @@ public class ModToolUserInfoComposer extends MessageComposer {
 
     private static int countBansForUser(int userId) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT COUNT(*) AS amount FROM bans WHERE user_id = ?")) {
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT COUNT(*) AS amount FROM bans WHERE user_id = ?")) {
             statement.setInt(1, userId);
             try (ResultSet set = statement.executeQuery()) {
                 if (set.next()) return set.getInt("amount");
@@ -108,7 +116,8 @@ public class ModToolUserInfoComposer extends MessageComposer {
      */
     private static int fetchLastPurchaseTimestamp(int userId) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT MAX(`timestamp`) AS ts FROM logs_shop_purchases WHERE user_id = ?")) {
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT MAX(`timestamp`) AS ts FROM logs_shop_purchases WHERE user_id = ?")) {
             statement.setInt(1, userId);
             try (ResultSet set = statement.executeQuery()) {
                 if (set.next()) return set.getInt("ts");
@@ -126,7 +135,8 @@ public class ModToolUserInfoComposer extends MessageComposer {
      */
     private static int fetchActiveTradeLockExpiry(int userId, int now) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT MAX(trade_locked_until) AS expiry FROM sanctions WHERE habbo_id = ? AND trade_locked_until > ?")) {
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT MAX(trade_locked_until) AS expiry FROM sanctions WHERE habbo_id = ? AND trade_locked_until > ?")) {
             statement.setInt(1, userId);
             statement.setInt(2, now);
             try (ResultSet set = statement.executeQuery()) {
@@ -148,7 +158,8 @@ public class ModToolUserInfoComposer extends MessageComposer {
         if (machineId == null || machineId.isEmpty()) return 0;
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT COUNT(DISTINCT user_id) AS amount FROM bans WHERE machine_id = ? AND user_id != ?")) {
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT COUNT(DISTINCT user_id) AS amount FROM bans WHERE machine_id = ? AND user_id != ?")) {
             statement.setString(1, machineId);
             statement.setInt(2, userId);
             try (ResultSet set = statement.executeQuery()) {
@@ -165,8 +176,8 @@ public class ModToolUserInfoComposer extends MessageComposer {
      * is rendered as an empty string so the client falls back to its
      * empty-state placeholder.
      */
-    private static String formatUnixTimestamp(int timestamp) {
+    static String formatUnixTimestamp(int timestamp) {
         if (timestamp <= 0) return "";
-        return DATE_FORMAT.format(new Date(timestamp * 1000L));
+        return DATE_FORMAT.format(Instant.ofEpochSecond(timestamp));
     }
 }

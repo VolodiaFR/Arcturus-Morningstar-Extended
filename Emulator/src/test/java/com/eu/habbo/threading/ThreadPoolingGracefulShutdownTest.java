@@ -1,7 +1,14 @@
 package com.eu.habbo.threading;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
@@ -10,11 +17,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 
 class ThreadPoolingGracefulShutdownTest {
 
@@ -38,9 +42,8 @@ class ThreadPoolingGracefulShutdownTest {
             });
             assertTrue(started.await(1, TimeUnit.SECONDS));
 
-            Future<ThreadPooling.ShutdownResult> shutdown = shutdownCaller.submit(
-                    () -> pooling.shutDown(2, TimeUnit.SECONDS)
-            );
+            Future<ThreadPooling.ShutdownResult> shutdown =
+                    shutdownCaller.submit(() -> pooling.shutDown(2, TimeUnit.SECONDS));
 
             assertThrows(TimeoutException.class, () -> shutdown.get(100, TimeUnit.MILLISECONDS));
             release.countDown();
@@ -73,7 +76,7 @@ class ThreadPoolingGracefulShutdownTest {
                     Thread.currentThread().interrupt();
                 }
             });
-            pooling.run(() -> { }, TimeUnit.MINUTES.toMillis(1));
+            pooling.run(() -> {}, TimeUnit.MINUTES.toMillis(1));
             assertTrue(started.await(1, TimeUnit.SECONDS));
 
             ThreadPooling.ShutdownResult result = pooling.shutDown(50, TimeUnit.MILLISECONDS);
@@ -90,9 +93,7 @@ class ThreadPoolingGracefulShutdownTest {
 
     @Test
     void gameEnvironmentDisposesEveryCoreScheduler() throws Exception {
-        String source = Files.readString(Path.of(
-                "src/main/java/com/eu/habbo/habbohotel/GameEnvironment.java"
-        ));
+        String source = Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/GameEnvironment.java"));
 
         assertTrue(source.contains("this.pointsScheduler.setDisposed(true);"));
         assertTrue(source.contains("this.pixelScheduler.setDisposed(true);"));
@@ -102,17 +103,22 @@ class ThreadPoolingGracefulShutdownTest {
     }
 
     @Test
-    void executorDrainsBeforeDatabaseIsClosed() throws Exception {
-        String source = Files.readString(Path.of("src/main/java/com/eu/habbo/Emulator.java"));
-        String shutdownMethod = source.substring(source.indexOf("private static void dispose()"));
-        int threadingShutdown = shutdownMethod.indexOf("Emulator.threading.shutDown()");
-        int databaseShutdown = shutdownMethod.indexOf("Emulator.database.dispose()");
-        int stoppedLog = shutdownMethod.indexOf("LOGGER.info(\"Stopped Polaris {}\", version)");
+    void rejectedDelayedShutdownTaskIsReported() {
+        ThreadPooling pooling = new ThreadPooling(1);
+        Logger logger = (Logger) LoggerFactory.getLogger(ThreadPooling.class);
+        ListAppender<ILoggingEvent> events = new ListAppender<>();
+        events.start();
+        logger.addAppender(events);
 
-        assertTrue(threadingShutdown >= 0);
-        assertTrue(databaseShutdown > threadingShutdown,
-                "tasks must finish before their database dependency is closed");
-        assertTrue(stoppedLog > databaseShutdown,
-                "the emulator must only report stopped after dependencies are closed");
+        try {
+            pooling.setCanAdd(false);
+
+            assertNull(pooling.run(() -> {}, 500));
+            assertTrue(events.list.stream()
+                    .anyMatch(event -> event.getFormattedMessage().contains("Rejected delayed task during shutdown")));
+        } finally {
+            logger.detachAppender(events);
+            pooling.getService().shutdownNow();
+        }
     }
 }

@@ -1,11 +1,10 @@
 package com.eu.habbo.habbohotel.catalog.marketplace;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class AtomicMarketPlacePurchaseContractTest {
     private static String read(String path) throws Exception {
@@ -14,12 +13,15 @@ class AtomicMarketPlacePurchaseContractTest {
 
     @Test
     void purchaseTransactionOwnsOfferItemAndBuyerBalance() throws Exception {
-        String source = read("src/main/java/com/eu/habbo/habbohotel/catalog/marketplace/MarketPlacePurchaseTransaction.java");
+        String source =
+                read("src/main/java/com/eu/habbo/habbohotel/catalog/marketplace/MarketPlacePurchaseTransaction.java");
+        String compactSource = source.replaceAll("\\s+", "");
 
         assertTrue(source.contains("setAutoCommit(false)"));
-        assertTrue(source.contains("UPDATE marketplace_items SET state = 2, sold_timestamp = ? WHERE id = ? AND state = 1"));
+        assertTrue(source.contains(
+                "UPDATE marketplace_items SET state = 2, sold_timestamp = ? WHERE id = ? AND state = 1"));
         assertTrue(source.contains("UPDATE items SET user_id = ? WHERE id = ?"));
-        assertTrue(source.contains("EconomyLedger.apply(connection"));
+        assertTrue(compactSource.contains("EconomyLedger.apply(connection"));
         assertTrue(source.contains("\"marketplace:offer:\" + offerId + \":buyer\""));
         assertTrue(source.contains("\"catalog.marketplace.buy\""));
         assertTrue(source.contains("connection.commit()"));

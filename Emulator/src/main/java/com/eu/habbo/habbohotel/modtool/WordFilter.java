@@ -6,10 +6,6 @@ import com.eu.habbo.habbohotel.rooms.RoomChatMessage;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.friends.FriendChatMessageComposer;
 import com.eu.habbo.plugin.events.users.UserTriggerWordFilterEvent;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -18,13 +14,17 @@ import java.text.Normalizer;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WordFilter {
     private static final Logger LOGGER = LoggerFactory.getLogger(WordFilter.class);
 
-    private static final Pattern DIACRITICS_AND_FRIENDS = Pattern.compile("[\\p{InCombiningDiacriticalMarks}\\p{IsLm}\\p{IsSk}]+");
-    public static boolean ENABLED_FRIENDCHAT = true;
-    public static String DEFAULT_REPLACEMENT = "bobba";
+    private static final Pattern DIACRITICS_AND_FRIENDS =
+            Pattern.compile("[\\p{InCombiningDiacriticalMarks}\\p{IsLm}\\p{IsSk}]+");
+    public static volatile boolean ENABLED_FRIENDCHAT = true;
+    public static volatile String DEFAULT_REPLACEMENT = "bobba";
     protected Set<WordFilterWord> autoReportWords = new HashSet<>();
     protected Set<WordFilterWord> hideMessageWords = new HashSet<>();
     protected Set<WordFilterWord> words = new HashSet<>();
@@ -43,14 +43,14 @@ public class WordFilter {
     }
 
     public synchronized void reload() {
-        if (!Emulator.getConfig().getBoolean("hotel.wordfilter.enabled"))
-            return;
+        if (!Emulator.getConfig().getBoolean("hotel.wordfilter.enabled")) return;
 
         this.autoReportWords.clear();
         this.hideMessageWords.clear();
         this.words.clear();
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); Statement statement = connection.createStatement()) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                Statement statement = connection.createStatement()) {
             try (ResultSet set = statement.executeQuery("SELECT * FROM wordfilter")) {
                 while (set.next()) {
                     WordFilterWord word;
@@ -63,10 +63,8 @@ public class WordFilter {
                     }
 
                     if (!word.prefixOnly) {
-                        if (word.autoReport)
-                            this.autoReportWords.add(word);
-                        else if (word.hideMessage)
-                            this.hideMessageWords.add(word);
+                        if (word.autoReport) this.autoReportWords.add(word);
+                        else if (word.hideMessage) this.hideMessageWords.add(word);
                     }
 
                     this.words.add(word);
@@ -78,15 +76,25 @@ public class WordFilter {
     }
 
     public String normalise(String message) {
-        return DIACRITICS_AND_FRIENDS.matcher(Normalizer.normalize(StringUtils.stripAccents(message), Normalizer.Form.NFKD)
-                .replaceAll("[,.;:'\"]", " ").replace("I", "l")
-                .replaceAll("[^\\p{ASCII}*$]", "").replaceAll("\\p{M}", " ")
-                .replaceAll("^\\p{M}*$]", "").replaceAll("[1|]", "i")
-                .replace("2", "z").replace("3", "e")
-                .replace("4", "a").replace("5", "s")
-                .replace("8", "b").replace("0", "o")
-                .replace(" ", " ").replace("$", "s")
-                .replace("ß", "b").trim()).replaceAll(" ");
+        return DIACRITICS_AND_FRIENDS
+                .matcher(Normalizer.normalize(StringUtils.stripAccents(message), Normalizer.Form.NFKD)
+                        .replaceAll("[,.;:'\"]", " ")
+                        .replace("I", "l")
+                        .replaceAll("[^\\p{ASCII}*$]", "")
+                        .replaceAll("\\p{M}", " ")
+                        .replaceAll("^\\p{M}*$]", "")
+                        .replaceAll("[1|]", "i")
+                        .replace("2", "z")
+                        .replace("3", "e")
+                        .replace("4", "a")
+                        .replace("5", "s")
+                        .replace("8", "b")
+                        .replace("0", "o")
+                        .replace(" ", " ")
+                        .replace("$", "s")
+                        .replace("ß", "b")
+                        .trim())
+                .replaceAll(" ");
     }
 
     public boolean autoReportCheck(RoomChatMessage roomChatMessage) {
@@ -94,10 +102,31 @@ public class WordFilter {
 
         for (WordFilterWord word : this.autoReportWords) {
             if (message.contains(word.key)) {
-                Emulator.getGameEnvironment().getModToolManager().quickTicket(roomChatMessage.getHabbo(), "Automatic WordFilter", roomChatMessage.getMessage());
+                Emulator.getGameEnvironment()
+                        .getModToolManager()
+                        .quickTicket(roomChatMessage.getHabbo(), "Automatic WordFilter", roomChatMessage.getMessage());
 
                 if (Emulator.getConfig().getBoolean("notify.staff.chat.auto.report")) {
-                    Emulator.getGameEnvironment().getHabboManager().sendPacketToHabbosWithPermission(new FriendChatMessageComposer(new Message(roomChatMessage.getHabbo().getHabboInfo().getId(), 0, Emulator.getTexts().getValue("warning.auto.report").replace("%user%", roomChatMessage.getHabbo().getHabboInfo().getUsername()).replace("%word%", word.key))).compose(), "acc_staff_chat");
+                    Emulator.getGameEnvironment()
+                            .getHabboManager()
+                            .sendPacketToHabbosWithPermission(
+                                    new FriendChatMessageComposer(new Message(
+                                                    roomChatMessage
+                                                            .getHabbo()
+                                                            .getHabboInfo()
+                                                            .getId(),
+                                                    0,
+                                                    Emulator.getTexts()
+                                                            .getValue("warning.auto.report")
+                                                            .replace(
+                                                                    "%user%",
+                                                                    roomChatMessage
+                                                                            .getHabbo()
+                                                                            .getHabboInfo()
+                                                                            .getUsername())
+                                                            .replace("%word%", word.key)))
+                                            .compose(),
+                                    "acc_staff_chat");
                 }
                 return true;
             }
@@ -139,8 +168,9 @@ public class WordFilter {
 
             if (StringUtils.containsIgnoreCase(filteredMessage, word.key)) {
                 if (habbo != null) {
-                    if (Emulator.getPluginManager().fireEvent(new UserTriggerWordFilterEvent(habbo, word)).isCancelled())
-                        continue;
+                    if (Emulator.getPluginManager()
+                            .fireEvent(new UserTriggerWordFilterEvent(habbo, word))
+                            .isCancelled()) continue;
                 }
                 filteredMessage = filteredMessage.replace("(?i)" + word.key, word.replacement);
                 foundShit = true;
@@ -170,8 +200,9 @@ public class WordFilter {
 
             if (StringUtils.containsIgnoreCase(message, word.key)) {
                 if (habbo != null) {
-                    if (Emulator.getPluginManager().fireEvent(new UserTriggerWordFilterEvent(habbo, word)).isCancelled())
-                        continue;
+                    if (Emulator.getPluginManager()
+                            .fireEvent(new UserTriggerWordFilterEvent(habbo, word))
+                            .isCancelled()) continue;
                 }
 
                 message = message.replace(word.key, word.replacement);

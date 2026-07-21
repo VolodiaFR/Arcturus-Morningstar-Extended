@@ -7,13 +7,7 @@ import com.google.gson.JsonObject;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaderValues;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -134,7 +128,7 @@ public final class AuthHttpUtil {
         // Only trust a client-supplied forwarded-IP header when the DIRECT peer
         // is a trusted reverse proxy; otherwise an attacker hitting the port
         // directly could spoof it to evade per-IP rate limiting and IP bans.
-        if (!ipHeader.isEmpty() && req.headers().contains(ipHeader) && isTrustedProxy(ctx)) {
+        if (!ipHeader.isEmpty() && req.headers().contains(ipHeader) && shouldHonorForwardedHeader(ctx, ipHeader)) {
             String hv = req.headers().get(ipHeader);
             if (hv != null && !hv.isEmpty()) {
                 int comma = hv.indexOf(',');
@@ -151,10 +145,36 @@ public final class AuthHttpUtil {
     }
 
     /**
+     * Gate for honouring a forwarded-IP header, with operator feedback: when a
+     * request carries the configured header but the direct peer is not a
+     * trusted proxy, log a one-time warning naming the peer so "everyone has
+     * the proxy IP" is diagnosable instead of silent.
+     */
+    public static boolean shouldHonorForwardedHeader(ChannelHandlerContext ctx, String headerName) {
+        if (isTrustedProxy(ctx)) return true;
+
+        String peerIp = (ctx.channel().remoteAddress() instanceof InetSocketAddress a)
+                ? a.getAddress().getHostAddress() : null;
+        if (peerIp != null && WARNED_UNTRUSTED_PEERS.size() < MAX_WARNED_PEERS && WARNED_UNTRUSTED_PEERS.add(peerIp)) {
+            LOGGER.warn("Ignoring forwarded-IP header '{}' from untrusted peer {} — if this is your reverse proxy, "
+                            + "add its IP to the ws.ip.header.trusted setting (comma-separated; a trailing '.' or ':' makes it a prefix range).",
+                    headerName, peerIp);
+        }
+        return false;
+    }
+
+    private static final int MAX_WARNED_PEERS = 64;
+    private static final java.util.Set<String> WARNED_UNTRUSTED_PEERS =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /**
      * Whether the channel's direct peer may set a forwarded-IP header. Loopback
-     * is always trusted; additional proxies can be allow-listed (exact IP or
-     * string prefix, comma-separated) via the {@code ws.ip.header.trusted}
-     * config key. Default-deny so the header can't be spoofed from the open net.
+     * is always trusted; Cloudflare's published edge ranges are trusted when
+     * {@code ws.ip.header} is {@code CF-Connecting-IP} (see
+     * {@link CloudflareIpRanges}); additional proxies can be allow-listed via
+     * the {@code ws.ip.header.trusted} config key (comma-separated exact IPs,
+     * dotted/colon prefixes, or CIDR blocks like {@code 10.0.0.0/8}).
+     * Default-deny so the header can't be spoofed from the open net.
      */
     public static boolean isTrustedProxy(ChannelHandlerContext ctx) {
         String peerIp = (ctx.channel().remoteAddress() instanceof InetSocketAddress a)
@@ -163,13 +183,23 @@ public final class AuthHttpUtil {
         if (peerIp.equals("127.0.0.1") || peerIp.equals("::1") || peerIp.equals("0:0:0:0:0:0:0:1")) {
             return true;
         }
+        if (CloudflareIpRanges.isCloudflareEdge(peerIp)) return true;
         String trusted = Emulator.getConfig() != null
                 ? Emulator.getConfig().getValue("ws.ip.header.trusted", "")
                 : "";
         if (trusted.isEmpty()) return false;
+        byte[] peerAddress = null; // lazily parsed, only needed for CIDR entries
         for (String entry : trusted.split(",")) {
             String t = entry.trim();
             if (t.isEmpty()) continue;
+            // CIDR block, e.g. "10.0.0.0/8" or "2400:cb00::/32".
+            if (t.indexOf('/') > 0) {
+                CidrRange range = CidrRange.parse(t);
+                if (range == null) continue;
+                if (peerAddress == null) peerAddress = CidrRange.parseAddress(peerIp);
+                if (range.contains(peerAddress)) return true;
+                continue;
+            }
             // Exact IP match, or a dotted/colon prefix range (e.g. "10.0.0." or
             // "2001:db8:") — never a bare-IP prefix, so "10.0.0.1" can't also
             // trust "10.0.0.12".

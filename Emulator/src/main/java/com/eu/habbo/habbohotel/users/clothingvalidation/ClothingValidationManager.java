@@ -3,25 +3,24 @@ package com.eu.habbo.habbohotel.users.clothingvalidation;
 import com.eu.habbo.habbohotel.users.Habbo;
 import it.unimi.dsi.fastutil.ints.IntCollection;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ClothingValidationManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClothingValidationManager.class);
 
-    public static String FIGUREDATA_URL = "";
-    public static boolean VALIDATE_ON_HC_EXPIRE = false;
-    public static boolean VALIDATE_ON_LOGIN = false;
-    public static boolean VALIDATE_ON_CHANGE_LOOKS = false;
-    public static boolean VALIDATE_ON_MIMIC = false;
-    public static boolean VALIDATE_ON_MANNEQUIN = false;
-    public static boolean VALIDATE_ON_FBALLGATE = false;
+    public static volatile String FIGUREDATA_URL = "";
+    public static volatile boolean VALIDATE_ON_HC_EXPIRE = false;
+    public static volatile boolean VALIDATE_ON_LOGIN = false;
+    public static volatile boolean VALIDATE_ON_CHANGE_LOOKS = false;
+    public static volatile boolean VALIDATE_ON_MIMIC = false;
+    public static volatile boolean VALIDATE_ON_MANNEQUIN = false;
+    public static volatile boolean VALIDATE_ON_FBALLGATE = false;
 
     private static final Figuredata FIGUREDATA = new Figuredata();
 
@@ -49,7 +48,11 @@ public class ClothingValidationManager {
      * @return Cleaned figure string
      */
     public static String validateLook(Habbo habbo) {
-        return validateLook(habbo.getHabboInfo().getLook(), habbo.getHabboInfo().getGender().name(), habbo.getHabboStats().hasActiveClub(), habbo.getInventory().getWardrobeComponent().getClothingSets());
+        return validateLook(
+                habbo.getHabboInfo().getLook(),
+                habbo.getHabboInfo().getGender().name(),
+                habbo.getHabboStats().hasActiveClub(),
+                habbo.getInventory().getWardrobeComponent().getClothingSets());
     }
 
     /**
@@ -60,7 +63,11 @@ public class ClothingValidationManager {
      * @return Cleaned figure string
      */
     public static String validateLook(Habbo habbo, String look, String gender) {
-        return validateLook(look, gender, habbo.getHabboStats().hasActiveClub(), habbo.getInventory().getWardrobeComponent().getClothingSets());
+        return validateLook(
+                look,
+                gender,
+                habbo.getHabboStats().hasActiveClub(),
+                habbo.getInventory().getWardrobeComponent().getClothingSets());
     }
 
     /**
@@ -93,8 +100,7 @@ public class ClothingValidationManager {
      * @return Cleaned figure string
      */
     public static String validateLook(String look, String gender, boolean isHC, IntCollection ownedClothing) {
-        if(FIGUREDATA.palettes.size() == 0 || FIGUREDATA.settypes.size() == 0)
-            return look;
+        if (FIGUREDATA.palettes.size() == 0 || FIGUREDATA.settypes.size() == 0) return look;
 
         String[] newLookParts = look.split(Pattern.quote("."));
         ArrayList<String> lookParts = new ArrayList<>();
@@ -102,42 +108,38 @@ public class ClothingValidationManager {
         Map<String, String[]> parts = new HashMap<>();
 
         // add mandatory settypes
-        for(String lookpart : newLookParts) {
+        for (String lookpart : newLookParts) {
             if (lookpart.contains("-")) {
                 String[] data = lookpart.split(Pattern.quote("-"));
                 FiguredataSettype settype = FIGUREDATA.settypes.get(data[0]);
-                if(settype != null) {
+                if (settype != null) {
                     parts.put(data[0], data);
                 }
             }
         }
 
-        FIGUREDATA.settypes.entrySet().stream().filter(x -> !parts.containsKey(x.getKey())).forEach(x ->
-        {
-            FiguredataSettype settype = x.getValue();
+        FIGUREDATA.settypes.entrySet().stream()
+                .filter(x -> !parts.containsKey(x.getKey()))
+                .forEach(x -> {
+                    FiguredataSettype settype = x.getValue();
 
-            if(gender.equalsIgnoreCase("M") && !isHC && !settype.mandatoryMale0)
-                return;
+                    if (gender.equalsIgnoreCase("M") && !isHC && !settype.mandatoryMale0) return;
 
-            if(gender.equalsIgnoreCase("F") && !isHC && !settype.mandatoryFemale0)
-                return;
+                    if (gender.equalsIgnoreCase("F") && !isHC && !settype.mandatoryFemale0) return;
 
-            if(gender.equalsIgnoreCase("M") && isHC && !settype.mandatoryMale1)
-                return;
+                    if (gender.equalsIgnoreCase("M") && isHC && !settype.mandatoryMale1) return;
 
-            if(gender.equalsIgnoreCase("F") && isHC && !settype.mandatoryFemale1)
-                return;
+                    if (gender.equalsIgnoreCase("F") && isHC && !settype.mandatoryFemale1) return;
 
-            parts.put(x.getKey(), new String[] { x.getKey() });
-        });
-
+                    parts.put(x.getKey(), new String[] {x.getKey()});
+                });
 
         parts.forEach((key, data) -> {
             try {
                 if (data.length >= 1) {
                     FiguredataSettype settype = FIGUREDATA.settypes.get(data[0]);
                     if (settype == null) {
-                        //throw new Exception("Set type " + data[0] + " does not exist");
+                        // throw new Exception("Set type " + data[0] + " does not exist");
                         return;
                     }
 
@@ -152,18 +154,18 @@ public class ClothingValidationManager {
                     setId = Integer.parseInt(data.length >= 2 ? data[1] : "-1");
                     set = settype.getSet(setId);
 
-                    if (set == null || (set.club && !isHC) || !set.selectable || (set.sellable && !ownedClothing.contains(set.id)) || (!set.gender.equalsIgnoreCase("U") && !set.gender.equalsIgnoreCase(gender))) {
-                        if (gender.equalsIgnoreCase("M") && !isHC && !settype.mandatoryMale0)
-                            return;
+                    if (set == null
+                            || (set.club && !isHC)
+                            || !set.selectable
+                            || (set.sellable && !ownedClothing.contains(set.id))
+                            || (!set.gender.equalsIgnoreCase("U") && !set.gender.equalsIgnoreCase(gender))) {
+                        if (gender.equalsIgnoreCase("M") && !isHC && !settype.mandatoryMale0) return;
 
-                        if (gender.equalsIgnoreCase("F") && !isHC && !settype.mandatoryFemale0)
-                            return;
+                        if (gender.equalsIgnoreCase("F") && !isHC && !settype.mandatoryFemale0) return;
 
-                        if (gender.equalsIgnoreCase("M") && isHC && !settype.mandatoryMale1)
-                            return;
+                        if (gender.equalsIgnoreCase("M") && isHC && !settype.mandatoryMale1) return;
 
-                        if (gender.equalsIgnoreCase("F") && isHC && !settype.mandatoryFemale1)
-                            return;
+                        if (gender.equalsIgnoreCase("F") && isHC && !settype.mandatoryFemale1) return;
 
                         set = settype.getFirstNonHCSetForGender(gender);
                         setId = set.id;
@@ -204,12 +206,11 @@ public class ClothingValidationManager {
                     lookParts.add(String.join("-", dataParts));
                 }
             } catch (Exception e) {
-                //habbo.alert(e.getMessage());
+                // habbo.alert(e.getMessage());
                 LOGGER.error("Error in clothing validation", e);
             }
         });
 
         return String.join(".", lookParts);
     }
-
 }

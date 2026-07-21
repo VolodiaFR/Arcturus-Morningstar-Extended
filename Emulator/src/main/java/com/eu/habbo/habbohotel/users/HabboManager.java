@@ -1,15 +1,19 @@
 package com.eu.habbo.habbohotel.users;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.database.SqlQueries;
 import com.eu.habbo.habbohotel.economy.EconomyLedger;
 import com.eu.habbo.habbohotel.economy.EconomyOperation;
 import com.eu.habbo.habbohotel.economy.EconomyOperationId;
-import com.eu.habbo.database.SqlQueries;
 import com.eu.habbo.habbohotel.modtool.ModToolBan;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.permissions.Rank;
 import com.eu.habbo.messages.ServerMessage;
-import com.eu.habbo.messages.outgoing.catalog.*;
+import com.eu.habbo.messages.outgoing.catalog.CatalogModeComposer;
+import com.eu.habbo.messages.outgoing.catalog.CatalogUpdatedComposer;
+import com.eu.habbo.messages.outgoing.catalog.DiscountComposer;
+import com.eu.habbo.messages.outgoing.catalog.GiftConfigurationComposer;
+import com.eu.habbo.messages.outgoing.catalog.RecyclerLogicComposer;
 import com.eu.habbo.messages.outgoing.catalog.marketplace.MarketplaceConfigComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.GenericAlertComposer;
 import com.eu.habbo.messages.outgoing.modtool.ModToolComposer;
@@ -17,9 +21,6 @@ import com.eu.habbo.messages.outgoing.users.UserPerksComposer;
 import com.eu.habbo.messages.outgoing.users.UserPermissionsComposer;
 import com.eu.habbo.plugin.events.users.UserRankChangedEvent;
 import com.eu.habbo.plugin.events.users.UserRegisteredEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -30,34 +31,41 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HabboManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HabboManager.class);
 
-    //Configuration. Loaded from database & updated accordingly.
-    public static String WELCOME_MESSAGE = "";
+    // Configuration. Loaded from database & updated accordingly.
+    public static volatile String WELCOME_MESSAGE = "";
     public static boolean NAMECHANGE_ENABLED = false;
 
     private final ConcurrentHashMap<Integer, Habbo> onlineHabbos;
     private final ConcurrentHashMap<String, Habbo> onlineHabbosByName;
     private final ConcurrentHashMap<Integer, String> usernameCache = new ConcurrentHashMap<>();
+    private final DisconnectPersistenceGate disconnectPersistence;
 
     public HabboManager() {
+        this(Runnable::run);
+    }
+
+    public HabboManager(Executor persistenceExecutor) {
         long millis = System.currentTimeMillis();
 
         this.onlineHabbos = new ConcurrentHashMap<>();
         this.onlineHabbosByName = new ConcurrentHashMap<>();
+        this.disconnectPersistence = new DisconnectPersistenceGate(persistenceExecutor);
 
         LOGGER.info("Habbo Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
     }
 
     public static HabboInfo getOfflineHabboInfo(int id) {
         try {
-            return SqlQueries.queryOne(
-                    "SELECT * FROM users WHERE id = ? LIMIT 1",
-                    HabboInfo::new,
-                    id).orElse(null);
+            return SqlQueries.queryOne("SELECT * FROM users WHERE id = ? LIMIT 1", HabboInfo::new, id)
+                    .orElse(null);
         } catch (SqlQueries.DataAccessException e) {
             LOGGER.error("Caught SQL exception", e);
             return null;
@@ -66,10 +74,8 @@ public class HabboManager {
 
     public static HabboInfo getOfflineHabboInfo(String username) {
         try {
-            return SqlQueries.queryOne(
-                    "SELECT * FROM users WHERE username = ? LIMIT 1",
-                    HabboInfo::new,
-                    username).orElse(null);
+            return SqlQueries.queryOne("SELECT * FROM users WHERE username = ? LIMIT 1", HabboInfo::new, username)
+                    .orElse(null);
         } catch (SqlQueries.DataAccessException e) {
             LOGGER.error("Caught SQL exception", e);
             return null;
@@ -99,7 +105,8 @@ public class HabboManager {
         int userId = 0;
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT id FROM users WHERE auth_ticket = ? AND (auth_ticket_expires_at IS NULL OR auth_ticket_expires_at >= NOW()) LIMIT 1")) {
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT id FROM users WHERE auth_ticket = ? AND (auth_ticket_expires_at IS NULL OR auth_ticket_expires_at >= NOW()) LIMIT 1")) {
             statement.setString(1, sso);
             try (ResultSet s = statement.executeQuery()) {
                 if (s.next()) {
@@ -111,6 +118,10 @@ public class HabboManager {
             LOGGER.error("Caught SQL exception", e);
         }
 
+        if (!this.awaitDisconnectPersistence(userId)) {
+            return null;
+        }
+
         habbo = this.cloneCheck(userId);
         if (habbo != null) {
             habbo.alert(Emulator.getTexts().getValue("loggedin.elsewhere"));
@@ -118,14 +129,18 @@ public class HabboManager {
             habbo = null;
         }
 
+        if (!this.awaitDisconnectPersistence(userId)) {
+            return null;
+        }
+
         ModToolBan ban = Emulator.getGameEnvironment().getModToolManager().checkForBan(userId);
         if (ban != null) {
             return null;
         }
 
-
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT * FROM users WHERE auth_ticket = ? AND (auth_ticket_expires_at IS NULL OR auth_ticket_expires_at >= NOW()) LIMIT 1")) {
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT * FROM users WHERE auth_ticket = ? AND (auth_ticket_expires_at IS NULL OR auth_ticket_expires_at >= NOW()) LIMIT 1")) {
             statement.setString(1, sso);
             try (ResultSet set = statement.executeQuery()) {
                 if (set.next()) {
@@ -150,6 +165,26 @@ public class HabboManager {
         }
 
         return habbo;
+    }
+
+    private boolean awaitDisconnectPersistence(int userId) {
+        if (this.disconnectPersistence.await(userId)) {
+            return true;
+        }
+        LOGGER.warn("Interrupted while waiting for disconnect persistence for user {}", userId);
+        return false;
+    }
+
+    DisconnectPersistenceGate.Registration beginDisconnectPersistence(int userId) {
+        return this.disconnectPersistence.begin(userId);
+    }
+
+    void submitDisconnectPersistence(DisconnectPersistenceGate.Registration registration, Runnable persistence) {
+        this.disconnectPersistence.submit(registration, persistence);
+    }
+
+    void cancelDisconnectPersistence(DisconnectPersistenceGate.Registration registration) {
+        this.disconnectPersistence.cancel(registration);
     }
 
     public HabboInfo getHabboInfo(int id) {
@@ -201,9 +236,7 @@ public class HabboManager {
 
     public synchronized void dispose() {
 
-
-//
-
+        //
 
         LOGGER.info("Habbo Manager -> Disposed!");
     }
@@ -236,7 +269,6 @@ public class HabboManager {
         }
     }
 
-
     public void setRank(int userId, int rankId) throws Exception {
         Habbo habbo = this.getHabbo(userId);
 
@@ -249,7 +281,7 @@ public class HabboManager {
             if (!oldRank.getBadge().isEmpty()) {
                 habbo.deleteBadge(habbo.getInventory().getBadgesComponent().getBadge(oldRank.getBadge()));
             }
-            if(oldRank.getRoomEffect() > 0) {
+            if (oldRank.getRoomEffect() > 0) {
                 habbo.getInventory().getEffectsComponent().effects.remove(oldRank.getRoomEffect());
             }
 
@@ -259,8 +291,10 @@ public class HabboManager {
                 habbo.addBadge(newRank.getBadge());
             }
 
-            if(newRank.getRoomEffect() > 0) {
-                habbo.getInventory().getEffectsComponent().createRankEffect(habbo.getHabboInfo().getRank().getRoomEffect());
+            if (newRank.getRoomEffect() > 0) {
+                habbo.getInventory()
+                        .getEffectsComponent()
+                        .createRankEffect(habbo.getHabboInfo().getRank().getRoomEffect());
             }
 
             habbo.getClient().sendResponse(new UserPermissionsComposer(habbo));
@@ -277,7 +311,9 @@ public class HabboManager {
             habbo.getClient().sendResponse(new MarketplaceConfigComposer());
             habbo.getClient().sendResponse(new GiftConfigurationComposer());
             habbo.getClient().sendResponse(new RecyclerLogicComposer());
-            habbo.alert(Emulator.getTexts().getValue("commands.generic.cmd_give_rank.new_rank").replace("id", newRank.getName()));
+            habbo.alert(Emulator.getTexts()
+                    .getValue("commands.generic.cmd_give_rank.new_rank")
+                    .replace("id", newRank.getName()));
         } else {
             try {
                 SqlQueries.update("UPDATE users SET `rank` = ? WHERE id = ? LIMIT 1", rankId, userId);

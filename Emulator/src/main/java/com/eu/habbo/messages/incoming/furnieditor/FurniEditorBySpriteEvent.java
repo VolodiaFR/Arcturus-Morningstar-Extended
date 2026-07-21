@@ -1,13 +1,10 @@
 package com.eu.habbo.messages.incoming.furnieditor;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.items.editor.FurniEditorRepository;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.furnieditor.FurniEditorResultComposer;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 
 public class FurniEditorBySpriteEvent extends MessageHandler {
 
@@ -25,18 +22,9 @@ public class FurniEditorBySpriteEvent extends MessageHandler {
             return;
         }
 
-        // Look up the item ID by sprite_id
-        int itemId = -1;
-
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement stmt = connection.prepareStatement("SELECT id FROM items_base WHERE sprite_id = ? LIMIT 1")) {
-            stmt.setInt(1, spriteId);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    itemId = rs.getInt("id");
-                }
-            }
-        }
+        int itemId = new FurniEditorRepository(Emulator.getDatabase().getDataSource())
+                .findItemIdBySprite(spriteId)
+                .orElse(-1);
 
         if (itemId <= 0) {
             this.client.sendResponse(new FurniEditorResultComposer(false, "No item found with sprite_id: " + spriteId));

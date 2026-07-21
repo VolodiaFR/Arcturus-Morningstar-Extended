@@ -4,14 +4,13 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 public class GiftConfigurationComposer extends MessageComposer {
-    public static List<Integer> BOX_TYPES = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 8);
-    public static List<Integer> RIBBON_TYPES = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+    public static volatile List<Integer> BOX_TYPES = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 8);
+    public static volatile List<Integer> RIBBON_TYPES = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 
     @Override
     protected ServerMessage composeInternal() {
@@ -19,8 +18,10 @@ public class GiftConfigurationComposer extends MessageComposer {
         this.response.appendBoolean(true);
         this.response.appendInt(Emulator.getConfig().getInt("hotel.gifts.special.price", 2));
 
-        this.response.appendInt(Emulator.getGameEnvironment().getCatalogManager().giftWrappers.size());
-        for (Integer i : Emulator.getGameEnvironment().getCatalogManager().giftWrappers.keySet()) {
+        var giftWrapping = Emulator.getGameEnvironment().getCatalogManager().getGiftWrappingSnapshot();
+
+        this.response.appendInt(giftWrapping.wrappers().size());
+        for (Integer i : giftWrapping.wrappers().keySet()) {
             this.response.appendInt(i);
         }
 
@@ -34,9 +35,9 @@ public class GiftConfigurationComposer extends MessageComposer {
             this.response.appendInt(type);
         }
 
-        this.response.appendInt(Emulator.getGameEnvironment().getCatalogManager().giftFurnis.size());
+        this.response.appendInt(giftWrapping.furniture().size());
 
-        for (Map.Entry<Integer, Integer> set : Emulator.getGameEnvironment().getCatalogManager().giftFurnis.entrySet()) {
+        for (Map.Entry<Integer, Integer> set : giftWrapping.furniture().entrySet()) {
             this.response.appendInt(set.getKey());
         }
 

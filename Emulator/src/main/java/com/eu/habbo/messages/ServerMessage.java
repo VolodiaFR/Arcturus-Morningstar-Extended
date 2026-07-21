@@ -5,11 +5,12 @@ import com.eu.habbo.util.PacketUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.Unpooled;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 public class ServerMessage {
+
+    private static final int MAX_UNSIGNED_SHORT = 0xFFFF;
 
     private boolean initialized;
 
@@ -17,10 +18,10 @@ public class ServerMessage {
     private ByteBufOutputStream stream;
     private ByteBuf channelBuffer;
     private MessageComposer composer;
+    private volatile boolean broadcastPrepared;
+    private int framedWriterIndex = -1;
 
-    public ServerMessage() {
-
-    }
+    public ServerMessage() {}
 
     public ServerMessage(int header) {
         this.init(header);
@@ -116,8 +117,12 @@ public class ServerMessage {
     }
 
     public void appendShort(int obj) {
+        if (obj < Short.MIN_VALUE || obj > MAX_UNSIGNED_SHORT) {
+            throw new IllegalArgumentException("Short value out of range: " + obj);
+        }
+
         try {
-            this.stream.writeShort((short) obj);
+            this.stream.writeShort(obj);
         } catch (IOException e) {
             throw new ServerMessageException(e);
         }
@@ -177,10 +182,33 @@ public class ServerMessage {
         return this.header;
     }
 
-    public ByteBuf get() {
-        this.channelBuffer.setInt(0, this.channelBuffer.writerIndex() - 4);
-
+    public synchronized ByteBuf get() {
+        this.frameLength();
         return this.channelBuffer.copy();
+    }
+
+    synchronized void prepareBroadcast() {
+        this.broadcastPrepared = true;
+        this.frameLength();
+    }
+
+    synchronized ByteBuf retainedDuplicateForBroadcast() {
+        this.frameLength();
+        return this.channelBuffer.retainedDuplicate();
+    }
+
+    boolean isBroadcastPrepared() {
+        return this.broadcastPrepared;
+    }
+
+    private void frameLength() {
+        int writerIndex = this.channelBuffer.writerIndex();
+        if (this.framedWriterIndex == writerIndex) {
+            return;
+        }
+
+        this.channelBuffer.setInt(0, writerIndex - 4);
+        this.framedWriterIndex = writerIndex;
     }
 
     public MessageComposer getComposer() {
@@ -190,5 +218,4 @@ public class ServerMessage {
     public void setComposer(MessageComposer composer) {
         this.composer = composer;
     }
-
 }

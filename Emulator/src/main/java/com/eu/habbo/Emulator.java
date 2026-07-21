@@ -3,12 +3,15 @@ package com.eu.habbo;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.ConsoleAppender;
-import com.eu.habbo.core.*;
+import com.eu.habbo.core.ConfigurationManager;
+import com.eu.habbo.core.CryptoConfig;
+import com.eu.habbo.core.DatabaseLogger;
+import com.eu.habbo.core.Logging;
+import com.eu.habbo.core.TextsManager;
 import com.eu.habbo.core.consolecommands.ConsoleCommand;
 import com.eu.habbo.database.Database;
-import com.eu.habbo.database.integrity.DatabaseIntegrityAudit;
+import com.eu.habbo.database.PersistenceExecutor;
 import com.eu.habbo.database.integrity.IntegrityAuditOptions;
-import com.eu.habbo.database.migration.MigrationRunner;
 import com.eu.habbo.database.migration.MigrationException;
 import com.eu.habbo.database.migration.MigrationOptions;
 import com.eu.habbo.gui.EmulatorDashboard;
@@ -17,47 +20,86 @@ import com.eu.habbo.habbohotel.gameclients.SessionResumeManager;
 import com.eu.habbo.networking.gameserver.GameServer;
 import com.eu.habbo.networking.rconserver.RCONServer;
 import com.eu.habbo.plugin.PluginManager;
-import com.eu.habbo.plugin.events.emulator.EmulatorConfigUpdatedEvent;
 import com.eu.habbo.plugin.events.emulator.EmulatorLoadedEvent;
 import com.eu.habbo.plugin.events.emulator.EmulatorStartShutdownEvent;
 import com.eu.habbo.plugin.events.emulator.EmulatorStoppedEvent;
 import com.eu.habbo.threading.ThreadPooling;
 import com.eu.habbo.util.imager.badges.BadgeImager;
 import com.eu.habbo.util.logback.ConsoleStyle;
-import org.fusesource.jansi.AnsiConsole;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.JarURLConnection;
 import java.net.URL;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
-import java.util.*;
+import java.text.ParsePosition;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.ResolverStyle;
+import java.time.temporal.TemporalAccessor;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.fusesource.jansi.AnsiConsole;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class Emulator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Emulator.class);
-    private static final String OS_NAME = (System.getProperty("os.name") != null ? System.getProperty("os.name") : "Unknown");
-    private static final String CLASS_PATH = (System.getProperty("java.class.path") != null ? System.getProperty("java.class.path") : "Unknown");
+    private static final String OS_NAME =
+            (System.getProperty("os.name") != null ? System.getProperty("os.name") : "Unknown");
+    private static final String CLASS_PATH =
+            (System.getProperty("java.class.path") != null ? System.getProperty("java.class.path") : "Unknown");
     private static final String ANSI_RESET = "\u001B[0m";
     private static final String ANSI_BOLD = "\u001B[1m";
     private static final String ANSI_CYAN = "\u001B[36m";
     private static final String ANSI_GREEN = "\u001B[32m";
     private static final String ANSI_YELLOW = "\u001B[33m";
     private static final String ANSI_DIM = "\u001B[2m";
+    private static final Pattern DURATION_PATTERN =
+            Pattern.compile("((?<![0-9])([0-9]++) (second|minute|hour|day|week|month|year))");
+    private static final Map<String, Integer> DURATION_SECONDS = Map.of(
+            "second", 1,
+            "minute", 60,
+            "hour", 3600,
+            "day", 86400,
+            "week", 604800,
+            "month", 2628000,
+            "year", 31536000);
+    private static final Map<String, Integer> CALENDAR_FIELDS = Map.of(
+            "second", Calendar.SECOND,
+            "minute", Calendar.MINUTE,
+            "hour", Calendar.HOUR,
+            "day", Calendar.DAY_OF_MONTH,
+            "week", Calendar.WEEK_OF_MONTH,
+            "month", Calendar.MONTH,
+            "year", Calendar.YEAR);
+    private static final DateTimeFormatter BUILD_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter LEGACY_TIMESTAMP_PARSER = new DateTimeFormatterBuilder()
+            .parseLenient()
+            .appendPattern("uuuu-MM-dd HH:mm:ss")
+            .toFormatter(Locale.ENGLISH)
+            .withResolverStyle(ResolverStyle.LENIENT);
 
     // Fallback version, only used when running outside a packaged jar (e.g. from
     // the IDE). In production the version comes from the jar manifest below.
-    public final static int MAJOR = 4;
-    public final static int MINOR = 1;
-    public final static int BUILD = 0;
-    public final static String PREVIEW = "";
+    public static final int MAJOR = 4;
+    public static final int MINOR = 1;
+    public static final int BUILD = 0;
+    public static final String PREVIEW = "";
 
     // Tied to the Maven project version: read from the jar manifest
     // (Implementation-Version = ${project.version}, see the shade plugin's
@@ -70,25 +112,23 @@ public final class Emulator {
     }
 
     public static final String version = "Polaris " + resolveVersionNumber();
-    private static final String logo =
-            "\n" +
-                    "██████╗  ██████╗ ██╗      █████╗ ██████╗ ██╗███████╗\n" +
-                    "██╔══██╗██╔═══██╗██║     ██╔══██╗██╔══██╗██║██╔════╝\n" +
-                    "██████╔╝██║   ██║██║     ███████║██████╔╝██║███████╗\n" +
-                    "██╔═══╝ ██║   ██║██║     ██╔══██║██╔══██╗██║╚════██║\n" +
-                    "██║     ╚██████╔╝███████╗██║  ██║██║  ██║██║███████║\n" +
-                    "╚═╝      ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚══════╝\n" +
-                    "Still Rocking in 2026.\n";
+    private static final String logo = "\n" + "██████╗  ██████╗ ██╗      █████╗ ██████╗ ██╗███████╗\n"
+            + "██╔══██╗██╔═══██╗██║     ██╔══██╗██╔══██╗██║██╔════╝\n"
+            + "██████╔╝██║   ██║██║     ███████║██████╔╝██║███████╗\n"
+            + "██╔═══╝ ██║   ██║██║     ██╔══██║██╔══██╗██║╚════██║\n"
+            + "██║     ╚██████╔╝███████╗██║  ██║██║  ██║██║███████║\n"
+            + "╚═╝      ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚══════╝\n"
+            + "Still Rocking in 2026.\n";
     public static String build = "";
     public static long buildTimestamp = -1L;
 
-
-    public static boolean isReady = false;
-    public static boolean isShuttingDown = false;
-    public static boolean stopped = false;
+    public static volatile boolean isReady = false;
+    public static volatile boolean isShuttingDown = false;
+    public static volatile boolean stopped = false;
     public static boolean debugging = false;
-    private static int timeStarted = 0;
+    private static long timeStarted = 0L;
     private static Runtime runtime;
+    private static PolarisRuntime polarisRuntime;
     private static ConfigurationManager config;
     private static CryptoConfig crypto;
     private static TextsManager texts;
@@ -114,7 +154,6 @@ public final class Emulator {
     }
 
     @SuppressWarnings("resource")
-
     public static void main(String[] args) throws Exception {
         try {
             MigrationOptions migrationOptions = MigrationOptions.parse(args);
@@ -129,118 +168,59 @@ public final class Emulator {
             Locale.setDefault(Locale.of("en"));
             setBuild();
             Emulator.stopped = false;
+            Emulator.polarisRuntime =
+                    new PolarisRuntime(() -> SessionResumeManager.getInstance().disposeAll());
             ConsoleCommand.load();
-            Emulator.logging = new Logging();
+            PolarisBootstrap bootstrap =
+                    new PolarisBootstrap(Emulator.polarisRuntime, Emulator::registerStartupConfigDefaults);
+            bootstrap.initializeLogging();
 
             System.out.println(startupHero(styledConsole));
 
             long startTime = System.nanoTime();
 
             Emulator.runtime = Runtime.getRuntime();
-            Emulator.config = new ConfigurationManager("config.ini");
-            Emulator.crypto = new CryptoConfig(
-                    Emulator.getConfig().getBoolean("enc.enabled", false),
-                    Emulator.getConfig().getValue("enc.e"),
-                    Emulator.getConfig().getValue("enc.n"),
-                    Emulator.getConfig().getValue("enc.d"));
-            Emulator.database = new Database(Emulator.getConfig());
-            // Migrate before loading database-backed configuration.
-            if (Emulator.getDatabase() != null && Emulator.getDatabase().getDataSource() != null) {
-                if (migrationOptions.mode() == MigrationOptions.Mode.VALIDATE) {
-                    System.out.print(MigrationRunner.statusAtStartup(Emulator.getDatabase().getDataSource()));
-                    DatabaseIntegrityAudit.auditAtStartup(
-                            Emulator.getDatabase().getDataSource(),
-                            Emulator.getConfig(),
-                            integrityAuditOptions);
-                    Emulator.database.dispose();
-                    return;
-                }
-
-                if (migrationOptions.mode() == MigrationOptions.Mode.APPLY
-                        || migrationOptions.migrationsOnly()) {
-                    MigrationRunner.migrateAtStartup(
-                            Emulator.getDatabase().getDataSource(),
-                            Emulator.getConfig());
-                } else {
-                    MigrationRunner.runAtStartup(Emulator.getDatabase().getDataSource(), Emulator.getConfig());
-                }
-
-                DatabaseIntegrityAudit.auditAtStartup(
-                        Emulator.getDatabase().getDataSource(),
-                        Emulator.getConfig(),
-                        integrityAuditOptions);
-
-                if (migrationOptions.migrationsOnly()) {
-                    LOGGER.info("[migrate] Database migration completed; --migrations-only requested, so the emulator will not start.");
-                    Emulator.database.dispose();
-                    return;
-                }
+            if (!bootstrap.start(migrationOptions, integrityAuditOptions)) {
+                Emulator.polarisRuntime.shutdown();
+                return;
             }
-            com.eu.habbo.database.indexing.DatabaseIndexAuditor.auditAtStartup(
-                    Emulator.getDatabase().getDataSource());
-            Emulator.databaseLogger = new DatabaseLogger();
-            Emulator.config.loaded = true;
-            Emulator.config.loadFromDatabase();
-            Emulator.threading = new ThreadPooling(Emulator.getConfig().getInt("runtime.threads"));
-            Emulator.getDatabase().getDataSource().setMaximumPoolSize(Emulator.getConfig().getInt("runtime.threads") * 2);
-            Emulator.getDatabase().getDataSource().setMinimumIdle(10);
-            registerStartupConfigDefaults();
-            Emulator.pluginManager = new PluginManager();
-            Emulator.pluginManager.reload();
-            Emulator.getPluginManager().fireEvent(new EmulatorConfigUpdatedEvent());
-            Emulator.texts = new TextsManager();
-
-            String hotelTimezoneId = Emulator.getConfig().getValue("hotel.timezone", java.time.ZoneId.systemDefault().getId());
-            System.out.println(startupCard(hotelTimezoneId));
-            Emulator.texts.register("camera.permission", "You don't have permission to use the camera!");
-            Emulator.texts.register("camera.wait", "Please wait %seconds% seconds before making another picture.");
-            Emulator.texts.register("camera.error.creation", "Failed to create your picture. *sadpanda*");
-
-            File thumbnailDir = new File(Emulator.config.getValue("imager.location.output.thumbnail"));
-            if (!thumbnailDir.exists()) {
-                thumbnailDir.mkdirs();
-            }
-
-            new CleanerThread();
-            Emulator.gameServer = new GameServer(getConfig().getValue("game.host", "127.0.0.1"), getConfig().getInt("game.port", 30000));
-            Emulator.rconServer = new RCONServer(getConfig().getValue("rcon.host", "127.0.0.1"), getConfig().getInt("rcon.port", 30001));
-            Emulator.gameEnvironment = new GameEnvironment();
-            Emulator.gameEnvironment.load();
-            Emulator.gameServer.initializePipeline();
-            Emulator.gameServer.connect();
-            Emulator.getGameServer().getGameClientManager().CFKeepAlive();
-            Emulator.rconServer.initializePipeline();
-            Emulator.rconServer.connect();
-            Emulator.badgeImager = new BadgeImager();
 
             LOGGER.info("Polaris has successfully loaded.");
-            LOGGER.info("System launched in: {}ms. Using {} threads!", (System.nanoTime() - startTime) / 1e6, Runtime.getRuntime().availableProcessors() * 2);
-            LOGGER.info("Memory: {}/{}MB", (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024), (runtime.freeMemory()) / (1024 * 1024));
+            LOGGER.info(
+                    "System launched in: {}ms. Using {} threads!",
+                    (System.nanoTime() - startTime) / 1e6,
+                    Runtime.getRuntime().availableProcessors() * 2);
+            LOGGER.info(
+                    "Memory: {}/{}MB",
+                    (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024),
+                    (runtime.freeMemory()) / (1024 * 1024));
 
             Emulator.debugging = Emulator.getConfig().getBoolean("debug.mode");
 
             if (debugging) {
-                ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+                ch.qos.logback.classic.Logger root =
+                        (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
                 root.setLevel(Level.DEBUG);
                 LOGGER.debug("Debugging enabled.");
             }
 
             Emulator.getPluginManager().fireEvent(new EmulatorLoadedEvent());
             Emulator.isReady = true;
-            Emulator.timeStarted = getIntUnixTimestamp();
+            Emulator.timeStarted = getLongUnixTimestamp();
 
             if (shouldLaunchGui()) {
                 EmulatorDashboard.launch();
             }
 
-            if (Emulator.getConfig().getInt("runtime.threads") < (Runtime.getRuntime().availableProcessors() * 2)) {
-                LOGGER.warn("Emulator settings runtime.threads ({}) can be increased to ({}) to possibly increase performance.",
+            if (Emulator.getConfig().getInt("runtime.threads")
+                    < (Runtime.getRuntime().availableProcessors() * 2)) {
+                LOGGER.warn(
+                        "Emulator settings runtime.threads ({}) can be increased to ({}) to possibly increase performance.",
                         Emulator.getConfig().getInt("runtime.threads"),
                         Runtime.getRuntime().availableProcessors() * 2);
             }
 
-            Emulator.getThreading().run(() -> {
-            }, 1500);
+            Emulator.getThreading().run(() -> {}, 1500);
 
             // Check if console mode is true or false, default is true
             if (Emulator.getConfig().getBoolean("console.mode", true)) {
@@ -249,10 +229,8 @@ public final class Emulator {
 
                 while (!isShuttingDown && isReady) {
                     try {
-                        String line = reader.readLine();
-
-                        if (line != null) {
-                            ConsoleCommand.handle(line);
+                        if (!readConsoleCommand(reader)) {
+                            break;
                         }
                         System.out.println("Waiting for command: ");
                     } catch (Exception e) {
@@ -265,17 +243,26 @@ public final class Emulator {
 
         } catch (IllegalArgumentException e) {
             LOGGER.error("Invalid startup option: {}", e.getMessage());
+            shutdownAfterStartupFailure();
             throw e;
         } catch (MigrationException e) {
             LOGGER.error("Polaris could not safely prepare the database, so startup was aborted.", e);
-            if (Emulator.database != null) {
-                Emulator.database.dispose();
-            }
+            shutdownAfterStartupFailure();
             throw e;
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);
+            shutdownAfterStartupFailure();
             throw e;
         }
+    }
+
+    static boolean readConsoleCommand(BufferedReader reader) throws IOException {
+        String line = reader.readLine();
+        if (line != null) {
+            ConsoleCommand.handle(line);
+            return true;
+        }
+        return false;
     }
 
     private static void setBuild() {
@@ -287,7 +274,11 @@ public final class Emulator {
 
         StringBuilder sb = new StringBuilder();
         try {
-            File buildFile = new File(Emulator.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+            File buildFile = new File(Emulator.class
+                    .getProtectionDomain()
+                    .getCodeSource()
+                    .getLocation()
+                    .toURI());
             buildTimestamp = resolveBuildTimestamp(buildFile);
 
             if (!buildFile.isFile()) {
@@ -300,8 +291,7 @@ public final class Emulator {
             try (FileInputStream fis = new FileInputStream(filepath)) {
                 byte[] dataBytes = new byte[1024];
                 int nread = 0;
-                while ((nread = fis.read(dataBytes)) != -1)
-                    md.update(dataBytes, 0, nread);
+                while ((nread = fis.read(dataBytes)) != -1) md.update(dataBytes, 0, nread);
                 byte[] mdbytes = md.digest();
                 for (int i = 0; i < mdbytes.length; i++)
                     sb.append(Integer.toString((mdbytes[i] & 0xff) + 0x100, 16).substring(1));
@@ -352,15 +342,15 @@ public final class Emulator {
     }
 
     static String startupCard(String hotelTimezoneId) {
-        return "\n" +
-                "+----------------------------------------------------------------+\n" +
-                "| Polaris (formerly Arcturus Morningstar Extended)               |\n" +
-                "| Source : github.com/duckietm/Nitro-Cool-UI-Renderer            |\n" +
-                "| Scope  : Educational open-source fork of Arcturus/Morningstar  |\n" +
-                "| Version: " + version + "\n" +
-                "| Build  : " + build + "\n" +
-                "| Time   : " + formatBuildTimestamp(buildTimestamp, hotelTimezoneId) + " [" + hotelTimezoneId + "]\n" +
-                "+----------------------------------------------------------------+\n";
+        return "\n" + "+----------------------------------------------------------------+\n"
+                + "| Polaris (formerly Arcturus Morningstar Extended)               |\n"
+                + "| Source : github.com/duckietm/Nitro-Cool-UI-Renderer            |\n"
+                + "| Scope  : Educational open-source fork of Arcturus/Morningstar  |\n"
+                + "| Version: "
+                + version + "\n" + "| Build  : "
+                + build + "\n" + "| Time   : "
+                + formatBuildTimestamp(buildTimestamp, hotelTimezoneId) + " [" + hotelTimezoneId + "]\n"
+                + "+----------------------------------------------------------------+\n";
     }
 
     static String startupHero() {
@@ -369,43 +359,50 @@ public final class Emulator {
 
     static String startupHero(boolean styled) {
         if (styled) {
-            return "\n" +
-                    ANSI_CYAN +
-                    "   ____   ___  _        _    ____  ___ ____  \n" +
-                    "  |  _ \\ / _ \\| |      / \\  |  _ \\|_ _/ ___| \n" +
-                    "  | |_) | | | | |     / _ \\ | |_) || | \\___ \\ \n" +
-                    "  |  __/| |_| | |___ / ___ \\|  _ <  | |  ___) |\n" +
-                    "  |_|    \\___/|_____/_/   \\_\\_| \\_\\|___||____/ \n" +
-                    ANSI_RESET +
-                    "\n" +
-                    ANSI_DIM + "+------------------------------------------------------------------------------+" + ANSI_RESET + "\n" +
-                    "| " + ANSI_BOLD + ANSI_GREEN + "[OK] POLARIS" + ANSI_RESET + fit("", 63) + " |\n" +
-                    "| " + ANSI_DIM + "Polaris game server runtime" + ANSI_RESET + fit("", 49) + " |\n" +
-                    ANSI_DIM + "+------------------------------------------------------------------------------+" + ANSI_RESET + "\n" +
-                    "| " + ANSI_YELLOW + "[VER]" + ANSI_RESET + " Version : " + fit(version, 57) + " |\n" +
-                    "| " + ANSI_YELLOW + "[BLD]" + ANSI_RESET + " Build   : " + fit(build.isBlank() ? "UNKNOWN" : build, 57) + " |\n" +
-                    "| " + ANSI_YELLOW + "[JVM]" + ANSI_RESET + " Runtime : " + fit("Java " + System.getProperty("java.version", "unknown") + " / styled console output", 57) + " |\n" +
-                    ANSI_DIM + "+------------------------------------------------------------------------------+" + ANSI_RESET + "\n";
+            return "\n" + ANSI_CYAN
+                    + "   ____   ___  _        _    ____  ___ ____  \n"
+                    + "  |  _ \\ / _ \\| |      / \\  |  _ \\|_ _/ ___| \n"
+                    + "  | |_) | | | | |     / _ \\ | |_) || | \\___ \\ \n"
+                    + "  |  __/| |_| | |___ / ___ \\|  _ <  | |  ___) |\n"
+                    + "  |_|    \\___/|_____/_/   \\_\\_| \\_\\|___||____/ \n"
+                    + ANSI_RESET
+                    + "\n"
+                    + ANSI_DIM
+                    + "+------------------------------------------------------------------------------+" + ANSI_RESET
+                    + "\n" + "| "
+                    + ANSI_BOLD + ANSI_GREEN + "[OK] POLARIS" + ANSI_RESET + fit("", 63) + " |\n" + "| "
+                    + ANSI_DIM + "Polaris game server runtime" + ANSI_RESET + fit("", 49) + " |\n" + ANSI_DIM
+                    + "+------------------------------------------------------------------------------+" + ANSI_RESET
+                    + "\n" + "| "
+                    + ANSI_YELLOW + "[VER]" + ANSI_RESET + " Version : " + fit(version, 57) + " |\n" + "| "
+                    + ANSI_YELLOW + "[BLD]" + ANSI_RESET + " Build   : " + fit(build.isBlank() ? "UNKNOWN" : build, 57)
+                    + " |\n" + "| "
+                    + ANSI_YELLOW + "[JVM]" + ANSI_RESET + " Runtime : "
+                    + fit("Java " + System.getProperty("java.version", "unknown") + " / styled console output", 57)
+                    + " |\n" + ANSI_DIM
+                    + "+------------------------------------------------------------------------------+" + ANSI_RESET
+                    + "\n";
         }
 
-        return "\n" +
-                "   ____   ___  _        _    ____  ___ ____  \n" +
-                "  |  _ \\ / _ \\| |      / \\  |  _ \\|_ _/ ___| \n" +
-                "  | |_) | | | | |     / _ \\ | |_) || | \\___ \\ \n" +
-                "  |  __/| |_| | |___ / ___ \\|  _ <  | |  ___) |\n" +
-                "  |_|    \\___/|_____/_/   \\_\\_| \\_\\|___||____/ \n" +
-                "\n" +
-                "+------------------------------------------------------------------------------+\n" +
-                "| POLARIS                                                                      |\n" +
-                "| Polaris game server runtime                                                  |\n" +
-                "+------------------------------------------------------------------------------+\n" +
-                "| Version : " + fit(version, 63) + " |\n" +
-                "| Build   : " + fit(build.isBlank() ? "UNKNOWN" : build, 63) + " |\n" +
-                "| Runtime : " + fit("Java " + System.getProperty("java.version", "unknown") + " / universal console output", 63) + " |\n" +
-                "+------------------------------------------------------------------------------+\n";
+        return "\n" + "   ____   ___  _        _    ____  ___ ____  \n"
+                + "  |  _ \\ / _ \\| |      / \\  |  _ \\|_ _/ ___| \n"
+                + "  | |_) | | | | |     / _ \\ | |_) || | \\___ \\ \n"
+                + "  |  __/| |_| | |___ / ___ \\|  _ <  | |  ___) |\n"
+                + "  |_|    \\___/|_____/_/   \\_\\_| \\_\\|___||____/ \n"
+                + "\n"
+                + "+------------------------------------------------------------------------------+\n"
+                + "| POLARIS                                                                      |\n"
+                + "| Polaris game server runtime                                                  |\n"
+                + "+------------------------------------------------------------------------------+\n"
+                + "| Version : "
+                + fit(version, 63) + " |\n" + "| Build   : "
+                + fit(build.isBlank() ? "UNKNOWN" : build, 63) + " |\n" + "| Runtime : "
+                + fit("Java " + System.getProperty("java.version", "unknown") + " / universal console output", 63)
+                + " |\n" + "+------------------------------------------------------------------------------+\n";
     }
 
-    static boolean shouldStyleConsole(Map<String, String> environment, boolean interactiveConsole, String osName, String styleProperty) {
+    static boolean shouldStyleConsole(
+            Map<String, String> environment, boolean interactiveConsole, String osName, String styleProperty) {
         return ConsoleStyle.isEnabled(environment, interactiveConsole, osName, styleProperty);
     }
 
@@ -417,7 +414,8 @@ public final class Emulator {
         try {
             AnsiConsole.systemInstall();
 
-            ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+            ch.qos.logback.classic.Logger root =
+                    (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
             ConsoleAppender<ILoggingEvent> appender = (ConsoleAppender<ILoggingEvent>) root.getAppender("Console");
             if (appender != null) {
                 appender.stop();
@@ -434,7 +432,8 @@ public final class Emulator {
     }
 
     private static void registerStartupConfigDefaults() {
-        Emulator.config.register("camera.url", "http://localhost/camera/");
+        ConfigurationManager configuration = Emulator.config;
+        configuration.register("camera.url", "http://localhost/camera/");
         Emulator.config.register("imager.location.output.camera", "/public/camera/");
         Emulator.config.register("imager.location.output.thumbnail", "/public/camera/thumbnails/");
         Emulator.config.register("camera.price.points.publish", "1");
@@ -444,10 +443,20 @@ public final class Emulator {
         Emulator.config.register("camera.price.points", "0");
         Emulator.config.register("camera.price.points.type", "5");
         Emulator.config.register("camera.render.delay", "5");
-        Emulator.config.register("hotel.timezone", java.time.ZoneId.systemDefault().getId());
-        Emulator.config.register("polaris.legacy.bridge.enabled", "1", "Rewrite legacy plugin SQL (pre-Polaris table names) to the new schema on the fly.");
-        Emulator.config.register("polaris.legacy.bridge.log", "1", "Log every distinct legacy SQL statement the bridge translates.");
-        Emulator.config.register("polaris.legacy.bridge.table_renames", "", "Extra legacy table renames, format old:new;old2:new2");
+        Emulator.config.register(
+                "hotel.timezone", java.time.ZoneId.systemDefault().getId());
+        Emulator.config.register(
+                "polaris.legacy.bridge.enabled",
+                "1",
+                "Rewrite legacy plugin SQL (pre-Polaris table names) to the new schema on the fly.");
+        Emulator.config.register(
+                "polaris.legacy.bridge.log", "1", "Log every distinct legacy SQL statement the bridge translates.");
+        Emulator.config.register(
+                "polaris.legacy.bridge.table_renames", "", "Extra legacy table renames, format old:new;old2:new2");
+        configuration.register(
+                "polaris.events.honor_priority",
+                "0",
+                "Opt in to priority-ordered, cancellation-aware plugin event dispatch.");
         Emulator.config.register("gui.enabled", "0");
         Emulator.config.register("gui.autostart.enabled", "0");
         Emulator.config.register("rcon.rate_limit.enabled", "1");
@@ -457,6 +466,16 @@ public final class Emulator {
         Emulator.config.register("rcon.execute_command.denied_permissions", "cmd_shutdown;cmd_give_rank");
         Emulator.config.register("rcon.execute_command.allowed_permissions", "");
         Emulator.config.register("rcon.max_payload_bytes", "65536");
+        configuration.register(
+                "stress.enabled", "0", "Enable transient room stress controls over the allowlisted RCON listener.");
+        configuration.register("stress.max_bots", "5000");
+        configuration.register("stress.max_items", "100000");
+        configuration.register("stress.max_rollers", "50000");
+        configuration.register("stress.max_wired_stacks", "50000");
+        configuration.register("stress.max_wired_events_per_second", "100");
+        configuration.register("stress.max_total_entities", "200000");
+        configuration.register("stress.max_chat_per_second", "10000");
+        configuration.register("stress.max_duration_seconds", "3600");
         Emulator.config.register("nitro.secure.api.max_payload_bytes", "65536");
         Emulator.config.register("nitro.secure.config.max_file_bytes", "2097152");
         Emulator.config.register("nitro.secure.gamedata.max_file_bytes", "16777216");
@@ -477,26 +496,44 @@ public final class Emulator {
             return "UNKNOWN";
         }
 
-        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
+        ZoneId zoneId;
         try {
-            format.setTimeZone(TimeZone.getTimeZone(java.time.ZoneId.of(timezoneId)));
+            zoneId = ZoneId.of(timezoneId);
         } catch (Exception ignored) {
-            format.setTimeZone(TimeZone.getDefault());
+            zoneId = ZoneId.systemDefault();
         }
 
-        return format.format(new Timestamp(buildTimestamp));
+        return BUILD_TIMESTAMP_FORMAT.format(
+                Instant.ofEpochMilli(buildTimestamp).atZone(zoneId));
     }
 
     private static void dispose() {
-        if (Emulator.threading != null) {
-            Emulator.threading.setCanAdd(false);
-        }
         Emulator.isShuttingDown = true;
         Emulator.isReady = false;
 
         LOGGER.info("Stopping Polaris {}", version);
 
+        if (Emulator.polarisRuntime != null) {
+            Emulator.polarisRuntime.shutdown();
+        } else {
+            disposeLegacyRuntime();
+        }
+
+        LOGGER.info("Stopped Polaris {}", version);
+
+        Emulator.stopped = true;
+    }
+
+    private static void shutdownAfterStartupFailure() {
+        if (Emulator.polarisRuntime != null) {
+            Emulator.polarisRuntime.shutdown();
+        }
+    }
+
+    private static void disposeLegacyRuntime() {
+        if (Emulator.threading != null) {
+            Emulator.threading.setCanAdd(false);
+        }
         if (Emulator.pluginManager != null)
             tryShutdown(() -> Emulator.pluginManager.fireEvent(new EmulatorStartShutdownEvent()));
         if (Emulator.rconServer != null) tryShutdown(() -> Emulator.rconServer.stop());
@@ -505,15 +542,10 @@ public final class Emulator {
         if (Emulator.pluginManager != null)
             tryShutdown(() -> Emulator.pluginManager.fireEvent(new EmulatorStoppedEvent()));
         if (Emulator.pluginManager != null) tryShutdown(() -> Emulator.pluginManager.dispose());
-        if (canPersistConfiguration())
-            tryShutdown(() -> Emulator.config.saveToDatabase());
+        if (canPersistConfiguration()) tryShutdown(() -> Emulator.config.saveToDatabase());
         if (Emulator.gameServer != null) tryShutdown(() -> Emulator.gameServer.stop());
         if (Emulator.threading != null) tryShutdown(() -> Emulator.threading.shutDown());
         if (Emulator.database != null) tryShutdown(() -> Emulator.database.dispose());
-
-        LOGGER.info("Stopped Polaris {}", version);
-
-        Emulator.stopped = true;
     }
 
     private static boolean canPersistConfiguration() {
@@ -532,28 +564,78 @@ public final class Emulator {
     }
 
     public static ConfigurationManager getConfig() {
-        return config;
+        return polarisRuntime != null && polarisRuntime.configuration() != null
+                ? polarisRuntime.configuration()
+                : config;
     }
 
     public static CryptoConfig getCrypto() {
-        return crypto;
+        return polarisRuntime != null && polarisRuntime.crypto() != null ? polarisRuntime.crypto() : crypto;
     }
 
     public static TextsManager getTexts() {
-        return texts;
+        return polarisRuntime != null && polarisRuntime.texts() != null ? polarisRuntime.texts() : texts;
     }
 
     public static Database getDatabase() {
-        return database;
+        return polarisRuntime != null && polarisRuntime.database() != null ? polarisRuntime.database() : database;
     }
 
     /** Installs the integration-test database without exposing a public API. */
     static void setDatabaseForTesting(Database database) {
         Emulator.database = database;
+        if (Emulator.polarisRuntime != null && database != null) {
+            Emulator.polarisRuntime.installDatabase(database);
+        }
+    }
+
+    /**
+     * Keeps the private legacy backing fields aligned with the runtime owner.
+     * Public compatibility getters still prefer the runtime-owned instances.
+     */
+    static void synchronizeLegacyFacade(PolarisRuntime services) {
+        if (services.configuration() != null) {
+            Emulator.config = services.configuration();
+        }
+        if (services.crypto() != null) {
+            Emulator.crypto = services.crypto();
+        }
+        if (services.texts() != null) {
+            Emulator.texts = services.texts();
+        }
+        if (services.database() != null) {
+            Emulator.database = services.database();
+        }
+        if (services.databaseLogger() != null) {
+            Emulator.databaseLogger = services.databaseLogger();
+        }
+        if (services.gameServer() != null) {
+            Emulator.gameServer = services.gameServer();
+        }
+        if (services.rconServer() != null) {
+            Emulator.rconServer = services.rconServer();
+        }
+        if (services.logging() != null) {
+            Emulator.logging = services.logging();
+        }
+        if (services.threading() != null) {
+            Emulator.threading = services.threading();
+        }
+        if (services.gameEnvironment() != null) {
+            Emulator.gameEnvironment = services.gameEnvironment();
+        }
+        if (services.pluginManager() != null) {
+            Emulator.pluginManager = services.pluginManager();
+        }
+        if (services.badgeImager() != null) {
+            Emulator.badgeImager = services.badgeImager();
+        }
     }
 
     public static DatabaseLogger getDatabaseLogger() {
-        return databaseLogger;
+        return polarisRuntime != null && polarisRuntime.databaseLogger() != null
+                ? polarisRuntime.databaseLogger()
+                : databaseLogger;
     }
 
     public static Runtime getRuntime() {
@@ -561,23 +643,23 @@ public final class Emulator {
     }
 
     public static GameServer getGameServer() {
-        return gameServer;
+        return polarisRuntime != null && polarisRuntime.gameServer() != null ? polarisRuntime.gameServer() : gameServer;
     }
 
     private static void registerEarningsSettings() {
         Emulator.config.register("earnings.enabled", "0");
 
         String[] categories = {
-                "daily_gift",
-                "games",
-                "achievements",
-                "marketplace",
-                "hc_payday",
-                "level_progress",
-                "donations",
-                "bonus_bag",
-                "mystery_boxes",
-                "club_job"
+            "daily_gift",
+            "games",
+            "achievements",
+            "marketplace",
+            "hc_payday",
+            "level_progress",
+            "donations",
+            "bonus_bag",
+            "mystery_boxes",
+            "club_job"
         };
 
         for (String category : categories) {
@@ -592,7 +674,14 @@ public final class Emulator {
             Emulator.config.register(prefix + "item_id", "0");
             Emulator.config.register(prefix + "item.quantity", "1");
             Emulator.config.register(prefix + "hc.days", "0");
-            Emulator.config.register(prefix + "native.enabled", (category.equals("marketplace") || category.equals("hc_payday") || category.equals("achievements") || category.equals("level_progress")) ? "1" : "0");
+            Emulator.config.register(
+                    prefix + "native.enabled",
+                    (category.equals("marketplace")
+                                    || category.equals("hc_payday")
+                                    || category.equals("achievements")
+                                    || category.equals("level_progress"))
+                            ? "1"
+                            : "0");
         }
 
         Emulator.config.register("earnings.achievements.min_score", "1");
@@ -601,7 +690,7 @@ public final class Emulator {
     }
 
     public static RCONServer getRconServer() {
-        return rconServer;
+        return polarisRuntime != null && polarisRuntime.rconServer() != null ? polarisRuntime.rconServer() : rconServer;
     }
 
     /**
@@ -609,37 +698,51 @@ public final class Emulator {
      */
     @Deprecated
     public static Logging getLogging() {
-        return logging;
+        return polarisRuntime != null && polarisRuntime.logging() != null ? polarisRuntime.logging() : logging;
     }
 
     public static ThreadPooling getThreading() {
-        return threading;
+        return polarisRuntime != null && polarisRuntime.threading() != null ? polarisRuntime.threading() : threading;
+    }
+
+    public static PersistenceExecutor getPersistenceExecutor() {
+        return polarisRuntime != null && polarisRuntime.persistenceExecutor() != null
+                ? polarisRuntime.persistenceExecutor()
+                : null;
     }
 
     public static GameEnvironment getGameEnvironment() {
-        return gameEnvironment;
+        return polarisRuntime != null && polarisRuntime.gameEnvironment() != null
+                ? polarisRuntime.gameEnvironment()
+                : gameEnvironment;
     }
 
     public static PluginManager getPluginManager() {
-        return pluginManager;
+        return polarisRuntime != null && polarisRuntime.pluginManager() != null
+                ? polarisRuntime.pluginManager()
+                : pluginManager;
     }
 
     public static Random getRandom() {
         return ThreadLocalRandom.current();
     }
+
     public static SecureRandom getRandomDice() {
         return secureRandom;
     }
+
     public static BadgeImager getBadgeImager() {
-        return badgeImager;
+        return polarisRuntime != null && polarisRuntime.badgeImager() != null
+                ? polarisRuntime.badgeImager()
+                : badgeImager;
     }
 
     public static int getTimeStarted() {
-        return timeStarted;
+        return (int) timeStarted;
     }
 
     public static int getOnlineTime() {
-        return getIntUnixTimestamp() - timeStarted;
+        return elapsedSeconds(timeStarted, getLongUnixTimestamp());
     }
 
     public static void prepareShutdown() {
@@ -647,81 +750,64 @@ public final class Emulator {
     }
 
     public static int timeStringToSeconds(String timeString) {
-        int totalSeconds = 0;
-
-        Matcher m = Pattern.compile("(([0-9]*) (second|minute|hour|day|week|month|year))").matcher(timeString);
-        Map<String,Integer> map = new HashMap<String,Integer>() {
-            {
-                put("second", 1);
-                put("minute", 60);
-                put("hour", 3600);
-                put("day", 86400);
-                put("week", 604800);
-                put("month", 2628000);
-                put("year", 31536000);
-            }
-        };
+        long totalSeconds = 0L;
+        Matcher m = DURATION_PATTERN.matcher(timeString);
 
         while (m.find()) {
             try {
                 int amount = Integer.parseInt(m.group(2));
                 String what = m.group(3);
-                totalSeconds += amount * map.get(what);
+                totalSeconds += (long) amount * DURATION_SECONDS.get(what);
+                if (totalSeconds >= Integer.MAX_VALUE) {
+                    return Integer.MAX_VALUE;
+                }
+            } catch (Exception ignored) {
             }
-            catch (Exception ignored) { }
         }
 
-        return totalSeconds;
+        return (int) totalSeconds;
     }
 
     public static Date modifyDate(Date date, String timeString) {
         Calendar c = Calendar.getInstance();
         c.setTime(date);
 
-        Matcher m = Pattern.compile("(([0-9]*) (second|minute|hour|day|week|month|year))").matcher(timeString);
-        Map<String, Integer> map = new HashMap<String, Integer>() {
-            {
-                put("second", Calendar.SECOND);
-                put("minute", Calendar.MINUTE);
-                put("hour", Calendar.HOUR);
-                put("day", Calendar.DAY_OF_MONTH);
-                put("week", Calendar.WEEK_OF_MONTH);
-                put("month", Calendar.MONTH);
-                put("year", Calendar.YEAR);
-            }
-        };
+        Matcher m = DURATION_PATTERN.matcher(timeString);
 
         while (m.find()) {
             try {
                 int amount = Integer.parseInt(m.group(2));
                 String what = m.group(3);
-                c.add(map.get(what), amount);
+                c.add(CALENDAR_FIELDS.get(what), amount);
+            } catch (Exception ignored) {
             }
-            catch (Exception ignored) { }
         }
 
         return c.getTime();
     }
 
     private static String dateToUnixTimestamp(Date date) {
-        String res = "";
-        Date aux = stringToDate("1970-01-01 00:00:00");
-        Timestamp aux1 = dateToTimeStamp(aux);
-        Timestamp aux2 = dateToTimeStamp(date);
-        long difference = aux2.getTime() - aux1.getTime();
+        Instant localEpoch = LocalDateTime.of(1970, 1, 1, 0, 0)
+                .atZone(ZoneId.systemDefault())
+                .toInstant();
+        long difference = date.getTime() - localEpoch.toEpochMilli();
         long seconds = difference / 1000L;
-        return res + seconds;
+        return Long.toString(seconds);
     }
 
     public static Date stringToDate(String date) {
-        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        Date res = null;
         try {
-            res = format.parse(date);
+            ParsePosition position = new ParsePosition(0);
+            TemporalAccessor parsed = LEGACY_TIMESTAMP_PARSER.parse(date, position);
+            if (parsed == null || position.getIndex() == 0) {
+                throw new IllegalArgumentException("Unparseable date: " + date);
+            }
+            return Date.from(
+                    LocalDateTime.from(parsed).atZone(ZoneId.systemDefault()).toInstant());
         } catch (Exception e) {
             LOGGER.error("Error parsing date", e);
+            return null;
         }
-        return res;
     }
 
     public static Timestamp dateToTimeStamp(Date date) {
@@ -737,11 +823,25 @@ public final class Emulator {
     }
 
     public static int getIntUnixTimestamp() {
-        return (int) (System.currentTimeMillis() / 1000);
+        return (int) getLongUnixTimestamp();
     }
 
-    public static boolean isNumeric(String string)
-            throws IllegalArgumentException {
+    public static long getLongUnixTimestamp() {
+        return Instant.now().getEpochSecond();
+    }
+
+    static int elapsedSeconds(long startTimestamp, long endTimestamp) {
+        long elapsed = endTimestamp - startTimestamp;
+        if (elapsed > Integer.MAX_VALUE) {
+            return Integer.MAX_VALUE;
+        }
+        if (elapsed < Integer.MIN_VALUE) {
+            return Integer.MIN_VALUE;
+        }
+        return (int) elapsed;
+    }
+
+    public static boolean isNumeric(String string) throws IllegalArgumentException {
         boolean isnumeric = false;
         if ((string != null) && (!string.equals(""))) {
             isnumeric = true;

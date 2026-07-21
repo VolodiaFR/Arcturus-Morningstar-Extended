@@ -4,7 +4,12 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.games.GameTeamColors;
 import com.eu.habbo.habbohotel.items.ICycleable;
 import com.eu.habbo.habbohotel.items.Item;
-import com.eu.habbo.habbohotel.items.interactions.*;
+import com.eu.habbo.habbohotel.items.interactions.InteractionRoller;
+import com.eu.habbo.habbohotel.items.interactions.InteractionTent;
+import com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition;
+import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
+import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
+import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.items.interactions.games.InteractionGameGate;
 import com.eu.habbo.habbohotel.items.interactions.games.InteractionGameScoreboard;
 import com.eu.habbo.habbohotel.items.interactions.games.InteractionGameTimer;
@@ -20,13 +25,12 @@ import com.eu.habbo.habbohotel.items.interactions.pets.InteractionPetDrink;
 import com.eu.habbo.habbohotel.items.interactions.pets.InteractionPetFood;
 import com.eu.habbo.habbohotel.items.interactions.pets.InteractionPetToy;
 import com.eu.habbo.habbohotel.items.interactions.pets.InteractionPetTree;
-import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSendSignal;
+import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.WiredTriggerType;
-
-import java.awt.*;
+import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -57,7 +61,7 @@ public class RoomSpecialTypes {
     private final ConcurrentHashMap<WiredEffectType, Set<InteractionWiredEffect>> wiredEffects;
     private final ConcurrentHashMap<WiredConditionType, Set<InteractionWiredCondition>> wiredConditions;
     private final ConcurrentHashMap<Integer, InteractionWiredExtra> wiredExtras;
-    
+
     // Spatial index for O(1) coordinate-based lookups of wired components
     private final ConcurrentHashMap<Long, Set<InteractionWiredTrigger>> wiredTriggersByLocation;
     private final ConcurrentHashMap<Long, Set<InteractionWiredEffect>> wiredEffectsByLocation;
@@ -86,7 +90,7 @@ public class RoomSpecialTypes {
         this.wiredEffects = new ConcurrentHashMap<>();
         this.wiredConditions = new ConcurrentHashMap<>();
         this.wiredExtras = new ConcurrentHashMap<>();
-        
+
         // Initialize spatial indexes
         this.wiredTriggersByLocation = new ConcurrentHashMap<>();
         this.wiredEffectsByLocation = new ConcurrentHashMap<>();
@@ -101,7 +105,7 @@ public class RoomSpecialTypes {
         this.undefined = new HashMap<>(0);
         this.cycleTasks = ConcurrentHashMap.newKeySet();
     }
-    
+
     /**
      * Generates a unique key for spatial indexing based on x,y coordinates.
      * Uses bit shifting to combine two shorts into a single long for efficient lookups.
@@ -110,17 +114,18 @@ public class RoomSpecialTypes {
         return ((long) x << 32) | (y & 0xFFFFFFFFL);
     }
 
-
     public InteractionBattleBanzaiTeleporter getBanzaiTeleporter(int itemId) {
         return this.banzaiTeleporters.get(itemId);
     }
 
     public void addBanzaiTeleporter(InteractionBattleBanzaiTeleporter item) {
-        this.banzaiTeleporters.put(item.getId(), item); this.specialItemsById.put(item.getId(), item);
+        this.banzaiTeleporters.put(item.getId(), item);
+        this.specialItemsById.put(item.getId(), item);
     }
 
     public void removeBanzaiTeleporter(InteractionBattleBanzaiTeleporter item) {
-        this.banzaiTeleporters.remove(item.getId()); this.specialItemsById.remove(item.getId());
+        this.banzaiTeleporters.remove(item.getId());
+        this.specialItemsById.remove(item.getId());
     }
 
     public Set<InteractionBattleBanzaiTeleporter> getBanzaiTeleporters() {
@@ -132,7 +137,8 @@ public class RoomSpecialTypes {
         }
     }
 
-    public InteractionBattleBanzaiTeleporter getRandomTeleporter(Item baseItem, InteractionBattleBanzaiTeleporter exclude) {
+    public InteractionBattleBanzaiTeleporter getRandomTeleporter(
+            Item baseItem, InteractionBattleBanzaiTeleporter exclude) {
         List<InteractionBattleBanzaiTeleporter> teleporterList = new ArrayList<>();
         for (InteractionBattleBanzaiTeleporter teleporter : this.banzaiTeleporters.values()) {
             if (baseItem == null || teleporter.getBaseItem() == baseItem) {
@@ -149,7 +155,6 @@ public class RoomSpecialTypes {
 
         return null;
     }
-
 
     public InteractionNest getNest(int itemId) {
         synchronized (this.nests) {
@@ -180,7 +185,6 @@ public class RoomSpecialTypes {
         }
     }
 
-
     public InteractionPetDrink getPetDrink(int itemId) {
         synchronized (this.petDrinks) {
             return this.petDrinks.get(itemId);
@@ -209,7 +213,6 @@ public class RoomSpecialTypes {
             return petDrinks;
         }
     }
-
 
     public InteractionPetFood getPetFood(int itemId) {
         synchronized (this.petFoods) {
@@ -240,7 +243,6 @@ public class RoomSpecialTypes {
         }
     }
 
-
     public InteractionPetToy getPetToy(int itemId) {
         synchronized (this.petToys) {
             return this.petToys.get(itemId);
@@ -269,7 +271,6 @@ public class RoomSpecialTypes {
             return petToys;
         }
     }
-
 
     public InteractionPetTree getPetTree(int itemId) {
         synchronized (this.petTrees) {
@@ -300,7 +301,6 @@ public class RoomSpecialTypes {
         }
     }
 
-
     public InteractionRoller getRoller(int itemId) {
         synchronized (this.rollers) {
             return this.rollers.get(itemId);
@@ -325,6 +325,11 @@ public class RoomSpecialTypes {
         return this.rollers;
     }
 
+    Map<Integer, InteractionRoller> rollerSnapshot() {
+        synchronized (this.rollers) {
+            return new HashMap<>(this.rollers);
+        }
+    }
 
     /**
      * Finds a wired trigger by its item ID.
@@ -387,6 +392,7 @@ public class RoomSpecialTypes {
      * @param trigger The trigger to add
      */
     public static final int MAX_SIGNAL_SENDERS_PER_ROOM = 0;
+
     public static final int MAX_SIGNAL_RECEIVERS_PER_ROOM = 0;
     public static final int MAX_SENDERS_PER_RECEIVER = 0;
 
@@ -419,7 +425,8 @@ public class RoomSpecialTypes {
         return countSendersTargetingReceiver(receiverItemId, null);
     }
 
-    public int countSendersTargetingAnyReceiver(Collection<Integer> receiverItemIds, InteractionWiredEffect excludeSender) {
+    public int countSendersTargetingAnyReceiver(
+            Collection<Integer> receiverItemIds, InteractionWiredEffect excludeSender) {
         if (receiverItemIds == null || receiverItemIds.isEmpty()) {
             return 0;
         }
@@ -461,7 +468,9 @@ public class RoomSpecialTypes {
 
         Set<InteractionWiredTrigger> receivers = this.getTriggers(WiredTriggerType.RECEIVE_SIGNAL);
         for (InteractionWiredTrigger trigger : receivers) {
-            if (!(trigger instanceof com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerReceiveSignal receiver)) {
+            if (!(trigger
+                    instanceof
+                    com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerReceiveSignal receiver)) {
                 continue;
             }
 
@@ -510,11 +519,13 @@ public class RoomSpecialTypes {
 
     public void addTrigger(InteractionWiredTrigger trigger) {
         // Add to type-based index
-        this.wiredTriggers.computeIfAbsent(trigger.getType(), k -> ConcurrentHashMap.newKeySet())
+        this.wiredTriggers
+                .computeIfAbsent(trigger.getType(), k -> ConcurrentHashMap.newKeySet())
                 .add(trigger);
         // Add to spatial index
         long key = coordinateKey(trigger.getX(), trigger.getY());
-        this.wiredTriggersByLocation.computeIfAbsent(key, k -> ConcurrentHashMap.newKeySet())
+        this.wiredTriggersByLocation
+                .computeIfAbsent(key, k -> ConcurrentHashMap.newKeySet())
                 .add(trigger);
         this.specialItemsById.put(trigger.getId(), trigger);
     }
@@ -543,7 +554,7 @@ public class RoomSpecialTypes {
         }
         this.specialItemsById.remove(trigger.getId());
     }
-    
+
     /**
      * Updates the spatial index when a trigger is moved.
      * @param trigger The trigger that was moved
@@ -560,13 +571,13 @@ public class RoomSpecialTypes {
                 this.wiredTriggersByLocation.remove(oldKey);
             }
         }
-        
+
         // Add to new location
         long newKey = coordinateKey(trigger.getX(), trigger.getY());
-        this.wiredTriggersByLocation.computeIfAbsent(newKey, k -> ConcurrentHashMap.newKeySet())
+        this.wiredTriggersByLocation
+                .computeIfAbsent(newKey, k -> ConcurrentHashMap.newKeySet())
                 .add(trigger);
     }
-
 
     /**
      * Finds a wired effect by its item ID.
@@ -630,11 +641,13 @@ public class RoomSpecialTypes {
      */
     public void addEffect(InteractionWiredEffect effect) {
         // Add to type-based index
-        this.wiredEffects.computeIfAbsent(effect.getType(), k -> ConcurrentHashMap.newKeySet())
+        this.wiredEffects
+                .computeIfAbsent(effect.getType(), k -> ConcurrentHashMap.newKeySet())
                 .add(effect);
         // Add to spatial index
         long key = coordinateKey(effect.getX(), effect.getY());
-        this.wiredEffectsByLocation.computeIfAbsent(key, k -> ConcurrentHashMap.newKeySet())
+        this.wiredEffectsByLocation
+                .computeIfAbsent(key, k -> ConcurrentHashMap.newKeySet())
                 .add(effect);
         this.specialItemsById.put(effect.getId(), effect);
     }
@@ -663,7 +676,7 @@ public class RoomSpecialTypes {
         }
         this.specialItemsById.remove(effect.getId());
     }
-    
+
     /**
      * Updates the spatial index when an effect is moved.
      * @param effect The effect that was moved
@@ -680,13 +693,13 @@ public class RoomSpecialTypes {
                 this.wiredEffectsByLocation.remove(oldKey);
             }
         }
-        
+
         // Add to new location
         long newKey = coordinateKey(effect.getX(), effect.getY());
-        this.wiredEffectsByLocation.computeIfAbsent(newKey, k -> ConcurrentHashMap.newKeySet())
+        this.wiredEffectsByLocation
+                .computeIfAbsent(newKey, k -> ConcurrentHashMap.newKeySet())
                 .add(effect);
     }
-
 
     /**
      * Finds a wired condition by its item ID.
@@ -750,11 +763,13 @@ public class RoomSpecialTypes {
      */
     public void addCondition(InteractionWiredCondition condition) {
         // Add to type-based index
-        this.wiredConditions.computeIfAbsent(condition.getType(), k -> ConcurrentHashMap.newKeySet())
+        this.wiredConditions
+                .computeIfAbsent(condition.getType(), k -> ConcurrentHashMap.newKeySet())
                 .add(condition);
         // Add to spatial index
         long key = coordinateKey(condition.getX(), condition.getY());
-        this.wiredConditionsByLocation.computeIfAbsent(key, k -> ConcurrentHashMap.newKeySet())
+        this.wiredConditionsByLocation
+                .computeIfAbsent(key, k -> ConcurrentHashMap.newKeySet())
                 .add(condition);
         this.specialItemsById.put(condition.getId(), condition);
     }
@@ -783,7 +798,7 @@ public class RoomSpecialTypes {
         }
         this.specialItemsById.remove(condition.getId());
     }
-    
+
     /**
      * Updates the spatial index when a condition is moved.
      * @param condition The condition that was moved
@@ -800,13 +815,13 @@ public class RoomSpecialTypes {
                 this.wiredConditionsByLocation.remove(oldKey);
             }
         }
-        
+
         // Add to new location
         long newKey = coordinateKey(condition.getX(), condition.getY());
-        this.wiredConditionsByLocation.computeIfAbsent(newKey, k -> ConcurrentHashMap.newKeySet())
+        this.wiredConditionsByLocation
+                .computeIfAbsent(newKey, k -> ConcurrentHashMap.newKeySet())
                 .add(condition);
     }
-
 
     /**
      * Gets all wired extras in the room.
@@ -850,7 +865,8 @@ public class RoomSpecialTypes {
         this.wiredExtras.put(extra.getId(), extra);
         // Add to spatial index
         long key = coordinateKey(extra.getX(), extra.getY());
-        this.wiredExtrasByLocation.computeIfAbsent(key, k -> ConcurrentHashMap.newKeySet())
+        this.wiredExtrasByLocation
+                .computeIfAbsent(key, k -> ConcurrentHashMap.newKeySet())
                 .add(extra);
         this.specialItemsById.put(extra.getId(), extra);
     }
@@ -872,7 +888,7 @@ public class RoomSpecialTypes {
         }
         this.specialItemsById.remove(extra.getId());
     }
-    
+
     /**
      * Updates the spatial index when an extra is moved.
      * @param extra The extra that was moved
@@ -889,10 +905,11 @@ public class RoomSpecialTypes {
                 this.wiredExtrasByLocation.remove(oldKey);
             }
         }
-        
+
         // Add to new location
         long newKey = coordinateKey(extra.getX(), extra.getY());
-        this.wiredExtrasByLocation.computeIfAbsent(newKey, k -> ConcurrentHashMap.newKeySet())
+        this.wiredExtrasByLocation
+                .computeIfAbsent(newKey, k -> ConcurrentHashMap.newKeySet())
                 .add(extra);
     }
 
@@ -917,17 +934,18 @@ public class RoomSpecialTypes {
         return false;
     }
 
-
     public InteractionGameScoreboard getGameScorebord(int itemId) {
         return this.gameScoreboards.get(itemId);
     }
 
     public void addGameScoreboard(InteractionGameScoreboard scoreboard) {
-        this.gameScoreboards.put(scoreboard.getId(), scoreboard); this.specialItemsById.put(scoreboard.getId(), scoreboard);
+        this.gameScoreboards.put(scoreboard.getId(), scoreboard);
+        this.specialItemsById.put(scoreboard.getId(), scoreboard);
     }
 
     public void removeScoreboard(InteractionGameScoreboard scoreboard) {
-        this.gameScoreboards.remove(scoreboard.getId()); this.specialItemsById.remove(scoreboard.getId());
+        this.gameScoreboards.remove(scoreboard.getId());
+        this.specialItemsById.remove(scoreboard.getId());
     }
 
     public Map<Integer, InteractionFreezeScoreboard> getFreezeScoreboards() {
@@ -1017,17 +1035,18 @@ public class RoomSpecialTypes {
         }
     }
 
-
     public InteractionGameGate getGameGate(int itemId) {
         return this.gameGates.get(itemId);
     }
 
     public void addGameGate(InteractionGameGate gameGate) {
-        this.gameGates.put(gameGate.getId(), gameGate); this.specialItemsById.put(gameGate.getId(), gameGate);
+        this.gameGates.put(gameGate.getId(), gameGate);
+        this.specialItemsById.put(gameGate.getId(), gameGate);
     }
 
     public void removeGameGate(InteractionGameGate gameGate) {
-        this.gameGates.remove(gameGate.getId()); this.specialItemsById.remove(gameGate.getId());
+        this.gameGates.remove(gameGate.getId());
+        this.specialItemsById.remove(gameGate.getId());
     }
 
     public Map<Integer, InteractionFreezeGate> getFreezeGates() {
@@ -1058,17 +1077,18 @@ public class RoomSpecialTypes {
         }
     }
 
-
     public InteractionGameTimer getGameTimer(int itemId) {
         return this.gameTimers.get(itemId);
     }
 
     public void addGameTimer(InteractionGameTimer gameTimer) {
-        this.gameTimers.put(gameTimer.getId(), gameTimer); this.specialItemsById.put(gameTimer.getId(), gameTimer);
+        this.gameTimers.put(gameTimer.getId(), gameTimer);
+        this.specialItemsById.put(gameTimer.getId(), gameTimer);
     }
 
     public void removeGameTimer(InteractionGameTimer gameTimer) {
-        this.gameTimers.remove(gameTimer.getId()); this.specialItemsById.remove(gameTimer.getId());
+        this.gameTimers.remove(gameTimer.getId());
+        this.specialItemsById.remove(gameTimer.getId());
     }
 
     public Map<Integer, InteractionGameTimer> getGameTimers() {
@@ -1081,12 +1101,14 @@ public class RoomSpecialTypes {
 
     public InteractionFreezeExitTile getRandomFreezeExitTile() {
         synchronized (this.freezeExitTile) {
-            return (InteractionFreezeExitTile) this.freezeExitTile.values().toArray()[Emulator.getRandom().nextInt(this.freezeExitTile.size())];
+            return (InteractionFreezeExitTile)
+                    this.freezeExitTile.values().toArray()[Emulator.getRandom().nextInt(this.freezeExitTile.size())];
         }
     }
 
     public void addFreezeExitTile(InteractionFreezeExitTile freezeExitTile) {
-        this.freezeExitTile.put(freezeExitTile.getId(), freezeExitTile); this.specialItemsById.put(freezeExitTile.getId(), freezeExitTile);
+        this.freezeExitTile.put(freezeExitTile.getId(), freezeExitTile);
+        this.specialItemsById.put(freezeExitTile.getId(), freezeExitTile);
     }
 
     public Map<Integer, InteractionFreezeExitTile> getFreezeExitTiles() {
@@ -1094,7 +1116,8 @@ public class RoomSpecialTypes {
     }
 
     public void removeFreezeExitTile(InteractionFreezeExitTile freezeExitTile) {
-        this.freezeExitTile.remove(freezeExitTile.getId()); this.specialItemsById.remove(freezeExitTile.getId());
+        this.freezeExitTile.remove(freezeExitTile.getId());
+        this.specialItemsById.remove(freezeExitTile.getId());
     }
 
     public boolean hasFreezeExitTile() {
@@ -1117,7 +1140,7 @@ public class RoomSpecialTypes {
 
     public Set<HabboItem> getItemsOfType(Class<? extends HabboItem> type) {
         Set<HabboItem> items = new LinkedHashSet<>();
-        
+
         // Check pet trees collection for InteractionPetTree type
         if (type == InteractionPetTree.class) {
             synchronized (this.petTrees) {
@@ -1125,7 +1148,7 @@ public class RoomSpecialTypes {
             }
             return items;
         }
-        
+
         // Check pet toys collection for InteractionPetToy type
         if (type == InteractionPetToy.class) {
             synchronized (this.petToys) {
@@ -1133,11 +1156,10 @@ public class RoomSpecialTypes {
             }
             return items;
         }
-        
+
         synchronized (this.undefined) {
             for (HabboItem item : this.undefined.values()) {
-                if (item.getClass() == type)
-                    items.add(item);
+                if (item.getClass() == type) items.add(item);
             }
         }
 
@@ -1186,7 +1208,9 @@ public class RoomSpecialTypes {
         this.petFoods.clear();
         this.petToys.clear();
         this.petTrees.clear();
-        this.rollers.clear();
+        synchronized (this.rollers) {
+            this.rollers.clear();
+        }
 
         this.wiredTriggers.clear();
         this.wiredEffects.clear();
@@ -1205,7 +1229,12 @@ public class RoomSpecialTypes {
 
     public Rectangle tentAt(RoomTile location) {
         for (HabboItem item : this.getItemsOfType(InteractionTent.class)) {
-            Rectangle rectangle = RoomLayout.getRectangle(item.getX(), item.getY(), item.getBaseItem().getWidth(), item.getBaseItem().getLength(), item.getRotation());
+            Rectangle rectangle = RoomLayout.getRectangle(
+                    item.getX(),
+                    item.getY(),
+                    item.getBaseItem().getWidth(),
+                    item.getBaseItem().getLength(),
+                    item.getRotation());
             if (RoomLayout.tileInSquare(rectangle, location)) {
                 return rectangle;
             }
